@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 const jetbrainsMono = localFont({
-  src: "@/src/fonts/JetBrains_Mono/",
+  src: "../fonts/JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf",
   variable: "--font-family-mono",
   weight: "100 900",
   fallback: ["Fira Code", "monospace"],
