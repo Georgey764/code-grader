@@ -30,6 +30,15 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+LOCAL_APPS = [
+    'apps.core',
+    'apps.users',
+    'apps.courses',
+    'apps.groups',
+    'apps.assessments',
+    'apps.grading'
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
