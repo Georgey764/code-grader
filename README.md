@@ -22,3 +22,4 @@ Below you can read about the technical architecture associated with this softwar
 ## Entity Relationship Diagram (ERD)
 
 ![ERD diagram for code-grader](./docs/pictures/ERD.png)
+*Designed by George Khawas*
