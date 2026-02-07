@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the app
+COPY . .
+
+# Expose Next.js default dev server port
+EXPOSE 3000
+
+# Start Next.js in development mode (hot reload)
+CMD ["npm", "run", "dev"]

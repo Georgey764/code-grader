@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class UsersConfig(AppConfig):
-    name = 'apps.accounts'
+    name = "apps.accounts"
+    label = "accounts"
