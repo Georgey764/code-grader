@@ -32,11 +32,11 @@ ALLOWED_HOSTS = []
 
 LOCAL_APPS = [
     'apps.core',
-    'apps.users',
+    'apps.accounts',
     'apps.courses',
     'apps.groups',
-    'apps.assessments',
-    'apps.grading'
+    'apps.assignments',
+    'apps.submissions'
 ]
 
 INSTALLED_APPS = [
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'phonenumber_field'
 ]
 
 MIDDLEWARE = [
