@@ -2,4 +2,5 @@ from django.apps import AppConfig
 
 
 class CoursesConfig(AppConfig):
-    name = 'apps.courses'
+    name = "apps.courses"
+    label = "courses"
