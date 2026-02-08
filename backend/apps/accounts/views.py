@@ -11,10 +11,13 @@ from apps.accounts.serializers import (
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics
+from rest_framework.permissions import AllowAny
 # Create your views here.
 
 
 class UsersCreateView(generics.CreateAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
     queryset = User.objects
     serializer_class = RegisterSerializer
 

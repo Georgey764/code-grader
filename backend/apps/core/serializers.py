@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 
 class BaseSerializers(serializers.ModelSerializer):
@@ -18,15 +17,3 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["cwid"] = user.cwid
 
         return token
-
-
-class MyTokenRefreshSerializer(TokenRefreshSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-
-        refresh = self.token_class(attrs["refresh"])
-
-        data["role"] = refresh.payload.get("role")
-        data["cwid"] = refresh.payload.get("cwid")
-
-        return data
