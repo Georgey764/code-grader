@@ -104,9 +104,12 @@ export default function LoginPage() {
         <div className="mt-6 pt-6 border-t border-border text-center">
           <p className="text-body text-sm">
             Need an account?{" "}
-            <span className="text-secondary font-bold cursor-pointer hover:underline">
+            <a
+              href="/register"
+              className="text-secondary font-bold cursor-pointer hover:underline"
+            >
               Register here
-            </span>
+            </a>
           </p>
         </div>
       </Card>

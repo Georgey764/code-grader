@@ -75,7 +75,7 @@ class FacultyProfile(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} - {self.phone}"
+        return f"{self.user.first_name} - {self.user.cwid}"
 
 
 class StudentProfile(BaseModel):
@@ -103,4 +103,4 @@ class StudentProfile(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} - {self.phone}"
+        return f"{self.user.first_name} - {self.user.cwid}"
