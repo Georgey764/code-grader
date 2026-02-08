@@ -12,7 +12,7 @@ services:
       - DEBUG=1
       - ALLOWED_HOST=${ALLOWED_HOST}
       - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_NAME=${POSTGRES_NAME}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_HOST=db
@@ -23,6 +23,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+      args:
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
     command: npm run dev
     volumes:
       - ./frontend:/app
@@ -31,3 +33,4 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}

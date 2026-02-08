@@ -7,7 +7,9 @@ An artificial intelligence–based code grading system developed as part of the 
 1. George Khawas (Project Lead)
    - Coordinated frontend & backend
    - Designed database schema, frontend & backend project structure
-   - Setup and administered the serveres
+   - Setup and administered the servers
+   - Designed the software architecture
+   - Managed the development cycle using Docker Compose
 2. Sujan Shrestha (Backend Engineer: Developed)
    - Developed APIs
 3. Sabin Chalise (Frontend Engineer)

@@ -1,23 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  /* Colors */
-  --primary: #1a2b48;
-  --secondary: #007aff;
-  --accent: #00c896;
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  /* ULM Core Colors */
+  --primary: #840029;       /* ULM Maroon */
+  --secondary: #BD955A;     /* ULM Gold */
+  --accent: #231F20;        /* ULM Black */
+  
+  /* Interface Colors */
+  --background: #F9F7F5;    /* Subtle warm off-white */
+  --foreground: #231F20;    /* Deep black-grey for readability */
   --surface: #ffffff;
-  --border: #e2e8f0;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --error: #d93025;
+  --border: #D1D5DB;
+  
+  /* Text Styles */
+  --text-main: #231F20;
+  --text-muted: #6B7280;
+  --error: #B91C1C;         /* A slightly deeper red to match the palette */
 
-  /* Code color & line height */
-  --code-bg: #0f172a;
-  --code-keyword: #c678dd;
-  --code-string: #98c379;
-  --code-comment: #5c6370;
+  /* Code Syntax (Warhawk Dark Mode) */
+  --code-bg: #1A1214;       /* Dark charcoal with a hint of maroon */
+  --code-keyword: #BD955A;  /* Gold for keywords */
+  --code-string: #A5B4FC;   /* Soft contrast for strings */
+  --code-comment: #8E8E8E;
   --code-line-height: 1.6;
 
   /* Typography & Structure & Elevation */
@@ -56,6 +60,40 @@
   --radius-md: var(--radius-md);
   --shadow-subtle: var(--shadow-subtle);
   --shadow-focus: var(--shadow-focus);
+}
+
+/* Custom Typography Utilities */
+@utility text-h1 {
+  @apply text-4xl font-extrabold tracking-tight text-primary sm:text-5xl;
+  font-family: var(--font-family-sans);
+}
+
+@utility text-h2 {
+  @apply text-2xl font-bold text-accent border-b-2 border-secondary pb-1;
+}
+
+@utility text-subheading {
+  @apply text-lg font-medium text-slate-600 uppercase tracking-widest;
+}
+
+@utility text-body {
+  @apply text-base leading-relaxed text-slate-800;
+}
+
+@utility text-caption {
+  @apply text-sm italic text-slate-500;
+}
+
+@utility code-main {
+  @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-sm font-semibold text-code-string;
+}
+
+@utility code-block {
+  @apply block overflow-x-auto rounded-lg bg-[var(--color-code-bg)] p-4 font-mono text-sm leading-relaxed text-[var(--color-code-text)] border-l-4 border-accent;
+}
+
+@utility code-keyword {
+  @apply text-primary font-bold;
 }
 
 /* @media (prefers-color-scheme: dark) {

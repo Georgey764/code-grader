@@ -36,13 +36,13 @@ class User(AbstractUser, BaseModel):
     first_name = models.CharField(max_length=50, unique=False, null=False, blank=False)
     last_name = models.CharField(max_length=50, unique=False, null=False, blank=False)
     role = models.CharField(max_length=2, choices=Roles.choices, default=Roles.STUDENT)
+    cwid = models.CharField(max_length=10, unique=True, null=False, blank=False)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
     objects = UserManager()
 
     class Meta:
-        db_table = "user"
         verbose_name = "User"
         verbose_name_plural = "Users"
 
@@ -84,9 +84,8 @@ class StudentProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="student_profile",
     )
-    cwid = models.CharField(max_length=10, unique=False)
-    major = PhoneNumberField(region="US")
-    classification = models.CharField(max_length=50)
+    major = models.CharField(max_length=255, unique=False, null=True, blank=True)
+    classification = models.CharField(max_length=50, null=True, blank=True)
 
     class Meta:
         db_table = "student_profile"

@@ -1,5 +1,5 @@
 import Image from "next/image";
 
 export default function Home() {
-  return <div>wsg</div>;
+  return <div className="text-subheading">wsg</div>;
 }
