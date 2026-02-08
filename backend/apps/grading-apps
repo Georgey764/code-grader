@@ -1,0 +1,49 @@
+from django.db import models
+import uuid
+
+class RubricCriteria(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.ForeignKey("assignments.Assignment", on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    max_points = models.FloatField()
+    is_automated = models.BooleanField(default=False)
+
+class RubricResult(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submission = models.ForeignKey("submissions.Submission", on_delete=models.CASCADE)
+    rubric_criteria = models.ForeignKey(RubricCriteria, on_delete=models.CASCADE)
+    points_awarded = models.FloatField()
+    optional_feedback = models.TextField(null=True, blank=True)
+
+class TestCase(models.Model):
+    TEST_TYPE_CHOICES = [
+        ("UNIT", "Unit"),
+        ("RUN", "Run"),
+        ("SINGLE", "Single"),
+        ("FULL", "Full"),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignment = models.ForeignKey("assignments.Assignment", on_delete=models.CASCADE)
+    test_type = models.CharField(max_length=10, choices=TEST_TYPE_CHOICES)
+    input_data = models.TextField()
+    expected_output = models.TextField()
+    is_public = models.BooleanField(default=False)
+    weight = models.DecimalField(max_digits=5, decimal_places=2)
+
+class TestResult(models.Model):
+    STATUS_CHOICES = [
+        ("PASS", "Pass"),
+        ("FAIL", "Fail"),
+        ("ERROR", "Error"),
+        ("TIMEOUT", "Timeout"),
+        ("SKIPPED", "Skipped"),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    submission = models.ForeignKey("submissions.Submission", on_delete=models.CASCADE)
+    test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    actual_output = models.TextField()
+    error_message = models.TextField(null=True, blank=True)
+    execution_time_ms = models.FloatField()
+    points_earned = models.FloatField()
