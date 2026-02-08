@@ -1,6 +1,9 @@
 # 1. Use official Node.js LTS image
 FROM node:20-alpine AS builder
 
+ARG NEXT_PUBLIC_URL
+ENV NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
+
 # 2. Set working directory
 WORKDIR /app
 

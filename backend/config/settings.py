@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
     os.getenv("ALLOWED_HOST_2", "localhost"),
 ]
 
-CORS_ALLOWED_ORIGIN = [os.getenv("ALLOWED_ORIGIN", "http://localhost:3000")]
+CORS_ALLOWED_ORIGINS = [os.getenv("ALLOWED_ORIGIN", "http://localhost:3000")]
 
 # Application definition
 DJANGO_APPS = [
@@ -43,7 +43,12 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 
-THIRD_PARTY_APPS = ["phonenumber_field", "corsheaders"]
+THIRD_PARTY_APPS = [
+    "phonenumber_field",
+    "corsheaders",
+    "rest_framework",
+    "rest_framework_simplejwt",
+]
 
 LOCAL_APPS = [
     "apps.core",
@@ -55,6 +60,19 @@ LOCAL_APPS = [
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
+
+CSRF_TRUSTED_ORIGINS = [
+    os.getenv("ALLOWED_ORIGIN", "http://localhost:3000"),
+]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -93,7 +111,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_NAME"),
+        "NAME": os.getenv("POSTGRES_NAME", "code_grader_db"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
         "HOST": os.getenv("POSTGRES_HOST"),
