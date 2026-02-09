@@ -149,7 +149,7 @@ export default function RegisterPage() {
                     type="radio"
                     name="role"
                     value="ST"
-                    checked={role === "student"}
+                    checked={role === "ST"}
                     onChange={(e) => setRole(e.target.value)}
                     className="w-4 h-4 accent-primary"
                   />
@@ -160,7 +160,7 @@ export default function RegisterPage() {
                     type="radio"
                     name="role"
                     value="FA"
-                    checked={role === "faculty"}
+                    checked={role === "FA"}
                     onChange={(e) => setRole(e.target.value)}
                     className="w-4 h-4 accent-primary"
                   />
@@ -172,7 +172,7 @@ export default function RegisterPage() {
             <hr className="md:col-span-2 border-border" />
 
             {/* Student Specific Fields */}
-            {role === "student" && (
+            {role === "ST" && (
               <>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-text-main">
@@ -205,7 +205,7 @@ export default function RegisterPage() {
             )}
 
             {/* Faculty Specific Fields */}
-            {role === "faculty" && (
+            {role === "FA" && (
               <>
                 <div className="space-y-1">
                   <label className="text-sm font-bold text-text-main">
