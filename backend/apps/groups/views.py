@@ -1,6 +1,6 @@
 from rest_framework import viewsets
 from .models import Group, GroupsMembership
-from .serializers import GroupSerializer, GroupsMembershipSerializer
+from .serializer import GroupSerializer, GroupsMembershipSerializer
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()

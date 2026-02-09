@@ -1,8 +1,9 @@
-asgiref==3.11.0
-Django==6.0.1
-django-cors-headers==4.9.0
-django-phonenumber-field==8.4.0
-djangorestframework==3.16.1
-phonenumbers==9.0.23
-psycopg2-binary==2.9.11
-sqlparse==0.5.5
+asgiref==3.8.1
+Django==5.0.2
+django-cors-headers==4.3.1
+django-phonenumber-field==7.3.0
+djangorestframework==3.14.0
+phonenumbers==8.13.30
+psycopg2-binary==2.9.9
+sqlparse==0.4.4
+python-dotenv

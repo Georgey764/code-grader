@@ -43,7 +43,7 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
 ]
 
-THIRD_PARTY_APPS = ["phonenumber_field", "corsheaders"]
+THIRD_PARTY_APPS = ["phonenumber_field", "corsheaders", "rest_framework"]
 
 LOCAL_APPS = [
     "apps.core",

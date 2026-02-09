@@ -1,28 +1,24 @@
-# apps/courses/models.py
 from django.db import models
-from core.models import BaseModel
-#from accounts.models import FacultyProfile, StudentProfile
-from apps.accounts.models import FacultyProfile, StudentProfile # ✅ Full path
-
+from apps.core.models import BaseModel
+from apps.accounts.models import FacultyProfile, StudentProfile
 
 class Course(BaseModel):
-    faculty = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE)
+    faculty = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE, related_name='courses')
     name = models.CharField(max_length=255)
-    short_name = models.CharField(max_length=50)
-    crn = models.CharField(max_length=5)
+    short_name = models.CharField(max_length=50) 
+    crn = models.CharField(max_length=5, blank=True) 
     is_active = models.BooleanField(default=True)
-    description = models.TextField()
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.short_name}: {self.name}"
 
 class Roster(BaseModel):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    """
+    Links a Student to a Course.
+    """
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='roster')
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='enrollments')
 
-class Group(BaseModel):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-    max_members = models.PositiveSmallIntegerField()
-
-class GroupsMembership(BaseModel):
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-    roster = models.ForeignKey(Roster, on_delete=models.CASCADE)
-    is_leader = models.BooleanField(default=False)
+    class Meta:
+        unique_together = ('course', 'student') # A student can't be in the same course twice

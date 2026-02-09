@@ -3,10 +3,18 @@
 import os
 import sys
 
+# 1. Add this import to read .env files
+from dotenv import load_dotenv
+
+# Your existing custom path logic (Keep this!)
 sys.path.append(os.path.join(os.path.dirname(__file__), "apps"))
 
 def main():
     """Run administrative tasks."""
+    
+    # 2. Add this line to actually load the variables
+    load_dotenv()
+    
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line

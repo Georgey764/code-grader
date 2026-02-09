@@ -1,23 +1,20 @@
-# apps/assignments/serializers.py
 from rest_framework import serializers
-from .models import Assignment, Rubric, TestCase, TestResult
+from .models import Assignment, RubricCriteria, TestCase
 
-class AssignmentSerializer(serializers.ModelSerializer):
+class RubricCriteriaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Assignment
-        fields = ['id', 'course', 'name', 'description', 'due_date']
-
-class RubricSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rubric
-        fields = ['id', 'assignment', 'criteria', 'max_score']
+        model = RubricCriteria
+        fields = '__all__'
 
 class TestCaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestCase
-        fields = ['id', 'assignment', 'input_data', 'expected_output']
+        fields = '__all__'
 
-class TestResultSerializer(serializers.ModelSerializer):
+class AssignmentSerializer(serializers.ModelSerializer):
+    rubrics = RubricCriteriaSerializer(many=True, read_only=True)
+    test_cases = TestCaseSerializer(many=True, read_only=True)
+
     class Meta:
-        model = TestResult
-        fields = ['id', 'submission', 'test_case', 'status', 'output', 'score']
+        model = Assignment
+        fields = '__all__'
