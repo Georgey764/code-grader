@@ -15,9 +15,9 @@ class RegisterSerializer(BaseSerializers):
         required=False, allow_null=True, allow_blank=True
     )
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = User
-        fields = BaseSerializers.Meta.fields + [
+        fields = [
             "email",
             "first_name",
             "last_name",
@@ -50,40 +50,37 @@ class RegisterSerializer(BaseSerializers):
 
     @transaction.atomic
     def create(self, validated_data):
-        # Remove password_confirm before passing to create_user
         validated_data.pop("password_confirm")
 
-        # Use the create_user method you defined in UserManager
-        user = User.objects.create_user(
-            email=validated_data["email"],
-            password=validated_data["password"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-            role=validated_data.get("role", Roles.STUDENT),
-            cwid=validated_data.get("cwid"),
-        )
+        title = validated_data.pop("title", None)
+        phone = validated_data.pop("phone", None)
+
+        classification = validated_data.pop("classification", None)
+        major = validated_data.pop("major", None)
+
+        user = User.objects.create_user(**validated_data)
 
         if validated_data["role"] == Roles.FACULTY:
             FacultyProfile.objects.create(
                 user=user,
-                phone=validated_data.get("phone"),
-                title=validated_data.get("title"),
+                phone=phone,
+                title=title,
             )
 
         elif validated_data["role"] == Roles.STUDENT:
             StudentProfile.objects.create(
                 user=user,
-                major=validated_data.get("major"),
-                classification=validated_data.get("classification"),
+                major=major,
+                classification=classification,
             )
 
         return user
 
 
 class UserDetailSerializer(BaseSerializers):
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = User
-        fields = BaseSerializers.Meta.fields + [
+        fields = [
             "id",
             "email",
             "first_name",
@@ -94,26 +91,52 @@ class UserDetailSerializer(BaseSerializers):
 
 
 class StudentSerializer(BaseSerializers):
-    user = UserDetailSerializer(read_only=True)
+    user = UserDetailSerializer()
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = StudentProfile
-        fields = BaseSerializers.Meta.fields + [
+        fields = [
             "id",
             "user",
             "major",
             "classification",
         ]
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        super().update(instance, validated_data)
+
+        if user_data:
+            user_instance = instance.user
+            for attr, value in user_data.items():
+                setattr(user_instance, attr, value)
+            user_instance.save()
+
+        return instance
+
 
 class FacultySerializer(BaseSerializers):
-    user = UserDetailSerializer(read_only=True)
+    user = UserDetailSerializer()
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = FacultyProfile
-        fields = BaseSerializers.Meta.fields + [
+        fields = [
             "id",
             "user",
             "title",
             "phone",
         ]
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        super().update(instance, validated_data)
+
+        if user_data:
+            user_instance = instance.user
+            for attr, value in user_data.items():
+                setattr(user_instance, attr, value)
+            user_instance.save()
+
+        return instance
