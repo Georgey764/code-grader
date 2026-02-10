@@ -13,7 +13,7 @@ class Course(BaseModel):
         unique=True, validators=[MinValueValidator(10000), MaxValueValidator(99999)]
     )
     is_active = models.BooleanField(default=True)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = "course"
