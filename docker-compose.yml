@@ -16,7 +16,25 @@ services:
       - app-network
 
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     container_name: backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - ALLOWED_HOST=${ALLOWED_HOST}
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
+      - POSTGRES_NAME=${POSTGRES_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       db:
         condition: service_healthy
@@ -24,7 +42,19 @@ services:
       - app-network
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
     container_name: frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
     depends_on:
       - db
     networks:

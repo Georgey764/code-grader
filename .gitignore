@@ -141,3 +141,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+#database
+postgres_data
+postgres_data/
