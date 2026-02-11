@@ -27,9 +27,10 @@ After completing the prerequisites:
     > Windows: Set-Alias dcdev docker compose -f docker-compose.yml -f docker-compose.dev.yml
     > Mac/Linux: alias dcdev='docker compose -f docker-compose.yml -f docker-compose.dev.yml'
 3. Run the following code to run the program:
+    > dcdev build --no-cache 
     > dcdev up -d
-4. View frontend at localhost:3000 & backend at localhost:8000
-5. To turn off use: 
+5. View frontend at localhost:3000 & backend at localhost:8000
+6. To turn off use: 
     > dcdev down -v
 
 # Architecture
