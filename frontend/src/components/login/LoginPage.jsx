@@ -1,22 +1,34 @@
 "use client";
 
 import { Button, Input, Card } from "@/components/global/elements";
-import useMetadata from "@/hooks/useMetadata";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+
 import { jwtDecode } from "jwt-decode";
+import { LoadingPage } from "@/components/global/sections";
+import { useRouteToCorrectPath } from "@/hooks";
+import { useMetadata } from "@/context";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const { url, name, author } = useMetadata();
+  const { user, isLoading } = useRouteToCorrectPath();
+  const { name, author, baseUrl } = useMetadata();
   const router = useRouter();
 
-  useEffect(() => {}, []);
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
       {/* Brand Header */}
       <div className="mb-8 text-center">
-        <h1 className="text-h1 mb-2">{name}</h1>
+        <Link href="/">
+          <h1 className="text-h1 mb-2">{name}</h1>
+        </Link>
         <p className="text-subheading">Portal Access</p>
       </div>
 
@@ -32,7 +44,7 @@ export default function LoginPage() {
             e.preventDefault();
             const form = e.target;
             try {
-              const response = await fetch(url + "token/", {
+              const response = await fetch(baseUrl + "token/", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

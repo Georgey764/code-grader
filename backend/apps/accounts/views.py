@@ -6,7 +6,7 @@ from apps.accounts.serializers import (
     FacultySerializer,
 )
 from rest_framework.permissions import AllowAny
-from apps.core.permissions import Is_Faculty, Is_Student
+from apps.core.permissions import Is_Faculty, Is_Student, DenyAll
 from apps.accounts.permissions import Is_Profile_Owner
 # Create your views here.
 
@@ -34,6 +34,8 @@ class StudentDetailView(generics.RetrieveUpdateAPIView):
     def get_permissions(self):
         if self.request.method in ["GET", "PUT", "PATCH"]:
             return [Is_Student(), Is_Profile_Owner()]
+        if self.request.method in ["DELETE", "POST"]:
+            return [DenyAll()]
         return super().get_permissions()
 
 
@@ -53,4 +55,6 @@ class FacultyDetailView(generics.RetrieveUpdateAPIView):
     def get_permissions(self):
         if self.request.method in ["GET", "PUT", "PATCH"]:
             return [Is_Faculty(), Is_Profile_Owner()]
+        if self.request.method in ["DELETE", "POST"]:
+            return [DenyAll()]
         return super().get_permissions()

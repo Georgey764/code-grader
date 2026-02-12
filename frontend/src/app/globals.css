@@ -126,8 +126,26 @@
   }
 } */
 
+/* Loading page css */
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-family-sans);
+}
+
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@theme {
+  --animate-loading: loading 2s ease-in-out infinite;
 }

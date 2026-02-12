@@ -24,9 +24,9 @@ class Course(BaseModel):
         return f"{self.name}"
 
 
-class Roster:
+class Roster(BaseModel):
     student_profile = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    facult_profile = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "roster"

@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
-import { useMetadata } from "@/hooks";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { LoadingPage } from "@/components/global/sections";
+import { useRouteToCorrectPath } from "@/hooks";
+import { useMetadata } from "@/context";
+import Link from "next/link";
 
 export default function RegisterPage() {
-  // State to toggle between Student and Faculty fields
   const [role, setRole] = useState("student");
   const { url } = useMetadata();
-  const router = useRouter();
+  const { user, isLoading } = useRouteToCorrectPath();
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
+  if (user) {
+    return null;
+  }
 
   // Handle form submission
   const handleSubmit = (e) => {
@@ -64,9 +73,11 @@ export default function RegisterPage() {
       <div className="w-full max-w-2xl bg-surface rounded-md shadow-subtle border border-border overflow-hidden">
         {/* Branding Header */}
         <div className="bg-primary p-8 text-center">
-          <h1 className="text-white text-3xl font-extrabold tracking-tight uppercase">
-            Warhawk Code Grader
-          </h1>
+          <Link href="/">
+            <h1 className="text-white text-3xl font-extrabold tracking-tight uppercase">
+              Warhawk Code Grader
+            </h1>
+          </Link>
           <p className="text-secondary font-medium mt-2">
             Create your academic account
           </p>
