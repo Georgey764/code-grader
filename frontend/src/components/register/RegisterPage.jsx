@@ -5,11 +5,13 @@ import { LoadingPage } from "@/components/global/sections";
 import { useRouteToCorrectPath } from "@/hooks";
 import { useMetadata } from "@/context";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [role, setRole] = useState("student");
-  const { url } = useMetadata();
+  const { baseUrl } = useMetadata();
   const { user, isLoading } = useRouteToCorrectPath();
+  const router = useRouter();
 
   if (isLoading) {
     return <LoadingPage />;
@@ -44,7 +46,7 @@ export default function RegisterPage() {
         bodyToSend["classification"] = form.classification.value;
       }
 
-      const response = await fetch(url + "accounts/", {
+      const response = await fetch(baseUrl + "accounts/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
