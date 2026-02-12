@@ -6,6 +6,7 @@ class Is_Faculty(BasePermission):
     message = "Access denied. Only Faculty accounts can perform this action."
 
     def has_permission(self, request, view):
+        print(request.user.role)
         return bool(request.user and request.user.role == Roles.FACULTY)
 
 
@@ -14,3 +15,10 @@ class Is_Student(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.role == Roles.STUDENT)
+
+
+class DenyAll(BasePermission):
+    message = "This action has been disabled for this resource."
+
+    def has_permission(self, request, view):
+        return False

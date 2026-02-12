@@ -2,7 +2,7 @@
 
 An artificial intelligence–based code grading system developed as part of the ULM CSCI 4060 Software Engineering course.
 
-### Members:
+## Members:
 
 1. George Khawas (Project Lead)
    - Coordinated frontend & backend
@@ -10,16 +10,24 @@ An artificial intelligence–based code grading system developed as part of the 
    - Setup and administered the servers
    - Designed the software architecture
    - Managed the development cycle using Docker Compose
+   - Designed accounts & courses model, view, serializers
+   - Designed tests for all model, view, serializer & permissions
+   - Designed the frontend authentication middleware and request middleware for UX and communication
 2. Sujan Shrestha (Backend Engineer: Developed)
    - Developed APIs
 3. Sabin Chalise (Frontend Engineer)
    - Developed frontend components
+   - Designed frontend's student layout
 4. Sumit Shrestha (UI/UX Designer)
+   - Designed frontend's faculty layout
 5. Aiden Jones (Documentation)
+   - Documented the backend in PostmanAPI
+   - Documented the backend in repo markdown
 
-# Startup Guide
 
-## Prerequisites: Make sure to download latest version of docker and docker commandlinetools
+## Startup Guide
+
+**Prerequisites:** Make sure to download latest version of docker and docker commandlinetools
 
 After completing the prerequisites:
 1. First create an .env file at the project root
@@ -33,7 +41,8 @@ After completing the prerequisites:
 6. To turn off use: 
     > dcdev down -v
 
-# Architecture
+
+## Architecture
 
 Below you can read about the technical architecture associated with this software.
 
@@ -41,3 +50,11 @@ Below you can read about the technical architecture associated with this softwar
 
 ![ERD diagram for code-grader](./docs/pictures/ERD.png)
 *Designed by George Khawas*
+
+
+## UI Mockups
+
+![Figma mockups for code-grader](./docs/pictures/figma.png)
+*Structured by George Khawas | Designed by Sumit Shrestha and Sabin Chalise*
+
+[Link to figma project](https://www.figma.com/design/RXazzGvzgKIsMya0im1IPG/Code-Grader?node-id=0-1&t=Bh31kDoC7w8zXNUT-1)
