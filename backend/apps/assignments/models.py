@@ -18,3 +18,20 @@ class Assignment(BaseModel):
         
         def __str__(self):
             return f"{self.title} - {self.course.short_name}"
+        
+#model for RubricCriteria
+class RubricCriteria(BaseModel):
+     description = models.CharField(max_length=255)
+     max_points = models.IntegerField(default=10)
+     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='rubrics')
+     
+     class Meta:
+            db_table = 'rubric_criteria'
+            verbose_name = 'Rubric Criteria'
+            verbose_name_plural = 'Rubric Criteria'
+    
+            def __str__(self):
+                     return f"{self.description} - {self.max_points} points"
+                 
+
+     
