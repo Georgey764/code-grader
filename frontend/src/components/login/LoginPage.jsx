@@ -78,6 +78,7 @@ export default function LoginPage() {
                 }
               }
             } catch (e) {
+              console.log(e);
               alert("System Error: " + e);
             }
           }}
