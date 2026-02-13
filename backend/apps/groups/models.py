@@ -24,7 +24,7 @@ class Group(BaseModel):
 class GroupMembership(BaseModel):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="member")
 
-    student = models.ForeignKey(
+    student = models.OneToOneField(
         StudentProfile, on_delete=models.CASCADE, related_name="group_memberships"
     )
 

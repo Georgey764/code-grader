@@ -25,7 +25,7 @@ class BaseTest(APITestCase):
         self.faculty_owner_profile = FacultyProfile.objects.create(
             user=self.faculty_owner_user, phone="318-605-5427", title="Professor"
         )
-        self.student_enrolled_profile = StudentProfile(
+        self.student_enrolled_profile = StudentProfile.objects.create(
             user=self.student_enrolled_user, major="Comp Sci", classification="senior"
         )
 
@@ -48,6 +48,6 @@ class BaseTest(APITestCase):
         self.faculty_stranger_profile = FacultyProfile.objects.create(
             user=self.faculty_stranger_user, phone="318-605-5428", title="Professor"
         )
-        self.student_unenrolled_profile = StudentProfile(
+        self.student_unenrolled_profile = StudentProfile.objects.create(
             user=self.student_unenrolled_user, major="Comp Sci", classification="senior"
         )

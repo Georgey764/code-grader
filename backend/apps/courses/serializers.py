@@ -1,11 +1,11 @@
 from rest_framework import serializers
 from apps.core.serializers import BaseSerializers
 from apps.courses.models import Course, Roster
-from apps.accounts.serializers import FacultySerializer, StudentSerializer
-from rest_framework.exceptions import ValidationError
+from apps.accounts.serializers import StudentSerializer, FacultySerializer
 
 
 class CourseSerializer(BaseSerializers):
+    faculty_profile = FacultySerializer(read_only=True)
     crn = serializers.IntegerField(
         required=True,
         allow_null=False,
@@ -27,9 +27,10 @@ class CourseSerializer(BaseSerializers):
 
 
 class RosterSerializer(BaseSerializers):
-    course = CourseSerializer()
-    student_profile = StudentSerializer()
+    student_profile = StudentSerializer(read_only=True)
+    course = CourseSerializer(read_only=True)
 
     class Meta(BaseSerializers.Meta):
         model = Roster
         fields = "__all__"
+        read_only_fields = ["student_profile", "course"]

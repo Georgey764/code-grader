@@ -32,3 +32,8 @@ class Roster(BaseModel):
         db_table = "roster"
         verbose_name = "Roster"
         verbose_name_plural = "Rosters"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student_profile", "course"], name="unique_student_course"
+            )
+        ]

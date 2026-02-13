@@ -27,5 +27,9 @@ export default function RoleGuard({ children, allowedRoles = [] }) {
     return null;
   }
 
+  if (user && !allowedRoles.includes(user.role)) {
+    return null;
+  }
+
   return <>{children}</>;
 }

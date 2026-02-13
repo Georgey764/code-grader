@@ -6,7 +6,6 @@ class Is_Faculty(BasePermission):
     message = "Access denied. Only Faculty accounts can perform this action."
 
     def has_permission(self, request, view):
-        print(request.user.role)
         return bool(request.user and request.user.role == Roles.FACULTY)
 
 
