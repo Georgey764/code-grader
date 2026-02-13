@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for missing migrations
         run: |
-          python manage.py makemigrations --check --dry-run
+          docker compose -f ./docker-compose.yml -f docker-compose.dev.yml exec -T backend python manage.py makemigrations --check --dry-run
 
       - name: Check Container Logs on Failure
         if: failure()
