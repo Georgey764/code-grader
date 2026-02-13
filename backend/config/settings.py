@@ -76,11 +76,19 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
 }
+
+if DEBUG:
+    SIMPLE_JWT = {
+        "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+        "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+        "ROTATE_REFRESH_TOKENS": False,
+        "BLACKLIST_AFTER_ROTATION": False,
+    }
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

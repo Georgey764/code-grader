@@ -3,6 +3,8 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+RUN apk add --no-cache curl && which curl && curl --version
+
 # Install dependencies
 COPY package*.json ./
 RUN npm install

@@ -32,6 +32,10 @@ jobs:
       - name: Run Django Tests
         run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml exec -T backend python manage.py test
 
+      - name: Check for missing migrations
+        run: |
+          python manage.py makemigrations --check --dry-run
+
       - name: Check Container Logs on Failure
         if: failure()
         run: |
@@ -39,4 +43,4 @@ jobs:
 
       - name: Stop Services
         if: always()
-        run: docker compose down -v
+        run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml down -v
