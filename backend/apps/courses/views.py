@@ -9,7 +9,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from apps.core.permissions import Is_Student, Is_Faculty
 from apps.courses.permissions import (
-    Is_Roster_Owner,
     Is_Course_Affiliated,
     IsEnrolledStudent,
 )

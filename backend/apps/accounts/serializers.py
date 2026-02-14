@@ -11,9 +11,7 @@ class RegisterSerializer(BaseSerializers):
     title = serializers.CharField(required=False)
     phone = serializers.CharField(required=False)
     major = serializers.CharField(required=False)
-    classification = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True
-    )
+    classification = serializers.CharField(required=False)
 
     class Meta(BaseSerializers.Meta):
         model = User
@@ -45,7 +43,6 @@ class RegisterSerializer(BaseSerializers):
                 raise serializers.ValidationError(
                     {"phone": "phone number is required for faculties"}
                 )
-
         return attrs
 
     @transaction.atomic
@@ -88,6 +85,29 @@ class UserDetailSerializer(BaseSerializers):
             "cwid",
             "role",
         ]
+        # extra_kwargs = {
+        #     "cwid": {"validators": []},
+        #     "email": {"validators": []},
+        # }
+        # read_only_fields = ["email", "cwid"]
+
+    def validate_email(self, attrs):
+        user = self.instance
+        qs = User.objects.filter(email__iexact=attrs)
+        if user:
+            qs = qs.exclude(pk=user.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return attrs
+
+    def validate_cwid(self, attrs):
+        user = self.instance
+        qs = User.objects.filter(cwid__iexact=attrs)
+        if user:
+            qs = qs.exclude(pk=user.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A user with this cwid already exists.")
+        return attrs
 
 
 class StudentSerializer(BaseSerializers):
@@ -128,15 +148,21 @@ class FacultySerializer(BaseSerializers):
             "phone",
         ]
 
+    def to_internal_value(self, data):
+        # This runs BEFORE is_valid()
+        # We manually inject the user instance into the nested serializer
+        if self.instance and hasattr(self.instance, "user"):
+            self.fields["user"].instance = self.instance.user
+        return super().to_internal_value(data)
+
     @transaction.atomic
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", None)
         super().update(instance, validated_data)
-
         if user_data:
-            user_instance = instance.user
-            for attr, value in user_data.items():
-                setattr(user_instance, attr, value)
-            user_instance.save()
-
+            user_serializer = UserDetailSerializer(
+                instance.user, data=user_data, partial=True
+            )
+            user_serializer.is_valid(raise_exception=True)
+            user_serializer.save()
         return instance

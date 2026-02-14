@@ -1,7 +1,7 @@
 from django.urls import path
 from apps.courses.views import CourseModelViewset, RosterModelViewSet
 
-app_name = "accounts"
+app_name = "courses"
 
 urlpatterns = [
     path(

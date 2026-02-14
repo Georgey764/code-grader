@@ -29,10 +29,10 @@ class CourseTest(CoursesBaseTest):
         super().setUp()
 
         self.url_list = reverse(
-            "accounts:course-list",
+            "courses:course-list",
         )
         self.url_detail = reverse(
-            "accounts:course-detail", kwargs={"pk": self.owner_course.pk}
+            "courses:course-detail", kwargs={"pk": self.owner_course.pk}
         )
 
     def test_faculty_owner_can_view_their_list(self):
@@ -156,12 +156,76 @@ class CourseTest(CoursesBaseTest):
             ],
         )
 
+    def test_faculty_owner_can_put_course(self):
+        """
+        Ensure the faculty owner can perform a full update (PUT) on their course.
+        """
+        self.client.force_authenticate(user=self.faculty_owner_user)
+        payload = {
+            "faculty_profile": self.faculty_owner_profile.pk,
+            "name": "Advanced Software Engineering",
+            "short_name": "CSCI 4061",
+            "crn": "77777",
+            "is_active": False,
+            "description": "Updated description",
+        }
+        response = self.client.put(self.url_detail, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.owner_course.refresh_from_db()
+        self.assertEqual(self.owner_course.name, "Advanced Software Engineering")
+        self.assertEqual(self.owner_course.crn, 77777)
+
+    def test_faculty_owner_can_patch_course(self):
+        """
+        Ensure the faculty owner can perform a partial update (PATCH) on their course.
+        """
+        self.client.force_authenticate(user=self.faculty_owner_user)
+        payload = {"name": "New Course Name"}
+        response = self.client.patch(self.url_detail, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.owner_course.refresh_from_db()
+        self.assertEqual(self.owner_course.name, "New Course Name")
+        # Ensure other fields remained the same
+        self.assertEqual(self.owner_course.crn, 60512)
+
+    def test_faculty_stranger_cannot_patch_others_course(self):
+        """
+        Ensure a faculty member cannot update a course they do not own.
+        """
+        self.client.force_authenticate(user=self.faculty_stranger_user)
+        payload = {"name": "I am a hacker"}
+        response = self.client.patch(self.url_detail, data=payload)
+
+        self.assertIn(
+            response.status_code,
+            [
+                status.HTTP_404_NOT_FOUND,
+                status.HTTP_403_FORBIDDEN,
+                status.HTTP_401_UNAUTHORIZED,
+            ],
+        )
+
+        self.owner_course.refresh_from_db()
+        self.assertNotEqual(self.owner_course.name, "I am a hacker")
+
+    def test_student_cannot_patch_course(self):
+        """
+        Ensure students (enrolled or not) do not have update permissions.
+        """
+        self.client.force_authenticate(user=self.student_enrolled_user)
+        payload = {"name": "Easy A Grade Course"}
+        response = self.client.patch(self.url_detail, data=payload)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
 
 class RosterTest(CoursesBaseTest):
     def setUp(self):
         super().setUp()
         self.url_detail = reverse(
-            "accounts:course-roster-detail", kwargs={"pk": self.owner_course.pk}
+            "courses:course-roster-detail", kwargs={"pk": self.owner_course.pk}
         )
 
     def test_student_enrolled_can_delete(self):
