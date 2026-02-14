@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 
+
 # Create your models here.
 class BaseModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -9,5 +10,5 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         get_latest_by = "created_at"
