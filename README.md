@@ -46,6 +46,8 @@ After completing the prerequisites:
     > dcdev build --no-cache 
 
     > dcdev up -d
+4. Run python migrate command
+    > dcdev run --rm backend python manage.py migrate
 5. View frontend at localhost:3000 & backend at localhost:8000
 6. To turn off use: 
     > dcdev down -v

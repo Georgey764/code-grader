@@ -1,3 +1,5 @@
+import { FacultyPage } from "@/components/faculty";
+
 export default function Page() {
-  return <>faculty</>;
+  return <FacultyPage />;
 }
