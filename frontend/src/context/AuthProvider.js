@@ -2,7 +2,7 @@
 "use client";
 import { createContext, useContext, useMemo } from "react";
 import { useAuthentication } from "@/hooks";
-import { useBaseMetadata } from "@/hooks";
+import { api } from "@/auth";
 
 const AuthContext = createContext();
 
@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
 
   const contextValue = useMemo(
     () => ({
+      api,
       user,
       isLoading,
       logout,
