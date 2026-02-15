@@ -1,12 +1,16 @@
 from django.urls import path
-from .views import GroupListCreateView, GroupDetailView, MembershipListCreateView, MembershipDetailView
+from .views import GroupModelViewSet, GroupsMemberShipModelViewSet
+
+app_name = 'groups'
 
 urlpatterns = [
-    #groups
-    path("", GroupListCreateView.as_view(), name="group-list-create"),
-    path("<int:id>/", GroupDetailView.as_view(), name="group-detail"),
     
-    #memberships
-    path("memberships/", MembershipListCreateView.as_view(), name="membership-list-create"),
-    path("memberships/<int:id>/", MembershipDetailView.as_view(), name="membership-detail"),
-]   
+    #url for group
+    path("", GroupModelViewSet.as_view({"get": "list", "post": "create"}), name="group-list"),
+    path("<uuid:pk>/", GroupModelViewSet.as_view({"get":"retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}), name="group-detail"),
+    
+    
+    #url for group membership
+    path("memberships/", GroupsMemberShipModelViewSet.as_view({"get": "list", "post": "create"}), name="membership-list"),
+    path("memberships/<uuid:pk>/", GroupsMemberShipModelViewSet.as_view({"get":"retrieve", "put": "update", "patch": "partial_update", "delete": "destroy"}), name="membership-detail"),
+]
