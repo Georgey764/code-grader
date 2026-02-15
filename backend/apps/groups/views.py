@@ -1,33 +1,42 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from apps.groups.models import Group, GroupMembership
-from apps.groups.serializers import GroupSerializer, GroupsMembershipSerializer
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
+from .models import Group, GroupsMembership
+from .serializers import GroupSerializer, GroupCreateSerializer, GroupMembershipSerializer, GroupMembershipCreateSerializer
 
-from apps.core.permissions import Is_Faculty, Is_Student
 
-#groups view
-class GroupListCreateView(generics.ListCreateAPIView):
+class GroupModelViewSet(viewsets.ModelViewSet):
+    queryset = Group.objects.select_related("course").prefetch_related(
+        "memberships__roster__student_profile__user"
+    )
     
-    queryset = Group.objects.select_related('course').all()
-    serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated, Is_Faculty]
+    permission_classes = [permissions.IsAuthenticated]
     
-class GroupDetailView(generics.RetrieveUpdateDestroyAPIView):
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return GroupCreateSerializer
+        return GroupSerializer
     
-    queryset = Group.objects.select_related('course').all()
-    serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        course_id = self.request.query_params.get("course_id")
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        return queryset
+        
+class GroupsMemberShipModelViewSet(viewsets.ModelViewSet):
+    queryset = GroupsMembership.objects.select_related("roster__student_profile__user", "group").all()
+    serializer_class = GroupMembershipSerializer
+    permission_classes = [permissions.IsAuthenticated]
     
-#membership view
-class MembershipListCreateView(generics.ListCreateAPIView):
+    def perform_create(self, serializer):
+        group = serializer.validated_data.get('group')
+        if group.memberships.count() >= group.max_members:
+            raise ValidationError({"error": f"This group is already full (Max {group.max_members} members)."})
+            
+        serializer.save()
+        
     
-    queryset = GroupMembership.objects.select_related('group', 'student').all()
-    serializer_class = GroupsMembershipSerializer
-    permission_classes = [IsAuthenticated]
     
-class MembershipDetailView(generics.RetrieveDestroyAPIView):
-    queryset = GroupMembership.objects.select_related('group', 'student').all()
-    serializer_class = GroupsMembershipSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = "id"
+    
