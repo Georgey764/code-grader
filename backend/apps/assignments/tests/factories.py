@@ -1,6 +1,6 @@
 import factory
 from django.utils import timezone
-from apps.assignments.models import Assignment, RubricCriteria, TestCase
+from apps.assignments.models import Assignment, RubricCriteria, TestCase, TestFile
 from apps.courses.tests.factories import CourseFactory
 
 
@@ -27,15 +27,31 @@ class RubricCriteriaFactory(factory.django.DjangoModelFactory):
     max_points = 25.0
 
 
+class TestFileFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = TestFile
+
+    name = factory.Faker("file_name", extension="txt")
+    bucket = "test-bucket"
+    key = factory.Sequence(lambda n: f"tests/file_{n}.txt")
+
+
 class TestCaseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = TestCase
 
     assignment = factory.SubFactory(AssignmentFactory)
-    input_data = factory.Faker("lexify", text="input_????")
-    expected_output = factory.Faker("lexify", text="output_????")
-    is_public = True
-    # Using Decimal to match your DecimalField(max_digits=3, decimal_places=2)
+
+    # Updated to use SubFactories for the new Foreign Key relationships
+    test_input = factory.SubFactory(TestFileFactory)
+    test_output = factory.SubFactory(TestFileFactory)
+
+    # NUMERIC(3,2) allows up to 9.99
     weight = factory.Faker(
-        "pydecimal", left_digits=1, right_digits=2, min_value=0.1, max_value=1.0
+        "pydecimal",
+        left_digits=1,
+        right_digits=2,
+        positive=True,
+        min_value=0.01,
+        max_value=9,
     )

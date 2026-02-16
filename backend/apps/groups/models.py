@@ -6,7 +6,7 @@ from apps.assignments.models import Assignment
 
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    course = models.ForeignKey(
+    assignment = models.ForeignKey(
         Assignment, on_delete=models.CASCADE, related_name="groups"
     )
     name = models.CharField(max_length=50)

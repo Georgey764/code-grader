@@ -1,52 +1,40 @@
 import pytest
+from rest_framework import status
+from apps.assignments.models import TestCase
 
-pytestmark = pytest.mark.django_db
 
-
-class TestNestedResources:
-    # def test_list_rubrics_for_assignment(self, faculty_client, assignment_urls, rubric):
-    #     """Verify we can fetch rubrics filtered by assignment ID."""
-    #     url = assignment_urls.rubrics(rubric.assignment.id)
-    #     response = faculty_client.get(url)
-
-    #     assert response.status_code == 200
-    #     # Check that the rubric belongs to the correct assignment
-    #     assert response.data[0]["id"] == str(rubric.id)
-
-    # def test_list_test_cases_filtering(
-    #     self, faculty_client, assignment_urls, assignment
-    # ):
-    #     """Verify public/private filtering for test cases."""
-    #     from apps.assignments.tests.factories import TestCaseFactory
-
-    #     TestCaseFactory(assignment=assignment, is_public=True)
-    #     TestCaseFactory(assignment=assignment, is_public=False)
-
-    #     url = assignment_urls.test_cases(assignment.id)
-
-    #     # Filter Public
-    #     res_public = faculty_client.get(url, {"is_public": "true"})
-    #     assert len(res_public.data) == 1
-
-    #     # Filter Private
-    #     res_private = faculty_client.get(url, {"is_public": "false"})
-    #     assert len(res_private.data) == 1
-
-    def test_retrieve_individual_rubric(self, faculty_client, assignment_urls, rubric):
-        """Test direct access to a rubric via its detail URL."""
-        url = assignment_urls.rubric_detail(rubric.id)
+@pytest.mark.django_db
+class TestTestCaseViewSet:
+    def test_retrieve_test_case(self, faculty_client, assignment_urls, test_case):
+        url = assignment_urls.test_case_detail(test_case.id)
         response = faculty_client.get(url)
-        print(response.data)
-        print(rubric.id)
-        print(url)
 
-        assert response.status_code == 200
-        assert response.data["id"] == str(rubric.id)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] == str(test_case.id)
+        # Ensure the FK to assignment is present
+        assert str(response.data["assignment"]) == str(test_case.assignment.id)
 
     def test_delete_test_case(self, faculty_client, assignment_urls, test_case):
-        """Verify faculty can delete a test case."""
         url = assignment_urls.test_case_detail(test_case.id)
         response = faculty_client.delete(url)
-        print(response.data)
 
-        assert response.status_code == 204
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not TestCase.objects.filter(id=test_case.id).exists()
+
+
+@pytest.mark.django_db
+class TestRubricViewSet:
+    def test_update_rubric(self, faculty_client, assignment_urls, rubric):
+        url = assignment_urls.rubric_detail(rubric.id)
+        payload = {
+            "name": "Updated Criteria Name",
+            "max_points": 50.0,
+            "assignment": rubric.assignment.id,
+        }
+
+        response = faculty_client.put(url, data=payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        rubric.refresh_from_db()
+        assert rubric.name == "Updated Criteria Name"
+        assert rubric.max_points == 50.0

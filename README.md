@@ -52,6 +52,11 @@ After completing the prerequisites:
 6. To turn off use: 
     > dcdev down -v
 
+## Documentation
+
+The documentation can be viewed at:
+1. [Frontend Documentation](./docs/frontend/README.md)
+2. [Backend Documentation](./docs/backend/README.md)
 
 ## Architecture
 
@@ -63,6 +68,12 @@ Below you can read about the technical architecture associated with this softwar
 *Designed by George Khawas*
 
 
+## Architecture Flow
+
+![Architecture flow for user program submission](./docs/pictures/architecture-flow.png)
+*Designed by George Khawas*
+
+
 ## UI Mockups
 
 ![Figma mockups for code-grader](./docs/pictures/figma.png)
@@ -70,8 +81,3 @@ Below you can read about the technical architecture associated with this softwar
 
 [Link to figma project](https://www.figma.com/design/RXazzGvzgKIsMya0im1IPG/Code-Grader?node-id=0-1&t=Bh31kDoC7w8zXNUT-1)
 
-## Documentation
-
-The documentation can be viewed at:
-1. [Frontend Documentation](./docs/frontend/README.md)
-2. [Backend Documentation](./docs/backend/README.md)

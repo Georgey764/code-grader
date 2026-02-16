@@ -1,34 +1,25 @@
-from django.db import models
 import uuid
+from django.db import models
 from apps.courses.models import Roster
-from apps.assignments.models import RubricCriteria, TestCase, Assignment
+from apps.assignments.models import Assignment, RubricCriteria, TestCase, TestFile
 from apps.groups.models import Group
 
 
 class Submission(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    roster = models.ForeignKey(
-        Roster, on_delete=models.CASCADE, related_name="submissions"
+    # References the student in the course roster
+    roster = models.ForeignKey(Roster, on_delete=models.CASCADE)
+    # References the specific assignment
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+    # Optional field for group-based work
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
+    # Reference to the metadata of the submitted file
+    submitted_file = models.OneToOneField(
+        TestFile, on_delete=models.PROTECT, related_name="submitted_file"
     )
-    assignment = models.ForeignKey(
-        Assignment, on_delete=models.CASCADE, related_name="submissions"
-    )
-    group = models.ForeignKey(
-        Group,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="submissions",
-    )
-    code_submitted = models.TextField()
 
     def __str__(self):
-        return f"Submission by {self.roster} for {self.assignment.name}"
-
-    class Meta:
-        db_table = "submission"
-        verbose_name = "Submission"
-        verbose_name_plural = "Submissions"
+        return f"Submission {self.id} for {self.assignment.name}"
 
 
 class RubricResult(models.Model):
@@ -36,50 +27,40 @@ class RubricResult(models.Model):
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="rubric_results"
     )
-    rubric_criteria = models.ForeignKey(
-        RubricCriteria, on_delete=models.CASCADE, related_name="results"
-    )
+    rubric_criteria = models.ForeignKey(RubricCriteria, on_delete=models.CASCADE)
     points_awarded = models.FloatField()
-    optional_feedback = models.TextField(blank=True, null=True)
+    optional_feedback = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.rubric_criteria.name}: {self.points_awarded} pts"
-
-    class Meta:
-        db_table = "rubricresult"
-        verbose_name = "Rubric Result"
-        verbose_name_plural = "Rubric Results"
-        unique_together = [
-            ["submission", "rubric_criteria"]
-        ]  # One result per criteria per submission
-
-
-class TestStatusChoices(models.TextChoices):
-    PASS = "PASS", "Pass"
-    FAIL = "FAIL", "Fail"
-    ERROR = "ERROR", "Error"
-    TIMEOUT = "TIMEOUT", "Timeout"
-    SKIPPED = "SKIPPED", "Skipped"
+        return f"Rubric {self.rubric_criteria.name}: {self.points_awarded}"
 
 
 class TestResult(models.Model):
+    STATUS_CHOICES = [
+        ("PASS", "Pass"),
+        ("FAIL", "Fail"),
+        ("ERROR", "Error"),
+        ("TIMEOUT", "Timeout"),
+        ("SKIPPED", "Skipped"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="test_results"
     )
-    test_case = models.ForeignKey(
-        TestCase, on_delete=models.CASCADE, related_name="results"
+    test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE)
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    output_file = models.OneToOneField(
+        null=True,
+        blank=True,
+        related_name="output_file",
+        to=TestFile,
+        on_delete=models.PROTECT,
     )
-    status = models.CharField(max_length=10, choices=TestStatusChoices.choices)
-    actual_output = models.TextField(blank=True, null=True)
-    error_message = models.TextField(blank=True, null=True)
-    execution_time_ms = models.FloatField(null=True, blank=True)
-    points_earned = models.FloatField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    execution_time_ms = models.FloatField()
+    points_earned = models.FloatField()
 
     def __str__(self):
-        return f"{self.test_case} - {self.status}"
-
-    class Meta:
-        db_table = "testresult"
-        verbose_name = "Test Result"
-        verbose_name_plural = "Test Results"
+        return f"Test {self.test_case.id}: {self.status}"

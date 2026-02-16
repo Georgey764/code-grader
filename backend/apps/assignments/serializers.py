@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Assignment, RubricCriteria, TestCase
+from .models import Assignment, RubricCriteria, TestCase, TestFile
 from apps.core.serializers import BaseSerializers
 
 
@@ -18,26 +18,36 @@ class RubricCriteriaSerializer(BaseSerializers):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class TestCaseSerializer(BaseSerializers):
-    class Meta(BaseSerializers.Meta):
+class TestFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestFile
+        fields = ["id", "name", "bucket", "key"]
+
+
+class TestCaseSerializer(serializers.ModelSerializer):
+    # PrimaryKeyRelatedFields for easy creation via UUIDs
+    test_input_id = serializers.PrimaryKeyRelatedField(
+        queryset=TestFile.objects.all(), source="test_input", write_only=True
+    )
+    test_output_id = serializers.PrimaryKeyRelatedField(
+        queryset=TestFile.objects.all(), source="test_output", write_only=True
+    )
+
+    # Read-only nested objects for detailed GET responses
+    test_input = TestFileSerializer(read_only=True)
+    test_output = TestFileSerializer(read_only=True)
+
+    class Meta:
         model = TestCase
         fields = [
             "id",
             "assignment",
-            "input_data",
-            "expected_output",
-            "is_public",
+            "test_input",
+            "test_input_id",
+            "test_output",
+            "test_output_id",
             "weight",
-            "created_at",
-            "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
-
-    def validate_weight(self, value):
-        """Ensure weight is between 0 and 1"""
-        if value < 0 or value > 1:
-            raise serializers.ValidationError("Weight must be between 0 and 1")
-        return value
 
 
 class AssignmentSerializer(BaseSerializers):
