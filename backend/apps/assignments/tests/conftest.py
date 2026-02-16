@@ -4,6 +4,7 @@ from apps.assignments.tests.factories import (
     AssignmentFactory,
     TestCaseFactory,
     RubricCriteriaFactory,
+    TestFileFactory,
 )
 
 
@@ -12,35 +13,30 @@ def assignment_urls():
     """A helper fixture to provide common assignment URL patterns."""
 
     class URLRegistry:
+        # Assignments
         def list(self):
             return reverse("assignments:assignment-list")
 
-        def detail(self, id):
-            return reverse("assignments:assignment-detail", kwargs={"id": id})
+        def detail(self, pk):
+            return reverse("assignments:assignment-detail", kwargs={"id": pk})
 
-        def stats(self, id):
-            return reverse("assignments:assignment-stats", kwargs={"id": id})
+        def stats(self, pk):
+            return reverse("assignments:assignment-stats", kwargs={"id": pk})
 
-        def clone(self, id):
-            return reverse("assignments:assignment-clone", kwargs={"id": id})
+        def clone(self, pk):
+            return reverse("assignments:assignment-clone", kwargs={"id": pk})
 
-        # def rubrics(self, assignment_id):
-        #     return reverse(
-        #         "assignments:assignment-rubrics",
-        #         kwargs={"assignment_id": assignment_id},
-        #     )
+        # Rubrics
+        def rubric_detail(self, pk):
+            return reverse("assignments:rubric-detail", kwargs={"id": pk})
 
-        # def test_cases(self, assignment_id):
-        #     return reverse(
-        #         "assignments:assignment-testcases",
-        #         kwargs={"assignment_id": assignment_id},
-        #     )
+        # Test Cases
+        def test_case_detail(self, pk):
+            return reverse("assignments:testcase-detail", kwargs={"id": pk})
 
-        def rubric_detail(self, id):
-            return reverse("assignments:rubric-detail", kwargs={"id": id})
-
-        def test_case_detail(self, id):
-            return reverse("assignments:testcase-detail", kwargs={"id": id})
+        # Test Files (if needed)
+        def test_file_detail(self, pk):
+            return reverse("assignments:testfile-detail", kwargs={"id": pk})
 
     return URLRegistry()
 
@@ -61,6 +57,12 @@ def rubric(db, assignment):
 def test_case(db, assignment):
     """Returns a test case linked to a fresh assignment."""
     return TestCaseFactory(assignment=assignment)
+
+
+@pytest.fixture
+def test_file(db):
+    """Returns a standalone TestFile instance for general testing."""
+    return TestFileFactory()
 
 
 @pytest.fixture

@@ -4,8 +4,8 @@ from .views import GroupViewSet, GroupsMembershipViewSet
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
-router.register(r"", GroupViewSet, basename="group")
 router.register(r"memberships", GroupsMembershipViewSet, basename="membership")
+router.register(r"", GroupViewSet, basename="group")
 
 # The API URLs are now determined automatically by the router.
 urlpatterns = [

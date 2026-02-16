@@ -16,10 +16,10 @@ class GroupViewSet(viewsets.ModelViewSet):
     serializer_class = GroupSerializer
 
     def get_queryset(self):
-        # Optional: Filter groups by course if passed in query params
-        course_id = self.request.query_params.get("course_id")
-        if course_id:
-            return self.queryset.filter(course_id=course_id)
+        # Optional: Filter groups by assignment if passed in query params
+        assignment_id = self.request.query_params.get("assignment_id")
+        if assignment_id:
+            return self.queryset.filter(assignment_id=assignment_id)
         return self.queryset
 
 

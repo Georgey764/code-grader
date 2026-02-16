@@ -1,5 +1,6 @@
-from rest_framework import viewsets, filters
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import Submission, RubricResult, TestResult
 from .serializers import (
     SubmissionSerializer,
@@ -10,50 +11,51 @@ from .serializers import (
 
 class SubmissionViewSet(viewsets.ModelViewSet):
     """
-    ViewSet for viewing and editing submissions.
-    Automatically handles nested Rubric and Test results.
+    Handles student file uploads and listing submissions.
     """
 
+    queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
 
-    # Filtering and Searching
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ["assignment", "roster", "group"]
-    search_fields = [
-        "code_submitted",
-        "roster__user__username",
-    ]  # Assuming Roster links to User
+    @action(detail=True, methods=["post"])
+    def run_tests(self, request, pk=None):
+        """
+        Custom endpoint to trigger the autograder for a specific submission.
+        Accessible at: POST /api/submissions/{id}/run_tests/
+        """
+        submission = self.get_object()
 
-    def get_queryset(self):
-        """
-        Optimized queryset to prevent N+1 queries by pre-fetching
-        the related results and joining the assignment/roster metadata.
-        """
-        return (
-            Submission.objects.all()
-            .select_related("assignment", "roster")
-            .prefetch_related(
-                "rubric_results", "test_results", "test_results__test_case"
-            )
+        # Logic to send the 'submitted_file' to your testing environment would go here.
+        # For now, we'll just return a success message.
+        return Response(
+            {"status": "Tests triggered", "submission_id": submission.id},
+            status=status.HTTP_202_ACCEPTED,
         )
 
 
-class RubricResultViewSet(viewsets.ReadOnlyModelViewSet):
+class RubricResultViewSet(viewsets.ModelViewSet):
     """
-    A read-only view for individual rubric results.
-    Usually accessed via the Submission, but useful for aggregate reporting.
+    Handles manual grading entries by faculty.
     """
 
     queryset = RubricResult.objects.all()
     serializer_class = RubricResultSerializer
-    filterset_fields = ["submission", "rubric_criteria"]
+
+    def get_queryset(self):
+        # Optional: Filter results by submission via query params
+        # e.g., /api/rubric-results/?submission_id=uuid
+        queryset = super().get_queryset()
+        submission_id = self.request.query_params.get("submission_id")
+        if submission_id:
+            queryset = queryset.filter(submission_id=submission_id)
+        return queryset
 
 
 class TestResultViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    A read-only view for individual test results.
+    Automated test results should generally be Read-Only for users,
+    updated only by the system/autograder.
     """
 
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
-    filterset_fields = ["submission", "test_case", "status"]

@@ -43,20 +43,49 @@ class RubricCriteria(BaseModel):
         return f"{self.name} ({self.assignment.name})"
 
 
-class TestCase(BaseModel):
+class TestFile(models.Model):
+    __test__ = False
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    bucket = models.TextField()
+    key = models.TextField()
+
+    class Meta:
+        db_table = "test_file"
+
+    def __str__(self):
+        return self.name
+
+
+class TestCase(models.Model):
+    __test__ = False
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # Changed from ForeignKey to OneToOneField
     assignment = models.ForeignKey(
-        Assignment, on_delete=models.CASCADE, related_name="test_cases"
+        "Assignment",
+        on_delete=models.CASCADE,
+        related_name="test_cases",
+        db_column="assignment_id",
     )
-    input_data = models.TextField(blank=True, null=True)
-    expected_output = models.TextField(blank=True, null=True)
-    is_public = models.BooleanField(default=True)
+
+    test_input = models.OneToOneField(
+        TestFile,
+        on_delete=models.PROTECT,
+        related_name="input_test_case",
+        db_column="test_input_id",
+    )
+    test_output = models.OneToOneField(
+        TestFile,
+        on_delete=models.PROTECT,
+        related_name="output_test_case",
+        db_column="test_output_id",
+    )
+
     weight = models.DecimalField(max_digits=3, decimal_places=2)
 
     class Meta:
         db_table = "test_case"
-        verbose_name = "Test Case"
-        verbose_name_plural = "Test Cases"
 
     def __str__(self):
-        return f"{self.test_type} test for {self.assignment.name}"
+        return f"TestCase for {self.assignment.name}"

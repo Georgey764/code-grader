@@ -1,11 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet
+from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet, TestFileViewSet
 
 app_name = "assignments"
 
 
 router = DefaultRouter()
+router.register(r"test-files", TestFileViewSet, basename="testfile")
+router.register(r"test-cases", TestCaseViewSet, basename="testcase")
 router.register(r"", AssignmentViewSet, basename="assignment")
 
 urlpatterns = [
@@ -36,12 +38,5 @@ urlpatterns = [
             {"get": "retrieve", "put": "update", "delete": "destroy"},
         ),
         name="rubric-detail",
-    ),
-    path(
-        "test-cases/<uuid:id>/",
-        TestCaseViewSet.as_view(
-            {"get": "retrieve", "put": "update", "delete": "destroy"}
-        ),
-        name="testcase-detail",
     ),
 ]

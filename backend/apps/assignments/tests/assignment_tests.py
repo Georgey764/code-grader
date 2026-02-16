@@ -78,3 +78,39 @@ class TestAssignmentAPI:
         # Assuming you'll add IsFaculty permissions later
         # response = student_client.post(clone_url, data={"new_course_id": 1})
         # assert response.status_code == 403
+
+    def test_filter_active_assignments(self, student_client, assignment_urls, db):
+        from apps.assignments.tests.factories import AssignmentFactory
+
+        # One active, one past
+        AssignmentFactory(deadline=timezone.now() + timedelta(days=1))
+        AssignmentFactory(deadline=timezone.now() - timedelta(days=1))
+
+        url = assignment_urls.list()
+        response = student_client.get(url, {"filter": "active"})
+
+        assert response.status_code == 200
+        # Should only return the one with the future deadline
+        assert len(response.data) == 1
+
+    def test_get_assignment_stats(
+        self, student_client, assignment_urls, complete_assignment
+    ):
+        url = assignment_urls.stats(complete_assignment.id)
+        response = student_client.get(url)
+
+        assert response.status_code == 200
+        assert response.data["total_rubric_criteria"] == 3
+        assert response.data["total_test_cases"] == 5
+        assert response.data["is_past_deadline"] is False
+
+    def test_clone_assignment_missing_id(
+        self, student_client, assignment_urls, assignment
+    ):
+        url = assignment_urls.clone(assignment.id)
+        response = student_client.post(url, data={})
+
+        print(response.data)
+
+        assert response.status_code == 400
+        assert response.data["error"] == "new_course_id required"
