@@ -1,8 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Submission, RubricResult, TestResult
-from .serializers import (
+from apps.assessments.models import Submission, RubricResult, TestResult
+from apps.assessments.serializers import (
     SubmissionSerializer,
     RubricResultSerializer,
     TestResultSerializer,
@@ -31,6 +31,10 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             {"status": "Tests triggered", "submission_id": submission.id},
             status=status.HTTP_202_ACCEPTED,
         )
+
+    def perform_create(self, serializer):
+
+        return super().perform_create(serializer)
 
 
 class RubricResultViewSet(viewsets.ModelViewSet):

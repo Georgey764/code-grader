@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from apps.courses.models import Roster
-from apps.assignments.models import Assignment, RubricCriteria, TestCase, TestFile
+from apps.assignments.models import Assignment, RubricCriteria, TestCase
 from apps.groups.models import Group
 
 
@@ -14,9 +14,7 @@ class Submission(models.Model):
     # Optional field for group-based work
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     # Reference to the metadata of the submitted file
-    submitted_file = models.OneToOneField(
-        TestFile, on_delete=models.PROTECT, related_name="submitted_file"
-    )
+    submitted_file = models.FileField(upload_to="submissions/")
 
     def __str__(self):
         return f"Submission {self.id} for {self.assignment.name}"
@@ -51,13 +49,7 @@ class TestResult(models.Model):
     test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE)
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    output_file = models.OneToOneField(
-        null=True,
-        blank=True,
-        related_name="output_file",
-        to=TestFile,
-        on_delete=models.PROTECT,
-    )
+    output_file = models.FileField(upload_to="test-results/")
     error_message = models.TextField(null=True, blank=True)
     execution_time_ms = models.FloatField()
     points_earned = models.FloatField()

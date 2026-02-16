@@ -1,6 +1,10 @@
 import pytest
 from rest_framework.reverse import reverse
-from .factories import SubmissionFactory, RubricResultFactory, TestResultFactory
+from apps.assessments.tests.factories import (
+    SubmissionFactory,
+    RubricResultFactory,
+    TestResultFactory,
+)
 
 
 @pytest.fixture

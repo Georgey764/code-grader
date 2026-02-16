@@ -12,7 +12,7 @@ class Assignment(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
-    starter_code = models.TextField(blank=True, null=True)
+    starter_code = models.FileField(pload_to="starter-codes/")
     max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
@@ -43,20 +43,6 @@ class RubricCriteria(BaseModel):
         return f"{self.name} ({self.assignment.name})"
 
 
-class TestFile(models.Model):
-    __test__ = False
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    bucket = models.TextField()
-    key = models.TextField()
-
-    class Meta:
-        db_table = "test_file"
-
-    def __str__(self):
-        return self.name
-
-
 class TestCase(models.Model):
     __test__ = False
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -69,18 +55,8 @@ class TestCase(models.Model):
         db_column="assignment_id",
     )
 
-    test_input = models.OneToOneField(
-        TestFile,
-        on_delete=models.PROTECT,
-        related_name="input_test_case",
-        db_column="test_input_id",
-    )
-    test_output = models.OneToOneField(
-        TestFile,
-        on_delete=models.PROTECT,
-        related_name="output_test_case",
-        db_column="test_output_id",
-    )
+    input_file = models.FileField(upload_to="test-cases/inputs/")
+    expected_output_file = models.FileField(upload_to="test-cases/outputs/")
 
     weight = models.DecimalField(max_digits=3, decimal_places=2)
 
