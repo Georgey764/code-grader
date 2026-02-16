@@ -6,7 +6,7 @@ app_name = "courses"
 urlpatterns = [
     path(
         "",
-        CourseModelViewset.as_view({"get": "list", "post": "create"}),
+        CourseModelViewset.as_view({"post": "create"}),
         name="course-list",
     ),
     path(
@@ -22,8 +22,11 @@ urlpatterns = [
         name="course-detail",
     ),
     path(
-        "<uuid:pk>/roster/",
-        RosterModelViewSet.as_view({"post": "create", "delete": "destroy"}),
-        name="course-roster-detail",
+        "roster/<uuid:pk>",
+        RosterModelViewSet.as_view({"delete": "destroy"}),
+        name="roster-destroy",
+    ),
+    path(
+        "roster/", RosterModelViewSet.as_view({"post": "create"}), name="roster-create"
     ),
 ]

@@ -8,18 +8,19 @@ from apps.accounts.serializers import (
 from rest_framework.permissions import AllowAny
 from apps.core.permissions import Is_Faculty, Is_Student, DenyAll
 from apps.accounts.permissions import Is_Profile_Owner
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 
 class UsersCreateView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     authentication_classes = []
-    queryset = User.objects
+    queryset = User.objects.all()
     serializer_class = RegisterSerializer
 
 
 class StudentDetailView(generics.RetrieveUpdateAPIView):
-    queryset = StudentProfile.objects.select_related("user").all()
+    queryset = StudentProfile.objects.select_related("user").prefetch_related("rosters")
     serializer_class = StudentSerializer
     lookup_field = "user__cwid"
     lookup_url_kwarg = "cwid"
@@ -32,15 +33,17 @@ class StudentDetailView(generics.RetrieveUpdateAPIView):
     #     return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_permissions(self):
-        if self.request.method in ["GET", "PUT", "PATCH"]:
+        if self.request.method in ["GET"]:
+            return [IsAuthenticated()]
+        if self.request.method in ["PUT", "PATCH"]:
             return [Is_Student(), Is_Profile_Owner()]
-        if self.request.method in ["DELETE", "POST"]:
-            return [DenyAll()]
-        return super().get_permissions()
+        # if self.request.method in ["DELETE", "POST"]:
+        #     return [DenyAll()]
+        return [DenyAll()]
 
 
 class FacultyDetailView(generics.RetrieveUpdateAPIView):
-    queryset = FacultyProfile.objects.select_related("user").all()
+    queryset = FacultyProfile.objects.select_related("user").prefetch_related("courses")
     serializer_class = FacultySerializer
     lookup_field = "user__cwid"
     lookup_url_kwarg = "cwid"
@@ -53,8 +56,10 @@ class FacultyDetailView(generics.RetrieveUpdateAPIView):
     #     return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_permissions(self):
-        if self.request.method in ["GET", "PUT", "PATCH"]:
+        if self.request.method in ["GET"]:
+            return [IsAuthenticated()]
+        if self.request.method in ["PUT", "PATCH"]:
             return [Is_Faculty(), Is_Profile_Owner()]
-        if self.request.method in ["DELETE", "POST"]:
-            return [DenyAll()]
-        return super().get_permissions()
+        # if self.request.method in ["DELETE", "POST"]:
+        #     return [DenyAll()]
+        return [DenyAll()]

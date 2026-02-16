@@ -6,7 +6,9 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 class Course(BaseModel):
-    faculty_profile = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE)
+    faculty_profile = models.ForeignKey(
+        FacultyProfile, on_delete=models.CASCADE, related_name="courses"
+    )
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=50)
     crn = models.IntegerField(
@@ -25,8 +27,10 @@ class Course(BaseModel):
 
 
 class Roster(BaseModel):
-    student_profile = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    student_profile = models.ForeignKey(
+        StudentProfile, on_delete=models.CASCADE, related_name="rosters"
+    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="rosters")
 
     class Meta:
         db_table = "roster"

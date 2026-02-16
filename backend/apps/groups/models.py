@@ -1,11 +1,14 @@
 from django.db import models
 import uuid
-from apps.courses.models import Course, Roster
+from apps.courses.models import Roster
+from apps.assignments.models import Assignment
 
 
 class Group(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="groups")
+    course = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, related_name="groups"
+    )
     name = models.CharField(max_length=50)
     max_members = models.SmallIntegerField(default=4)
 

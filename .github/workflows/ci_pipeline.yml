@@ -29,12 +29,12 @@ jobs:
       - name: Build and Start Services
         run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml up -d --build --wait
 
-      - name: Run Django Tests
-        run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml exec -T backend python manage.py test
-
       - name: Check for missing migrations
         run: |
           docker compose -f ./docker-compose.yml -f docker-compose.dev.yml exec -T backend python manage.py makemigrations --check --dry-run
+
+      - name: Run Django Tests
+        run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml exec -T backend pytest
 
       - name: Check Container Logs on Failure
         if: failure()

@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class GradingConfig(AppConfig):
-    name = "apps.submissions"
-    label = "submissions"
+    name = "apps.assessments"
+    label = "assessments"

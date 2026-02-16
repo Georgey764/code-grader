@@ -1,33 +1,55 @@
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from apps.groups.models import Group, GroupMembership
-from apps.groups.serializers import GroupSerializer, GroupsMembershipSerializer
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from .models import Group, GroupsMembership
+from .serializers import GroupSerializer, GroupsMembershipSerializer
 
-from apps.core.permissions import Is_Faculty, Is_Student
 
-#groups view
-class GroupListCreateView(generics.ListCreateAPIView):
-    
-    queryset = Group.objects.select_related('course').all()
+class GroupViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for viewing and editing groups.
+    """
+
+    queryset = Group.objects.all().prefetch_related(
+        "memberships", "memberships__roster"
+    )
     serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated, Is_Faculty]
-    
-class GroupDetailView(generics.RetrieveUpdateDestroyAPIView):
-    
-    queryset = Group.objects.select_related('course').all()
-    serializer_class = GroupSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-    
-#membership view
-class MembershipListCreateView(generics.ListCreateAPIView):
-    
-    queryset = GroupMembership.objects.select_related('group', 'student').all()
+
+    def get_queryset(self):
+        # Optional: Filter groups by course if passed in query params
+        course_id = self.request.query_params.get("course_id")
+        if course_id:
+            return self.queryset.filter(course_id=course_id)
+        return self.queryset
+
+
+class GroupsMembershipViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing student memberships in groups.
+    """
+
+    queryset = GroupsMembership.objects.all().select_related("group", "roster")
     serializer_class = GroupsMembershipSerializer
-    permission_classes = [IsAuthenticated]
-    
-class MembershipDetailView(generics.RetrieveDestroyAPIView):
-    queryset = GroupMembership.objects.select_related('group', 'student').all()
-    serializer_class = GroupsMembershipSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = "id"
+
+    def create(self, request, *args, **kwargs):
+        """
+        Custom create to enforce the max_members limit.
+        """
+        group_id = request.data.get("group")
+        try:
+            group = Group.objects.get(pk=group_id)
+        except Group.DoesNotExist:
+            return Response(
+                {"error": "Group not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Business Logic: Check if group is full
+        if group.memberships.count() >= group.max_members:
+            return Response(
+                {
+                    "error": f"This group has reached its limit of {group.max_members} members."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().create(request, *args, **kwargs)

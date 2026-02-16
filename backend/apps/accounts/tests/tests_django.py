@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import status
 from apps.accounts.models import User, Roles, StudentProfile, FacultyProfile
-from apps.core.tests import BaseTest
+from apps.core.tests.tests import BaseTest
 from rest_framework.test import APITestCase
 
 
