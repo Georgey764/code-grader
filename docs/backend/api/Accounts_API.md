@@ -3,16 +3,14 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [Base URL](#base-url)
 - [Authentication](#authentication)
+- [Base URL](#base-url)
 - [Common Headers](#common-headers)
 - [Endpoints](#endpoints)
-  - [Summary](#endpoints-summary)
-  - [Create Student User Account](#create-user-account---student)
-  - [Create Faculty User Account](#create-user-account---faculty)
-  - [Get User Account](#get-user-account)
-  - [Update Student User Account](#update-user-account---student)
-  - [Update Faculty User Account](#update-user-account---faculty)
+  - [Endpoints Summary](#endpoints-summary)
+  - [Create User Account](#create-user)
+  - [Get User Account Details](#get-user-account-details)
+  - [Update User Account Details](#update-user-account-details)
 - [Status Codes](#status-codes)
 
 ## Overview
@@ -26,6 +24,15 @@ Key features:
 - Update account information
 - Role-based access and authentication
 
+
+## Authentication
+
+```
+Authorization: Bearer <access_token>
+```
+
+To know how to retrieve an access token refer to the [Authentication API: Getting An Access Token](Authentication_API.md#getting-an-access-token).
+
 ## Base URL
 
 Development:
@@ -34,11 +41,6 @@ Development:
 http://localhost:8000/api
 ```
 
-## Authentication
-
-```
-Authorization: Bearer <access_token>
-```
 
 ## Common Headers
 
@@ -50,21 +52,22 @@ Content-Type: application/json
 
 ### Endpoints Summary
 
-| Method | Endpoint                  | Description                      |
-| ------ | ------------------------- | -------------------------------- |
-| POST   | /accounts/                | Create a new user account        |
-| GET    | /accounts/student/_cwid_/ | Retrieve student account details |
-| GET    | /accounts/faculty/_cwid_/ | Retrieve faculty account details |
-| PUT    | /accounts/student/_cwid_/ | Update student account details   |
-| PUT    | /accounts/faculty/_cwid_/ | Update faculty account details   |
+| Method | Endpoint                  | Authentication Required | Description                      |
+| ------ | ------------------------- | :---------------------: | -------------------------------- |
+| POST   | /accounts/                |           No            | Create a new user account        |
+| GET    | /accounts/student/_cwid_/ |           Yes           | Retrieve student account details |
+| GET    | /accounts/faculty/_cwid_/ |           Yes           | Retrieve faculty account details |
+| PUT    | /accounts/student/_cwid_/ |           Yes           | Update student account details   |
+| PUT    | /accounts/faculty/_cwid_/ |           Yes           | Update faculty account details   |
 
-### Create User Account - Student
+### Create User
 
-**POST** /account/
+- **Method**: POST
+- **Path**: /account/
+- **Auth Required**: No (registration)
+- **Description**: Creates a student user account.
 
-Creates a student user account.
-
-**Request Body**
+#### Request Body
 
 ```JSON
 {
@@ -80,7 +83,26 @@ Creates a student user account.
 }
 ```
 
-**Response - 201 Created**
+
+##### Request Body Fields
+
+| Field            |  Type  | Required |       Role        | Description                                        |
+| ---------------- | :----: | :------: | :---------------: | -------------------------------------------------- |
+| email            | string |   Yes    | Student + Faculty | User's email address                               |
+| password         | string |   Yes    | Student + Faculty | Password                                           |
+| password_confirm | string |   Yes    | Student + Faculty | Password confirmation (must match password)        |
+| role             | string |   Yes    | Student + Faculty | User role: FACULTY/FA or STUDENT/ST                |
+| first_name       | string |   Yes    | Student + Faculty | User's first name                                  |
+| last_name        | string |   Yes    | Student + Faculty | User's last name                                   |
+| cwid             | string |   Yes    | Student + Faculty | Campus-wide ID                                     |
+| major            | string |  Yes\*   |      Student      | Student major (required if role is STUDENT)        |
+| classification   | string |  Yes\*   |      Student      | Student classification (required if STUDENT)       |
+| title            | string |  Yes\*   |      Faculty      | Faculty title (required if role is FACULTY)        |
+| phone            | string |  Yes\*   |      Factuly      | Faculty phone number (required if role is FACULTY) |
+
+#### Responses
+
+**201 Created**
 
 ```JSON
 {
@@ -93,63 +115,32 @@ Creates a student user account.
 }
 ```
 
-### Create User Account - Faculty
-
-**POST** /account/
-
-Creates a faculty user account.
-
-**Request Body**
-
-```JSON
-{
-    "email": "john.doe@example.com",
-    "password": "password123",
-    "password_confirm": "password123",
-    "role": "FA",
-    "first_name": "John",
-    "last_name": "Doe",
-    "cwid": "99999999",
-    "title": "Professor",
-    "phone": "(318) 342-0000"
-}
-```
-
-**Response - 201 Created**
-
-```JSON
-{
-    "email": "john.doe@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
-    "role": "FA",
-    "cwid": "99999999",
-    "classification": null
-}
-```
-
-**Response - 400 Bad Request**
+**400 Bad Request** (Validation Error)
 
 ```JSON
 {
     "email": [
-        "User with this email already exists."
+        "This field is required."
     ],
-    "cwid": [
-        "User with this cwid already exists."
-    ]
+    "first_name": [
+        "This field is required."
+    ],
+    ...
 }
 ```
 
-### Get User Account
+### Get User Account Details
 
-**POST** /accounts/student/_cwid_/
+- **Method**: GET
+- **Paths**:
+  - /accounts/faculty/_cwid_/
+  - /accounts/student/_cwid_/
+- **Auth Required**: Yes (Access Token)
+- **Description**: Retrieves account details of the student/faculty user by _CWID_.
 
-**POST** /accounts/faculty/_cwid_/
+#### Responses
 
-Retrieves account details of the student/faculty user by _CWID_.
-
-**Response - 200 OK**
+**200 OK**
 
 ```JSON
 {
@@ -167,6 +158,32 @@ Retrieves account details of the student/faculty user by _CWID_.
 }
 ```
 
+**401 Unauthorized** (Authentication Error)
+
+```JSON
+{
+    "detail": "Authentication credentials were not provided."
+}
+```
+
+**403 Forbidden** (Authorization Error)
+
+```JSON
+{
+    "detail": "Access denied. Only Student accounts can perform this action."
+}
+```
+
+### Update User Account Details
+
+- **Method**: PUT
+- **Paths**:
+  - /accounts/faculty/_cwid_/
+  - /accounts/student/_cwid_/
+- **Auth Required**: Yes (Access Token)
+- **Description**: Updates student/faculty account details by _CWID_.
+
+#### Request Body
 **Response - 401 Unauthorized**
 
 ```JSON
@@ -205,25 +222,57 @@ Updates student account details by _CWID_.
 }
 ```
 
-## Update User Account - Faculty
+##### Request Body Fields
 
-**PUT** /accounts/faculty/_cwid_/
+| Field          |  Type  |  Role   |      Description       |
+| -------------- | :----: | :-----: | :--------------------: |
+| user           | object |  Both   |   Nested user fields   |
+| major          | string | Student |     Student major      |
+| classification | string | Student | Student classification |
+| title          | string | Faculty |     Faculty title      |
+| phone          | string | Factuly |  Faculty phone number  |
 
-Updates faculty account details by CWID.
+##### Nested User Object Fields
 
-**Request Body**
+| Field      |  Type  |    Description    |
+| ---------- | :----: | :---------------: |
+| id         |  int   |      User ID      |
+| email      | string |   User's email    |
+| first_name | string | User's first name |
+| last_name  | string | User's last name  |
+| cwid       | string |  Campus-wide ID   |
+| role       | string |     User role     |
+
+#### Responses
+
+**400 Bad Request** (Validation Error)
 
 ```JSON
 {
-  "user": {
-    "email": "john.doe@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
-    "cwid": "99999999",
-    "role": "FA"
-  },
-  "title": "Teacher's Assistant",
-  "phone": "(318) 342-0000"
+    "user": {
+        "email": [
+            "User with this email already exists."
+        ],
+        "cwid": [
+            "User with this cwid already exists."
+        ]
+    }
+}
+```
+
+**401 Unauthorized** (Authentication Error)
+
+```JSON
+{
+    "detail": "Authentication credentials were not provided."
+}
+```
+
+**403 Forbidden** (Authorization Error)
+
+```JSON
+{
+    "detail": "Access denied. Only Student accounts can perform this action."
 }
 ```
 
@@ -235,5 +284,6 @@ Updates faculty account details by CWID.
 | **201** Created               | The request succeeded, and a new resource was created as a result.                                                                      |
 | **400** Bad Request           | The server cannot process the request due to something the server considered to be a client error. Most likely invalid request message. |
 | **401** Unauthorized          | The request is unauthenticated.                                                                                                         |
+| **403** Forbidden             | The server understood the request but refused to process it                                                                             |
 | **404** Not Found             | The server cannot find the requested resource.                                                                                          |
 | **500** Internal Server Error | The server encountered an unexpected condition that prevented it from fulfilling the request.                                           |
