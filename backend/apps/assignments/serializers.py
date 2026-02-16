@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Assignment, RubricCriteria, TestCase
+from apps.core.serializers import BaseSerializers
 
 
-class RubricCriteriaSerializer(serializers.ModelSerializer):
-    class Meta:
+class RubricCriteriaSerializer(BaseSerializers):
+    class Meta(BaseSerializers.Meta):
         model = RubricCriteria
         fields = [
             "id",
@@ -17,8 +18,8 @@ class RubricCriteriaSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class TestCaseSerializer(serializers.ModelSerializer):
-    class Meta:
+class TestCaseSerializer(BaseSerializers):
+    class Meta(BaseSerializers.Meta):
         model = TestCase
         fields = [
             "id",
@@ -39,11 +40,11 @@ class TestCaseSerializer(serializers.ModelSerializer):
         return value
 
 
-class AssignmentSerializer(serializers.ModelSerializer):
+class AssignmentSerializer(BaseSerializers):
     rubrics = RubricCriteriaSerializer(many=True, read_only=True)
     test_cases = TestCaseSerializer(many=True, read_only=True)
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
             "id",
@@ -68,7 +69,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
         return value
 
 
-class AssignmentDetailSerializer(serializers.ModelSerializer):
+class AssignmentDetailSerializer(BaseSerializers):
     """Detailed serializer with nested relationships"""
 
     rubrics = RubricCriteriaSerializer(many=True, read_only=True)
@@ -78,7 +79,7 @@ class AssignmentDetailSerializer(serializers.ModelSerializer):
         source="course.short_name", read_only=True
     )
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
             "id",
@@ -99,7 +100,7 @@ class AssignmentDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class AssignmentListSerializer(serializers.ModelSerializer):
+class AssignmentListSerializer(BaseSerializers):
     """Lightweight serializer for list views"""
 
     course_name = serializers.CharField(source="course.name", read_only=True)
@@ -108,7 +109,7 @@ class AssignmentListSerializer(serializers.ModelSerializer):
         source="test_cases.count", read_only=True
     )
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
             "id",
@@ -125,13 +126,13 @@ class AssignmentListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
-class AssignmentCreateSerializer(serializers.ModelSerializer):
+class AssignmentCreateSerializer(BaseSerializers):
     """Serializer for creating assignments with nested rubrics and test cases"""
 
     rubrics = RubricCriteriaSerializer(many=True, required=False)
     test_cases = TestCaseSerializer(many=True, required=False)
 
-    class Meta:
+    class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
             "id",

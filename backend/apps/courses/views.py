@@ -19,7 +19,9 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 
 class CourseModelViewset(viewsets.ModelViewSet):
-    queryset = Course.objects.all()
+    queryset = Course.objects.select_related("faculty_profile__user").prefetch_related(
+        "assignments"
+    )
     serializer_class = CourseSerializer
 
     def get_permissions(self):
@@ -39,7 +41,7 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
         if not faculty_profile_instance:
             return Response(
-                {"error": "Faculty profile not found"}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Only faculties can create"}, status=status.HTTP_404_NOT_FOUND
             )
 
         body_data = request.data
@@ -65,7 +67,7 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
 
 class RosterModelViewSet(viewsets.ModelViewSet):
-    queryset = Roster.objects.all()
+    queryset = Roster.objects.select_related("course", "student_profile__user")
     serializer_class = RosterSerializer
 
     # def get_queryset(self):
@@ -99,22 +101,22 @@ class RosterModelViewSet(viewsets.ModelViewSet):
             return [Is_Student()]
         return [DenyAll()]
 
-    def get_object(self):
-        queryset = self.get_queryset()
-        user = self.request.user
-        if user.role == Roles.FACULTY:
-            raise PermissionDenied("Faculty is not allowed to get rosters")
-        obj = get_object_or_404(
-            queryset, course_id=self.kwargs["pk"], student_profile__user=user
-        )
-        return obj
+    # def get_object(self):
+    #     queryset = self.get_queryset()
+    #     user = self.request.user
+    #     if user.role == Roles.FACULTY:
+    #         raise PermissionDenied("Faculty is not allowed to get rosters")
+    #     obj = get_object_or_404(
+    #         queryset, course_id=self.kwargs["pk"], student_profile__user=user
+    #     )
+    #     return obj
 
-    def get_queryset(self):
-        course_pk = self.kwargs.get("pk")
-        return Roster.objects.filter(course_id=course_pk)
+    # def get_queryset(self):
+    #     course_pk = self.kwargs.get("pk")
+    #     return Roster.objects.filter(course_id=course_pk)
 
     def perform_create(self, serializer):
-        course_pk = self.kwargs.get("pk")
+        course_pk = self.request.data.get("course_id")
         enrolling_course = get_object_or_404(Course, pk=course_pk)
         student_profile = get_object_or_404(StudentProfile, user=self.request.user)
         if Roster.objects.filter(
@@ -124,17 +126,17 @@ class RosterModelViewSet(viewsets.ModelViewSet):
 
         serializer.save(course=enrolling_course, student_profile=student_profile)
 
-    def destroy(self, request, *args, **kwargs):
-        course_pk = self.kwargs.get("pk")
+    # def destroy(self, request, *args, **kwargs):
+    #     course_pk = self.kwargs.get("pk")
 
-        student_profile = get_object_or_404(StudentProfile, user=request.user)
-        roster_query = get_object_or_404(
-            Roster, course_id=course_pk, student_profile=student_profile
-        )
-        deleted_count = roster_query.delete()[0]
-        message = (
-            "Roster entry deleted."
-            if deleted_count == 1
-            else f"{deleted_count} entries deleted."
-        )
-        return Response({"message": message}, status=204)
+    #     student_profile = get_object_or_404(StudentProfile, user=request.user)
+    #     roster_query = get_object_or_404(
+    #         Roster, course_id=course_pk, student_profile=student_profile
+    #     )
+    #     deleted_count = roster_query.delete()[0]
+    #     message = (
+    #         "Roster entry deleted."
+    #         if deleted_count == 1
+    #         else f"{deleted_count} entries deleted."
+    #     )
+    #     return Response({"message": message}, status=204)

@@ -1,12 +1,13 @@
-from django.urls import path
-from .views import GroupListCreateView, GroupDetailView, MembershipListCreateView, MembershipDetailView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import GroupViewSet, GroupsMembershipViewSet
 
+# Create a router and register our viewsets with it.
+router = DefaultRouter()
+router.register(r"", GroupViewSet, basename="group")
+router.register(r"memberships", GroupsMembershipViewSet, basename="membership")
+
+# The API URLs are now determined automatically by the router.
 urlpatterns = [
-    #groups
-    path("", GroupListCreateView.as_view(), name="group-list-create"),
-    path("<int:id>/", GroupDetailView.as_view(), name="group-detail"),
-    
-    #memberships
-    path("memberships/", MembershipListCreateView.as_view(), name="membership-list-create"),
-    path("memberships/<int:id>/", MembershipDetailView.as_view(), name="membership-detail"),
-]   
+    path("", include(router.urls)),
+]

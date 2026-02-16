@@ -55,9 +55,9 @@ class Is_Course_Affiliated(BasePermission):
 
 class IsEnrolledStudent(BasePermission):
     def has_object_permission(self, request, view, obj):
-        print(obj)
+
         return (
             request.user.is_authenticated
-            and hasattr(obj, "student_profile", None)
+            and hasattr(obj, "student_profile")
             and obj.student_profile.user == request.user
         )

@@ -1,56 +1,47 @@
-from django.urls import path
-from .views import (
-    AssignmentListView,
-    AssignmentDetailView,
-    AssignmentCreateView,
-    AssignmentUpdateView,
-    AssignmentDeleteView,
-    AssignmentByCourseView,
-    AssignmentStatsView,
-    CloneAssignmentView,
-    RubricCriteriaListCreateView,
-    RubricCriteriaDetailView,
-    TestCaseListCreateView,
-    TestCaseDetailView,
-    PublicTestCasesView,
-)
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet
 
 app_name = "assignments"
 
+
+router = DefaultRouter()
+router.register(r"", AssignmentViewSet, basename="assignment")
+
 urlpatterns = [
-    # Assignment URLs
-    path("", AssignmentListView.as_view(), name="assignment-list"),
-    path("create/", AssignmentCreateView.as_view(), name="assignment-create"),
-    path("<uuid:id>/", AssignmentDetailView.as_view(), name="assignment-detail"),
-    path("<uuid:id>/update/", AssignmentUpdateView.as_view(), name="assignment-update"),
-    path("<uuid:id>/delete/", AssignmentDeleteView.as_view(), name="assignment-delete"),
-    path("<uuid:id>/stats/", AssignmentStatsView.as_view(), name="assignment-stats"),
-    path("<uuid:id>/clone/", CloneAssignmentView.as_view(), name="assignment-clone"),
-    # Course-specific assignments
+    # Standard CRUD + Stats + Clone (handled by Router & Actions)
+    path("", include(router.urls)),
+    # Nested resources for specific Assignments
+    # path(
+    #     "<uuid:assignment_id>/",
+    #     include(
+    #         [
+    #             path(
+    #                 "rubrics/",
+    #                 RubricViewSet.as_view({"get": "list", "post": "create"}),
+    #                 name="assignment-rubrics",
+    #             ),
+    #             path(
+    #                 "test-cases/",
+    #                 TestCaseViewSet.as_view({"get": "list", "post": "create"}),
+    #                 name="assignment-testcases",
+    #             ),
+    #         ]
+    #     ),
+    # ),
+    # Direct access to children
     path(
-        "course/<uuid:course_id>/",
-        AssignmentByCourseView.as_view(),
-        name="assignment-by-course",
-    ),
-    # Rubric URLs
-    path(
-        "<uuid:assignment_id>/rubrics/",
-        RubricCriteriaListCreateView.as_view(),
-        name="rubric-list-create",
+        "rubrics/<uuid:id>/",
+        RubricViewSet.as_view(
+            {"get": "retrieve", "put": "update", "delete": "destroy"},
+        ),
+        name="rubric-detail",
     ),
     path(
-        "rubrics/<uuid:id>/", RubricCriteriaDetailView.as_view(), name="rubric-detail"
+        "test-cases/<uuid:id>/",
+        TestCaseViewSet.as_view(
+            {"get": "retrieve", "put": "update", "delete": "destroy"}
+        ),
+        name="testcase-detail",
     ),
-    # Test Case URLs
-    path(
-        "<uuid:assignment_id>/test-cases/",
-        TestCaseListCreateView.as_view(),
-        name="testcase-list-create",
-    ),
-    path(
-        "<uuid:assignment_id>/test-cases/public/",
-        PublicTestCasesView.as_view(),
-        name="testcase-public",
-    ),
-    path("test-cases/<uuid:id>/", TestCaseDetailView.as_view(), name="testcase-detail"),
 ]

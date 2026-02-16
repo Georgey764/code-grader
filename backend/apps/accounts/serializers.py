@@ -2,6 +2,8 @@ from apps.core.serializers import BaseSerializers
 from rest_framework import serializers
 from apps.accounts.models import User, Roles, FacultyProfile, StudentProfile
 from django.db import transaction
+from phonenumber_field.phonenumber import to_python
+from apps.courses.serializers import RosterSerializer, CourseSerializer
 
 
 class RegisterSerializer(BaseSerializers):
@@ -85,6 +87,7 @@ class UserDetailSerializer(BaseSerializers):
             "cwid",
             "role",
         ]
+        read_only_fields = ["role"]
         # extra_kwargs = {
         #     "cwid": {"validators": []},
         #     "email": {"validators": []},
@@ -112,41 +115,11 @@ class UserDetailSerializer(BaseSerializers):
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
+    rosters = RosterSerializer(many=True, read_only=True)
 
     class Meta(BaseSerializers.Meta):
         model = StudentProfile
-        fields = [
-            "id",
-            "user",
-            "major",
-            "classification",
-        ]
-
-    @transaction.atomic
-    def update(self, instance, validated_data):
-        user_data = validated_data.pop("user", None)
-        super().update(instance, validated_data)
-
-        if user_data:
-            user_instance = instance.user
-            for attr, value in user_data.items():
-                setattr(user_instance, attr, value)
-            user_instance.save()
-
-        return instance
-
-
-class FacultySerializer(BaseSerializers):
-    user = UserDetailSerializer()
-
-    class Meta(BaseSerializers.Meta):
-        model = FacultyProfile
-        fields = [
-            "id",
-            "user",
-            "title",
-            "phone",
-        ]
+        fields = ["id", "user", "major", "classification", "rosters"]
 
     def to_internal_value(self, data):
         # This runs BEFORE is_valid()
@@ -166,3 +139,39 @@ class FacultySerializer(BaseSerializers):
             user_serializer.is_valid(raise_exception=True)
             user_serializer.save()
         return instance
+
+
+class FacultySerializer(BaseSerializers):
+    user = UserDetailSerializer()
+    courses = CourseSerializer(many=True, read_only=True)
+
+    class Meta(BaseSerializers.Meta):
+        model = FacultyProfile
+        fields = ["id", "user", "title", "phone", "courses"]
+
+    def to_internal_value(self, data):
+        # This runs BEFORE is_valid()
+        # We manually inject the user instance into the nested serializer
+        if self.instance and hasattr(self.instance, "user"):
+            self.fields["user"].instance = self.instance.user
+        return super().to_internal_value(data)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        super().update(instance, validated_data)
+        if user_data:
+            user_serializer = UserDetailSerializer(
+                instance.user, data=user_data, partial=True
+            )
+            user_serializer.is_valid(raise_exception=True)
+            user_serializer.save()
+        return instance
+
+    def validate_phone(self, value):
+        phone_obj = to_python(value, region="US")
+
+        if not phone_obj or not phone_obj.is_valid():
+            raise serializers.ValidationError("Please provide a valid US phone number.")
+
+        return phone_obj.as_e164

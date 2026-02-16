@@ -56,7 +56,7 @@ class FacultyProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="faculty_profile",
     )
-    title = models.CharField(max_length=50, unique=False)
+    title = models.CharField(max_length=255, unique=False)
     phone = PhoneNumberField(region="US")
 
     class Meta:
