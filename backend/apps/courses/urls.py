@@ -1,7 +1,7 @@
 from django.urls import path
-from apps.courses.views import CourseModelViewset
+from apps.courses.views import CourseModelViewset, RosterModelViewSet
 
-app_name = "accounts"
+app_name = "courses"
 
 urlpatterns = [
     path(
@@ -20,5 +20,10 @@ urlpatterns = [
             }
         ),
         name="course-detail",
+    ),
+    path(
+        "<uuid:pk>/roster/",
+        RosterModelViewSet.as_view({"post": "create", "delete": "destroy"}),
+        name="course-roster-detail",
     ),
 ]

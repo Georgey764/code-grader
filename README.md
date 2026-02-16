@@ -2,6 +2,14 @@
 
 An artificial intelligence–based code grading system developed as part of the ULM CSCI 4060 Software Engineering course.
 
+## Table of Contents:
+1. [Members](#members)
+2. [Startup Guide](#startup-guide)
+3. [Architecture](#architecture)
+   - [ER-Diagram](#entity-relationship-diagram-erd)
+   - [UI Mockups](#ui-mockups)
+4. [Documentation](#documentation)
+
 ## Members:
 
 1. George Khawas (Project Lead)
@@ -30,13 +38,16 @@ An artificial intelligence–based code grading system developed as part of the 
 **Prerequisites:** Make sure to download latest version of docker and docker commandlinetools
 
 After completing the prerequisites:
-1. First create an .env file at the project root
+1. First create an .env file at the project root (Ask George for .env variables)
 2. Use the following commands in project directory in terminal/command-line to set an alias:
     > Windows: Set-Alias dcdev docker compose -f docker-compose.yml -f docker-compose.dev.yml
     > Mac/Linux: alias dcdev='docker compose -f docker-compose.yml -f docker-compose.dev.yml'
 3. Run the following code to run the program:
     > dcdev build --no-cache 
+
     > dcdev up -d
+4. Run python migrate command
+    > dcdev run --rm backend python manage.py migrate
 5. View frontend at localhost:3000 & backend at localhost:8000
 6. To turn off use: 
     > dcdev down -v
@@ -58,3 +69,9 @@ Below you can read about the technical architecture associated with this softwar
 *Structured by George Khawas | Designed by Sumit Shrestha and Sabin Chalise*
 
 [Link to figma project](https://www.figma.com/design/RXazzGvzgKIsMya0im1IPG/Code-Grader?node-id=0-1&t=Bh31kDoC7w8zXNUT-1)
+
+## Documentation
+
+The documentation can be viewed at:
+1. [Frontend Documentation](./docs/frontend/README.md)
+2. [Backend Documentation](./docs/backend/README.md)

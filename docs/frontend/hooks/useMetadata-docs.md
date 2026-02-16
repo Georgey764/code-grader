@@ -10,6 +10,7 @@ Provides authentication state and app metadata globally.
 - **name:** "Code Grader".
 - **author:** "The Devs".
 - **baseUrl:** NEXT_PUBLIC_URL.
+- **api:** The axios api caller
 
 ## Usage:
 

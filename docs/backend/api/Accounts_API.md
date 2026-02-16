@@ -24,6 +24,7 @@ Key features:
 - Update account information
 - Role-based access and authentication
 
+
 ## Authentication
 
 ```
@@ -39,6 +40,7 @@ Development:
 ```
 http://localhost:8000/api
 ```
+
 
 ## Common Headers
 
@@ -80,6 +82,7 @@ Content-Type: application/json
     "classification": "freshman"
 }
 ```
+
 
 ##### Request Body Fields
 
@@ -181,6 +184,29 @@ Content-Type: application/json
 - **Description**: Updates student/faculty account details by _CWID_.
 
 #### Request Body
+**Response - 401 Unauthorized**
+
+```JSON
+ {
+    "detail": "Given token not valid for any token type",
+    "code": "token_not_valid",
+    "messages": [
+        {
+            "token_class": "AccessToken",
+            "token_type": "access",
+            "message": "Token is expired"
+        }
+    ]
+}
+```
+
+### Update User Account - Student
+
+**PUT** /accounts/student/_cwid_/
+
+Updates student account details by _CWID_.
+
+**Request Body**
 
 ```JSON
 {
