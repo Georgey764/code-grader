@@ -1,9 +1,18 @@
+# Ignore piston data
+piston_data
+
+depracated
+
 # IGNORE TERRAFORM DATA
 ls_data/
 .terraform/
 *.tfstate
 *.tfstate.backup
 tfplan
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfstate.*
+terraform.tfvars
 
 # --- Python & Environment ---
 .venv/

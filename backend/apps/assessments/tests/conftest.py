@@ -5,6 +5,29 @@ from apps.assessments.tests.factories import (
     RubricResultFactory,
     TestResultFactory,
 )
+from apps.assignments.tests.factories import AssignmentFactory
+from apps.courses.tests.factories import RosterFactory, CourseFactory
+import boto3
+
+LOCALSTACK_ENDPOINT = "http://localstack:4566"
+
+
+@pytest.fixture
+def s3_client():
+    return boto3.client(
+        "s3",
+        endpoint_url=LOCALSTACK_ENDPOINT,
+        region_name="us-east-1",
+    )
+
+
+@pytest.fixture
+def logs_client():
+    return boto3.client(
+        "logs",
+        endpoint_url=LOCALSTACK_ENDPOINT,
+        region_name="us-east-1",
+    )
 
 
 @pytest.fixture
@@ -82,3 +105,18 @@ def full_graded_submission(db, submission):
     TestResultFactory.create_batch(3, submission=submission, status="PASS")
     RubricResultFactory(submission=submission, points_awarded=100.0)
     return submission
+
+
+@pytest.fixture
+def course(db):
+    return CourseFactory()
+
+
+@pytest.fixture
+def roster(db, course):
+    return RosterFactory(course=course)
+
+
+@pytest.fixture
+def assignment(db, course):
+    return AssignmentFactory(course=course)

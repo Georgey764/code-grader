@@ -19,6 +19,11 @@ class Submission(models.Model):
     def __str__(self):
         return f"Submission {self.id} for {self.assignment.name}"
 
+    class Meta:
+        db_table = "submission"
+        verbose_name = "submission"
+        verbose_name_plural = "submissions"
+
 
 class RubricResult(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -31,6 +36,11 @@ class RubricResult(models.Model):
 
     def __str__(self):
         return f"Rubric {self.rubric_criteria.name}: {self.points_awarded}"
+
+    class Meta:
+        db_table = "rubric_result"
+        verbose_name = "Rubric Result"
+        verbose_name_plural = "Rubric Results"
 
 
 class TestResult(models.Model):
@@ -56,3 +66,8 @@ class TestResult(models.Model):
 
     def __str__(self):
         return f"Test {self.test_case.id}: {self.status}"
+
+    class Meta:
+        db_table = "test_result"
+        verbose_name = "Test Result"
+        verbose_name_plural = "Test Results"

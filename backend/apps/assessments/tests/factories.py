@@ -17,7 +17,7 @@ class SubmissionFactory(factory.django.DjangoModelFactory):
     assignment = factory.SubFactory(AssignmentFactory)
     group = None
     submitted_file = factory.django.FileField(
-        filename="student_code.py", data=b'print("hello world")'
+        filename="submitted_code.py", data=b'print("hello world")'
     )
 
 

@@ -32,6 +32,8 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
           sudo apt update && sudo apt install terraform
 
+      # MIGHT NEED: terraform-local, awscli, aws-cli-local, aws-sam-cli, aws-sam-cli-local to run lambda locally and test locally
+
       - name: Build and Start Services
         run: docker compose -f ./docker-compose.yml -f docker-compose.dev.yml up -d --build --wait
       

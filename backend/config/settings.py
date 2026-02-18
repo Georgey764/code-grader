@@ -74,7 +74,7 @@ STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "location": "media",  # All uploads go into a /media/ folder in S3
+            "location": "workspace",  # All uploads go into a /media/ folder in S3
             "default_acl": "public-read",
             "file_overwrite": False,
         },
@@ -87,10 +87,12 @@ STORAGES = {
 
 # 3. URL Settings
 # Media comes from S3
-MEDIA_URL = f"https://{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com/media/"
+MEDIA_URL = (
+    f"https://{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com/workspace/"
+)
 if DEBUG:
-    AWS_S3_ENDPOINT_URL = "http://localhost:4566"
-    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/media/"
+    AWS_S3_ENDPOINT_URL = f"{os.getenv('AWS_S3_ENDPOINT_URL')}"
+    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/workspace/"
 
 # Static stays on your local server/domain
 STATIC_URL = "/static/"

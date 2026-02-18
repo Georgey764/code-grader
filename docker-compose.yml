@@ -15,6 +15,21 @@ services:
     networks:
       - app-network
 
+  piston:
+    image: ghcr.io/engineer-man/piston
+    platform: linux/amd64
+    container_name: piston_api
+    restart: always
+    privileged: true
+    ports:
+      - "2000:2000"
+    # volumes:
+    #   - ./piston_data:/piston/packages
+    #   - ./piston/init-piston.sh:/piston/init-piston.sh
+    networks:
+      - app-network
+    # entrypoint: ["/bin/bash", "/piston/init-piston.sh"]
+
   localstack:
     container_name: localstack_main
     image: localstack/localstack:latest
@@ -34,7 +49,7 @@ services:
     volumes:
       - "./ls_data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./init-aws:/etc/localstack/init/ready.d" # Automatic setup scripts
+      # - "./init-aws:/etc/localstack/init/ready.d" # Automatic setup scripts
     networks:
       - app-network
     
@@ -72,6 +87,12 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - SECRET_KEY=${SECRET_KEY}
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_SESSION_TOKEN=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_STORAGE_BUCKET_NAME=code-grader-storage
+      - AWS_S3_ENDPOINT_URL=http://localstack:4566
 
   frontend:
     container_name: frontend

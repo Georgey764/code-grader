@@ -1,5 +1,5 @@
 # 1. Use an official Python runtime as a parent image
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 # 2. Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1

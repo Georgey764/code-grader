@@ -36,4 +36,21 @@ class GroupSerializer(serializers.ModelSerializer):
         """
         if data.get("max_members", 1) < 1:
             raise serializers.ValidationError("A group must allow at least 1 member.")
+
+        # 1. Access the assignment object from the validated data
+        assignment = data.get("assignment")
+
+        # 2. Check if the assignment allows grouping
+        # Note: We check this only during 'create' (when assignment is provided)
+        if assignment and not assignment.is_grouped:
+            raise serializers.ValidationError(
+                {
+                    "assignment": "Groups cannot be created for this assignment because is_grouped is False."
+                }
+            )
+
+        # 3. Existing check for max_members
+        if data.get("max_members", 1) < 1:
+            raise serializers.ValidationError("A group must allow at least 1 member.")
+
         return data

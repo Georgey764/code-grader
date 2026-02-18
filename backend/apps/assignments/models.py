@@ -12,7 +12,7 @@ class Assignment(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
-    starter_code = models.FileField(pload_to="starter-codes/")
+    starter_code = models.FileField(upload_to="starter-codes/", null=True, blank=True)
     max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
@@ -47,7 +47,6 @@ class TestCase(models.Model):
     __test__ = False
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Changed from ForeignKey to OneToOneField
     assignment = models.ForeignKey(
         "Assignment",
         on_delete=models.CASCADE,

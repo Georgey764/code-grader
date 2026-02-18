@@ -48,7 +48,9 @@ class TestRubricResults:
         self, faculty_client, assessment_urls, submission
     ):
         """Verify faculty can grade a submission via a rubric."""
-        from .factories import RubricCriteriaFactory  # Assuming this exists
+        from apps.assignments.tests.factories import (
+            RubricCriteriaFactory,
+        )  # Assuming this exists
 
         criteria = RubricCriteriaFactory()
 
