@@ -7,13 +7,11 @@ def submit_code_to_piston():
     """
     Utility to invoke the Lambda code runner with student code and test cases.
     """
-    url = "http://localhost:2000/api/v2/execute"
+    url = "http://localhost:2000/api/v2/execute/"
     payload = {
         "language": "python",
-        "version": "3.10.0",
-        "files": [
-            {"name": "main.py", "content": "print('Hello from Piston!')\nprint(1 + 1)"}
-        ],
+        "version": "3.9.0",
+        "files": [{"content": "print('Hello World')"}],
         "stdin": "",
         "args": [],
         "compile_timeout": 10000,

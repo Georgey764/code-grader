@@ -3,7 +3,7 @@ services:
     image: postgres:15-alpine
     container_name: db
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - ./data/postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NAME}"]
       interval: 2s
@@ -22,13 +22,14 @@ services:
     restart: always
     privileged: true
     ports:
-      - "2000:2000"
-    # volumes:
-    #   - ./piston_data:/piston/packages
-    #   - ./piston/init-piston.sh:/piston/init-piston.sh
-    networks:
-      - app-network
-    # entrypoint: ["/bin/bash", "/piston/init-piston.sh"]
+      - 2000:2000
+    volumes:
+      - ./data/piston/packages:/piston/packages
+      # - ./piston-engine/data/piston/packages:/piston/packages
+      - "./initialization_scripts/piston-init.sh:/piston/piston-init.sh"
+    tmpfs:
+      - /tmp:exec
+    # entrypoint: ["/bin/bash", "/piston/piston-init.sh"]
 
   localstack:
     container_name: localstack_main
@@ -47,7 +48,7 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - PERSISTENCE=1                    # Keeps your buckets/queues after restart
     volumes:
-      - "./ls_data:/var/lib/localstack"
+      - "./data/ls_data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
       # - "./init-aws:/etc/localstack/init/ready.d" # Automatic setup scripts
     networks:

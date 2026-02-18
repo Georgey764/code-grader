@@ -36,7 +36,9 @@ An artificial intelligence–based code grading system developed as part of the 
 ## Startup Guide
 
 **Prerequisites:** 
-- Make sure to download latest version of docker and docker command line tools
+- Docker: You must have Docker and Docker Compose installed.
+- Node JS: Make sure to have node.js (For Piston)
+- Cgroups Config: Piston requires cgroup v2 to be enabled and cgroup v1 to be disabled for resource limiting and security.
 
 ****After completing the prerequisites:**
 1. First create an .env file at the project root (Ask George for .env variables)
