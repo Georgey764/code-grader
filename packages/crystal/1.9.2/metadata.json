@@ -1,0 +1,5 @@
+{
+    "language": "crystal",
+    "version": "1.9.2",
+    "aliases": ["crystal", "cr"]
+}
