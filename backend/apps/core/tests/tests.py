@@ -51,3 +51,14 @@ class BaseTest(APITestCase):
         self.student_unenrolled_profile = StudentProfile.objects.create(
             user=self.student_unenrolled_user, major="Comp Sci", classification="senior"
         )
+
+        self.programming_course = Course.objects.create(
+            crn="12345",
+            short_name="CS 101",
+            name="Intro to Programming",
+            faculty_profile=self.faculty_owner_profile,
+        )
+        self.prog_course_roster = Roster.objects.create(
+            course=self.programming_course,
+            student_profile=self.student_enrolled_profile,
+        )
