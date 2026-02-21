@@ -7,7 +7,10 @@ from apps.assessments.serializers import (
     RubricResultSerializer,
     TestResultSerializer,
 )
-from apps.assessments.services import submit_code_to_piston
+from apps.assessments.services import run_untrusted_python
+from apps.assessments.tasks import run_submission_tests_task
+from apps.assignments.models import TestCase
+from rest_framework.exceptions import APIException
 
 
 class SubmissionViewSet(viewsets.ModelViewSet):
@@ -18,7 +21,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], url_path="run-tests", url_name="run-tests")
     def run_tests(self, request, pk=None):
         """
         Custom endpoint to trigger the autograder for a specific submission.
@@ -26,16 +29,15 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         """
         submission = self.get_object()
 
-        # Logic to send the 'submitted_file' to your testing environment would go here.
-        # For now, we'll just return a success message.
+        if not submission.submitted_file:
+            return Response({"error": "No file attached"}, status=400)
+
+        run_submission_tests_task.delay(submission.id)
+
         return Response(
             {"status": "Tests triggered", "submission_id": submission.id},
             status=status.HTTP_202_ACCEPTED,
         )
-
-    def perform_create(self, serializer):
-
-        return super().perform_create(serializer)
 
 
 class RubricResultViewSet(viewsets.ModelViewSet):
@@ -56,11 +58,6 @@ class RubricResultViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class TestResultViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Automated test results should generally be Read-Only for users,
-    updated only by the system/autograder.
-    """
-
+class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer

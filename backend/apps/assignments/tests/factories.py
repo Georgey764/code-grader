@@ -32,18 +32,11 @@ class TestCaseFactory(factory.django.DjangoModelFactory):
         model = TestCase
 
     id = factory.Faker("uuid4")
+    # Assumes you have an AssignmentFactory defined elsewhere
     assignment = factory.SubFactory(AssignmentFactory)
 
-    input_file = factory.django.FileField(filename="input.txt", data=b"input data")
-    expected_output_file = factory.django.FileField(
-        filename="output.txt", data=b"expected output"
-    )
-
-    weight = factory.Faker(
-        "pydecimal",
-        left_digits=1,
-        right_digits=2,
-        positive=True,
-        min_value=0.01,
-        max_value=1,
-    )
+    input_text = "1\n1"
+    expected_output = "2"
+    time_limit = factory.Iterator([5, 10, 30])
+    is_hidden = factory.Faker("boolean")
+    points_possible = factory.Iterator([5, 10, 20])

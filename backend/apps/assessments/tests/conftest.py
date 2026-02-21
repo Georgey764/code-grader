@@ -5,7 +5,7 @@ from apps.assessments.tests.factories import (
     RubricResultFactory,
     TestResultFactory,
 )
-from apps.assignments.tests.factories import AssignmentFactory
+from apps.assignments.tests.factories import AssignmentFactory, TestCaseFactory
 from apps.courses.tests.factories import RosterFactory, CourseFactory
 import boto3
 
@@ -43,6 +43,9 @@ def assessment_urls():
         def submission_detail(self, submission_id):
             return reverse("submission-detail", args=[submission_id])
 
+        def submission_run_tests(self, submission_id):
+            return reverse("submission-run-tests", args=[submission_id])
+
         # Rubric Results
         @property
         def rubric_results_list(self):
@@ -63,9 +66,33 @@ def assessment_urls():
 
 
 @pytest.fixture
-def submission(db):
+def course(db):
+    return CourseFactory()
+
+
+@pytest.fixture
+def roster(
+    db, course, student_user, student_client, student_profile, test_case_add, submission
+):
+    return RosterFactory(course=course, student_profile=student_profile)
+
+
+@pytest.fixture()
+def assignment(db, course):
+    return AssignmentFactory(course=course)
+
+
+@pytest.fixture
+def submission(db, assignment, test_case_add):
     """Creates a base submission with all necessary parent relations (Roster, Assignment)."""
-    return SubmissionFactory()
+    return SubmissionFactory(assignment=assignment)
+
+
+@pytest.fixture
+def test_case_add(db, assignment):
+    return TestCaseFactory(
+        input_text="1\n1", expected_output="2", assignment=assignment
+    )
 
 
 @pytest.fixture
@@ -83,17 +110,9 @@ def rubric_result(db, submission):
 
 
 @pytest.fixture
-def passing_test_result(db, submission):
+def test_result(db, submission):
     """Creates a specific passing test result."""
-    return TestResultFactory(submission=submission, status="PASS", points_earned=10.0)
-
-
-@pytest.fixture
-def failing_test_result(db, submission):
-    """Creates a specific failing test result with an error message."""
-    return TestResultFactory(
-        submission=submission, status="FAIL", error_message="AssertionError: 1 != 2"
-    )
+    return TestResultFactory(submission=submission)
 
 
 @pytest.fixture
@@ -102,21 +121,21 @@ def full_graded_submission(db, submission):
     A 'composite' fixture: Creates a submission that has both
     automated test results and a manual rubric result.
     """
-    TestResultFactory.create_batch(3, submission=submission, status="PASS")
-    RubricResultFactory(submission=submission, points_awarded=100.0)
+    TestResultFactory.create_batch(3, submission=submission)
+    RubricResultFactory(submission=submission)
     return submission
 
 
-@pytest.fixture
-def course(db):
-    return CourseFactory()
+# @pytest.fixture
+# def course(db):
+#     return CourseFactory()
 
 
-@pytest.fixture
-def roster(db, course):
-    return RosterFactory(course=course)
+# @pytest.fixture
+# def roster(db, course):
+#     return RosterFactory(course=course)
 
 
-@pytest.fixture
-def assignment(db, course):
-    return AssignmentFactory(course=course)
+# @pytest.fixture
+# def assignment(db, course):
+#     return AssignmentFactory(course=course)

@@ -1,19 +1,4 @@
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: db
-    volumes:
-      - ./data/postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_NAME}"]
-      interval: 2s
-      retries: 10
-    environment:
-      - POSTGRES_DB=${POSTGRES_NAME}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-      - app-network
 
   redis:
     container_name: redis
@@ -28,35 +13,6 @@ services:
     ports:
       - "6379:6379"
 
-
-  localstack:
-    container_name: localstack
-    build:
-      context: ./localstack
-      dockerfile: Dockerfile.dev
-    ports:
-      - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # Service port range
-    healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/provisioned"]
-      interval: 5s
-      timeout: 10s
-      retries: 25
-    environment:
-      - DEBUG=1
-      - LS_LOG=trace
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - PERSISTENCE=1                    
-    volumes:
-      - "./data/ls_data:/var/lib/localstack"
-      - "./localstack:/docker-entrypoint-initaws.d/terraform"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./localstack/initialization.sh:/etc/localstack/init/ready.d/initialization.sh" # Automatic setup scripts
-    networks:
-      - app-network
-  
-    
 
   backend:
     container_name: backend
@@ -131,12 +87,8 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
     depends_on:
-      db:
-        condition: service_healthy
-      localstack:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - redis
+      - backend
 
   frontend:
     container_name: frontend
@@ -162,7 +114,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
       - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
 
 networks:

@@ -17,8 +17,10 @@ class SubmissionFactory(factory.django.DjangoModelFactory):
     assignment = factory.SubFactory(AssignmentFactory)
     group = None
     submitted_file = factory.django.FileField(
-        filename="submitted_code.py", data=b'print("hello world")'
+        filename="submitted_code.py",
+        data=b"a=int(input())\nb=int(input())\nprint(str(a+b))",
     )
+    status = Submission.Status.PENDING
 
 
 class RubricResultFactory(factory.django.DjangoModelFactory):
@@ -33,7 +35,7 @@ class RubricResultFactory(factory.django.DjangoModelFactory):
         left_digits=2,
         right_digits=1,
         positive=True,
-        min_value=0,
+        min_value=0.01,
         max_value=20,
     )
     optional_feedback = factory.Faker("sentence")
@@ -46,16 +48,10 @@ class TestResultFactory(factory.django.DjangoModelFactory):
     id = factory.Faker("uuid4")
     submission = factory.SubFactory(SubmissionFactory)
     test_case = factory.SubFactory(TestCaseFactory)
-    status = factory.Iterator(["PASS", "FAIL", "ERROR", "TIMEOUT"])
-    output_file = factory.django.FileField(
-        filename="execution_output.txt", data=b"Actual output from code execution"
-    )
-    error_message = factory.Maybe(
-        "status", yes_declaration=factory.Faker("text"), no_declaration=None
-    )
-    execution_time_ms = factory.Faker(
-        "pyfloat", left_digits=3, right_digits=2, positive=True
-    )
-    points_earned = factory.Faker(
-        "pyfloat", left_digits=1, right_digits=1, positive=True
-    )
+
+    stdout = factory.Faker("text", max_nb_chars=200)
+    stderr = ""
+    exit_code = factory.Iterator([0, 1])
+    duration = factory.Faker("pyfloat", left_digits=1, right_digits=2, positive=True)
+
+    is_success = factory.LazyAttribute(lambda o: o.exit_code == 0)

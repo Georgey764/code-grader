@@ -3,9 +3,16 @@ from django.db import models
 from apps.courses.models import Roster
 from apps.assignments.models import Assignment, RubricCriteria, TestCase
 from apps.groups.models import Group
+from django.db import transaction
 
 
 class Submission(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        PROCESSING = "PROCESSING", "Processing"
+        COMPLETE = "COMPLETE", "Complete"
+        INCOMPLETE = "INCOMPLETE", "Incomplete"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # References the student in the course roster
     roster = models.ForeignKey(Roster, on_delete=models.CASCADE)
@@ -16,6 +23,10 @@ class Submission(models.Model):
     # Reference to the metadata of the submitted file
     submitted_file = models.FileField(upload_to="submissions/")
 
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
+
     def __str__(self):
         return f"Submission {self.id} for {self.assignment.name}"
 
@@ -23,6 +34,13 @@ class Submission(models.Model):
         db_table = "submission"
         verbose_name = "submission"
         verbose_name_plural = "submissions"
+
+    def update_test_status(self, status):
+        """
+        Logic to handle the results dictionary and save to DB
+        """
+        self.status = status
+        self.save()
 
 
 class RubricResult(models.Model):
@@ -44,30 +62,53 @@ class RubricResult(models.Model):
 
 
 class TestResult(models.Model):
-    STATUS_CHOICES = [
-        ("PASS", "Pass"),
-        ("FAIL", "Fail"),
-        ("ERROR", "Error"),
-        ("TIMEOUT", "Timeout"),
-        ("SKIPPED", "Skipped"),
-    ]
-
+    # Using UUID as the primary key as specified in the diagram
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    # Foreign Key relationships
+    # 'Submission' and 'TestCase' should be the names of your other models
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="test_results"
     )
-    test_case = models.ForeignKey(TestCase, on_delete=models.CASCADE)
+    test_case = models.ForeignKey(
+        TestCase, on_delete=models.CASCADE, related_name="test_results"
+    )
 
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    output_file = models.FileField(upload_to="test-results/")
-    error_message = models.TextField(null=True, blank=True)
-    execution_time_ms = models.FloatField()
-    points_earned = models.FloatField()
+    # Text fields for standard output and error
+    stdout = models.TextField(blank=True, null=True)
+    stderr = models.TextField(blank=True, null=True)
+
+    # Exit code (integer 0 or 1)
+    exit_code = models.IntegerField(choices=[(0, "Success"), (1, "Failure")])
+
+    # Float fields for duration and points
+    duration = models.FloatField(blank=True, null=True)
+
+    # Boolean for success status
+    is_success = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Test {self.test_case.id}: {self.status}"
+        return f"Result for Submission {self.submission_id} - Test {self.test_case_id}"
 
-    class Meta:
-        db_table = "test_result"
-        verbose_name = "Test Result"
-        verbose_name_plural = "Test Results"
+    @classmethod
+    def save_test_results(cls, submission, results):
+        # 'results' is the list of dictionaries returned by run_untrusted_python
+        try:
+            with transaction.atomic():
+                test_results_to_create = [
+                    cls(
+                        submission=submission,
+                        test_case_id=item.get("test_case_id", None),
+                        stdout=item.get("stdout", ""),
+                        stderr=item.get("stderr", ""),
+                        exit_code=item.get("exit_code", 1),
+                        duration=item.get("duration"),
+                        is_success=item.get("is_success", False),
+                    )
+                    for item in results
+                ]
+                cls.objects.bulk_create(test_results_to_create)
+                submission.update_test_status(status=Submission.Status.COMPLETE)
+        except Exception:
+            submission.update_test_status(status=Submission.Status.INCOMPLETE)
+            raise

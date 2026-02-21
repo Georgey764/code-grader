@@ -17,16 +17,7 @@ class RubricResultSerializer(serializers.ModelSerializer):
 class TestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestResult
-        fields = [
-            "id",
-            "submission",
-            "test_case",
-            "status",
-            "output_file",
-            "error_message",
-            "execution_time_ms",
-            "points_earned",
-        ]
+        fields = "__all__"
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
@@ -42,6 +33,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
             "assignment",
             "group",
             "submitted_file",
-            "rubric_results",
+            "status",
             "test_results",
+            "rubric_results",
         ]

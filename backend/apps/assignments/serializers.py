@@ -21,7 +21,7 @@ class RubricCriteriaSerializer(BaseSerializers):
 class TestCaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestCase
-        fields = ["id", "assignment", "input_file", "expected_output_file", "weight"]
+        fields = "__all__"
 
 
 class AssignmentSerializer(BaseSerializers):

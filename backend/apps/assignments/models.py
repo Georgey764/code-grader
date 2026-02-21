@@ -12,7 +12,7 @@ class Assignment(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
-    starter_code = models.FileField(upload_to="starter-codes/", null=True, blank=True)
+    starter_code = models.TextField(null=True, blank=True)
     max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
@@ -45,22 +45,20 @@ class RubricCriteria(BaseModel):
 
 class TestCase(models.Model):
     __test__ = False
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    # Linked to the Assignment (Foreign Key)
     assignment = models.ForeignKey(
-        "Assignment",
-        on_delete=models.CASCADE,
-        related_name="test_cases",
-        db_column="assignment_id",
+        "Assignment", on_delete=models.CASCADE, related_name="test_cases"
     )
 
-    input_file = models.FileField(upload_to="test-cases/inputs/")
-    expected_output_file = models.FileField(upload_to="test-cases/outputs/")
-
-    weight = models.DecimalField(max_digits=3, decimal_places=2)
-
-    class Meta:
-        db_table = "test_case"
+    # Test details
+    input_text = models.TextField(blank=True, null=True)
+    expected_output = models.TextField(blank=True, null=True)
+    time_limit = models.IntegerField(help_text="Time limit in seconds")
+    is_hidden = models.BooleanField(default=True)
+    points_possible = models.FloatField()
 
     def __str__(self):
-        return f"TestCase for {self.assignment.name}"
+        return f"TestCase {self.id} for Assignment {self.assignment_id}"
