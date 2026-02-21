@@ -5,7 +5,30 @@ from phonenumber_field.modelfields import PhoneNumberField
 from django.contrib.auth.base_user import BaseUserManager
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.core.exceptions import ValidationError
+import re
 
+# VALIDATORS
+def validate_name(value):
+    if not value: # Skip validation for blank/null values
+        return
+    
+    # Allows letters, spaces, and hyphens
+    if not re.fullmatch(r"[A-Za-z\s\-]+", value):
+        raise ValidationError("Name must contain only letters, spaces, or hyphens.")
+    
+def validate_title(value):
+    if not value: # Skip validation for blank/null values
+        return
+
+    if not re.fullmatch(r"[A-Za-z\s]+", value):
+        raise ValidationError("Title must contain only letters or spaces.")
+    
+def validate_major(value):
+    if not value: # Skip validation for blank/null values
+        return
+
+    if not re.fullmatch(r"[A-Za-z\s]+", value):
+        raise ValidationError("Major must contain only letters or spaces.")
 
 # Create your models here.
 class Roles(models.TextChoices):
@@ -32,11 +55,26 @@ class UserManager(BaseUserManager):
 class User(AbstractUser, BaseModel):
     username = None
 
-    email = models.EmailField(unique=True, null=False, blank=False)
-    first_name = models.CharField(max_length=50, unique=False, null=False, blank=False)
-    last_name = models.CharField(max_length=50, unique=False, null=False, blank=False)
-    role = models.CharField(max_length=2, choices=Roles.choices, default=Roles.STUDENT)
-    cwid = models.CharField(max_length=10, unique=True, null=False, blank=False)
+    # Email field must be unique and not null
+    email = models.EmailField(
+        unique=True, null=False, blank=False
+    )
+    # User first name must contain only letters, spaces, or hyphens
+    first_name = models.CharField(
+        max_length=50, unique=False, null=False, blank=False, validators=[validate_name]
+    )
+    # User last name must contain only letters, spaces, or hyphens
+    last_name = models.CharField(
+        max_length=50, unique=False, null=False, blank=False, validators=[validate_name]
+    )
+    # User role: Faculty or Student
+    role = models.CharField(
+        max_length=2, choices=Roles.choices, default=Roles.STUDENT
+    )
+    # Campus Wide ID should be an 8-10 digit number
+    cwid = models.IntegerField(
+        unique=True, null=False, blank=False, validators=[MinValueValidator(10000000), MaxValueValidator(9999999999)]
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
@@ -56,7 +94,8 @@ class FacultyProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="faculty_profile",
     )
-    title = models.CharField(max_length=255, unique=False)
+    # Title must contain only letters and spaces
+    title = models.CharField(max_length=255, unique=False, validators=[validate_title])
     phone = PhoneNumberField(region="US")
 
     class Meta:
@@ -84,7 +123,10 @@ class StudentProfile(BaseModel):
         on_delete=models.CASCADE,
         related_name="student_profile",
     )
-    major = models.CharField(max_length=255, unique=False, null=True, blank=True)
+    # Major must contain only letters and spaces
+    major = models.CharField(
+        max_length=255, unique=False, null=True, blank=True, validators=[validate_major]
+    )
     classification = models.CharField(max_length=50, null=True, blank=True)
 
     class Meta:
