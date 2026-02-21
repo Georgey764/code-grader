@@ -40,7 +40,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and Start Services
-        run: docker compose -f up -d --build --wait
+        run: docker compose up -d --build --wait
 
       - name: Check for missing migrations
         run: |
