@@ -1,7 +1,5 @@
 from rest_framework import serializers
-from .models import Submission, RubricResult, TestResult
-
-# --- Result Serializers (Used inside Submission) ---
+from apps.assessments.models import Submission, RubricResult, TestResult
 
 
 class RubricResultSerializer(serializers.ModelSerializer):
@@ -19,33 +17,13 @@ class RubricResultSerializer(serializers.ModelSerializer):
 class TestResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestResult
-        fields = [
-            "id",
-            "submission",
-            "test_case",
-            "status",
-            "output_file",
-            "error_message",
-            "execution_time_ms",
-            "points_earned",
-        ]
-
-    def validate_points_earned(self, value):
-        """
-        Example validation: Ensure points earned aren't negative.
-        """
-        if value < 0:
-            raise serializers.ValidationError("Points earned cannot be negative.")
-        return value
-
-
-# --- Main Submission Serializer ---
+        fields = "__all__"
 
 
 class SubmissionSerializer(serializers.ModelSerializer):
-    # These 'source' fields allow you to see the results directly on the submission object
-    test_results = TestResultSerializer(many=True, read_only=True)
+    # Nested results to show grading details alongside the submission
     rubric_results = RubricResultSerializer(many=True, read_only=True)
+    test_results = TestResultSerializer(many=True, read_only=True)
 
     class Meta:
         model = Submission
@@ -55,16 +33,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
             "assignment",
             "group",
             "submitted_file",
+            "status",
             "test_results",
             "rubric_results",
         ]
-
-    def validate(self, data):
-        """
-        Example validation: Ensure a group is provided if the assignment
-        is marked as 'is_grouped' in your ERD.
-        """
-        assignment = data.get("assignment")
-        if assignment and assignment.is_grouped and not data.get("group"):
-            raise serializers.ValidationError("This assignment requires a group ID.")
-        return data

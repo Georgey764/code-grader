@@ -1,21 +1,124 @@
 services:
+
+  redis:
+    container_name: redis
+    image: "redis:alpine"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+    ports:
+      - "6379:6379"
+
+
   backend:
+    container_name: backend
+    depends_on:
+      db:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - app-network
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    command: gunicorn myproject.wsgi:application --bind 0.0.0.0:8000
-    restart: unless-stopped
+      dockerfile: Dockerfile.dev
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/admin/login/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     environment:
-      - DEBUG=0
+      - DEBUG=${DEBUG}
+      - ALLOWED_HOST=${ALLOWED_HOST}
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
+      - POSTGRES_NAME=${POSTGRES_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+      - AWS_S3_ENDPOINT_URL=${AWS_S3_ENDPOINT_URL}
+      - E2B_API_KEY=${E2B_API_KEY}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: worker
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - ./backend:/code
+    networks:
+      - app-network
+    environment:
+      - DEBUG=${DEBUG}
+      - ALLOWED_HOST=${ALLOWED_HOST}
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
+      - POSTGRES_NAME=${POSTGRES_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - SECRET_KEY=${SECRET_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME}
+      - AWS_S3_ENDPOINT_URL=${AWS_S3_ENDPOINT_URL}
+      - E2B_API_KEY=${E2B_API_KEY}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    depends_on:
+      - redis
+      - backend
 
   frontend:
+    container_name: frontend
+    depends_on:
+      - db
+    networks:
+      - app-network
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    command: npm start
-    restart: unless-stopped
+      dockerfile: Dockerfile.dev
+      args:
+        NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
+    command: npm run dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
 
-  db:
-    restart: unless-stopped
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -1,3 +1,27 @@
+# Ignore piston data
+piston_data
+data
+
+depracated
+
+# IGNORE TERRAFORM DATA
+localstack_providers_override.tf
+ls_data/
+.terraform/
+*.tfstate
+*.tfstate.backup
+tfplan
+terraform.tfstate
+terraform.tfstate.backup
+terraform.tfstate.*
+terraform.tfvars
+
+# --- Python & Environment ---
+.venv/
+*.py[cod]
+.env
+
+
 postgres_data
 postgres_data/*
 

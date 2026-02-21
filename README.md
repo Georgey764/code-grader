@@ -35,22 +35,22 @@ An artificial intelligence–based code grading system developed as part of the 
 
 ## Startup Guide
 
-**Prerequisites:** Make sure to download latest version of docker and docker commandlinetools
+**Prerequisites:** 
+- Docker: You must have Docker and Docker Compose installed.
 
-After completing the prerequisites:
+****After completing the prerequisites:**
 1. First create an .env file at the project root (Ask George for .env variables)
-2. Use the following commands in project directory in terminal/command-line to set an alias:
-    > Windows: Set-Alias dcdev docker compose -f docker-compose.yml -f docker-compose.dev.yml
-    > Mac/Linux: alias dcdev='docker compose -f docker-compose.yml -f docker-compose.dev.yml'
-3. Run the following code to run the program:
-    > dcdev build --no-cache 
-
-    > dcdev up -d
-4. Run python migrate command
-    > dcdev run --rm backend python manage.py migrate
-5. View frontend at localhost:3000 & backend at localhost:8000
-6. To turn off use: 
-    > dcdev down -v
+2. Run the following code to run the program:
+    > $docker compose build --no-cache  
+    > $docker compose up -d  
+3. Run python migrate command
+    > $dcdev run --rm backend python manage.py migrate  
+4. Run the piston package install command
+    > cd piston-engine/cli && npm i && cd -
+    > piston-engine/cli/index.js ppman install python=3.9. 
+4. View frontend at localhost:3000 & backend at localhost:8000
+5. To turn off use: 
+    > $dcdev down -v  
 
 ## Documentation
 

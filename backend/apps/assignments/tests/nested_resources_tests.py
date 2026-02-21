@@ -8,9 +8,10 @@ class TestTestCaseViewSet:
     def test_retrieve_test_case(self, faculty_client, assignment_urls, test_case):
         url = assignment_urls.test_case_detail(test_case.id)
         response = faculty_client.get(url)
-
+        print(response.data)
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == str(test_case.id)
+
         # Ensure the FK to assignment is present
         assert str(response.data["assignment"]) == str(test_case.assignment.id)
 

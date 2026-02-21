@@ -1,6 +1,6 @@
 import factory
 from django.utils import timezone
-from apps.assignments.models import Assignment, RubricCriteria, TestCase, TestFile
+from apps.assignments.models import Assignment, RubricCriteria, TestCase
 from apps.courses.tests.factories import CourseFactory
 
 
@@ -27,31 +27,16 @@ class RubricCriteriaFactory(factory.django.DjangoModelFactory):
     max_points = 25.0
 
 
-class TestFileFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = TestFile
-
-    name = factory.Faker("file_name", extension="txt")
-    bucket = "test-bucket"
-    key = factory.Sequence(lambda n: f"tests/file_{n}.txt")
-
-
 class TestCaseFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = TestCase
 
+    id = factory.Faker("uuid4")
+    # Assumes you have an AssignmentFactory defined elsewhere
     assignment = factory.SubFactory(AssignmentFactory)
 
-    # Updated to use SubFactories for the new Foreign Key relationships
-    test_input = factory.SubFactory(TestFileFactory)
-    test_output = factory.SubFactory(TestFileFactory)
-
-    # NUMERIC(3,2) allows up to 9.99
-    weight = factory.Faker(
-        "pydecimal",
-        left_digits=1,
-        right_digits=2,
-        positive=True,
-        min_value=0.01,
-        max_value=9,
-    )
+    input_text = "1\n1"
+    expected_output = "2"
+    time_limit = factory.Iterator([5, 10, 30])
+    is_hidden = factory.Faker("boolean")
+    points_possible = factory.Iterator([5, 10, 20])

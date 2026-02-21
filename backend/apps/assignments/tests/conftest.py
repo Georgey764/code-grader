@@ -4,7 +4,6 @@ from apps.assignments.tests.factories import (
     AssignmentFactory,
     TestCaseFactory,
     RubricCriteriaFactory,
-    TestFileFactory,
 )
 
 
@@ -32,11 +31,7 @@ def assignment_urls():
 
         # Test Cases
         def test_case_detail(self, pk):
-            return reverse("assignments:testcase-detail", kwargs={"id": pk})
-
-        # Test Files (if needed)
-        def test_file_detail(self, pk):
-            return reverse("assignments:testfile-detail", kwargs={"id": pk})
+            return reverse("assignments:testcase-detail", kwargs={"pk": pk})
 
     return URLRegistry()
 
@@ -57,12 +52,6 @@ def rubric(db, assignment):
 def test_case(db, assignment):
     """Returns a test case linked to a fresh assignment."""
     return TestCaseFactory(assignment=assignment)
-
-
-@pytest.fixture
-def test_file(db):
-    """Returns a standalone TestFile instance for general testing."""
-    return TestFileFactory()
 
 
 @pytest.fixture

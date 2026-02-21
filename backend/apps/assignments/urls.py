@@ -1,12 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet, TestFileViewSet
+from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet
 
 app_name = "assignments"
 
 
 router = DefaultRouter()
-router.register(r"test-files", TestFileViewSet, basename="testfile")
 router.register(r"test-cases", TestCaseViewSet, basename="testcase")
 router.register(r"", AssignmentViewSet, basename="assignment")
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Assignment, RubricCriteria, TestCase, TestFile
+from .models import Assignment, RubricCriteria, TestCase
 from apps.core.serializers import BaseSerializers
 
 
@@ -18,36 +18,10 @@ class RubricCriteriaSerializer(BaseSerializers):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class TestFileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TestFile
-        fields = ["id", "name", "bucket", "key"]
-
-
 class TestCaseSerializer(serializers.ModelSerializer):
-    # PrimaryKeyRelatedFields for easy creation via UUIDs
-    test_input_id = serializers.PrimaryKeyRelatedField(
-        queryset=TestFile.objects.all(), source="test_input", write_only=True
-    )
-    test_output_id = serializers.PrimaryKeyRelatedField(
-        queryset=TestFile.objects.all(), source="test_output", write_only=True
-    )
-
-    # Read-only nested objects for detailed GET responses
-    test_input = TestFileSerializer(read_only=True)
-    test_output = TestFileSerializer(read_only=True)
-
     class Meta:
         model = TestCase
-        fields = [
-            "id",
-            "assignment",
-            "test_input",
-            "test_input_id",
-            "test_output",
-            "test_output_id",
-            "weight",
-        ]
+        fields = "__all__"
 
 
 class AssignmentSerializer(BaseSerializers):

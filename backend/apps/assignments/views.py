@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from apps.assignments.serializers import TestCaseSerializer, TestFileSerializer
-from .models import Assignment, RubricCriteria, TestCase, TestFile
+from apps.assignments.serializers import TestCaseSerializer
+from .models import Assignment, RubricCriteria, TestCase
 from . import serializers
 
 
@@ -71,24 +71,17 @@ class RubricViewSet(viewsets.ModelViewSet):
     #     return self.queryset.filter(assignment_id=self.kwargs.get("assignment_id"))
 
 
-class TestFileViewSet(viewsets.ModelViewSet):
-    """
-    Standard CRUD for Test Files (Input/Output files).
-    """
-
-    queryset = TestFile.objects.all()
-    serializer_class = TestFileSerializer
-
-
 class TestCaseViewSet(viewsets.ModelViewSet):
-    """
-    Standard CRUD for Test Cases.
-    Optimized with select_related for linked foreign keys.
-    """
-
-    # select_related performs a SQL JOIN to fetch related data in 1 query
-    queryset = TestCase.objects.all().select_related(
-        "test_input", "test_output", "assignment"
-    )
+    queryset = TestCase.objects.all()
     serializer_class = TestCaseSerializer
-    lookup_field = "id"
+
+    def get_queryset(self):
+        """
+        Optionally restricts the returned test cases to a given assignment,
+        by filtering against an `assignment_id` query parameter in the URL.
+        """
+        queryset = TestCase.objects.all()
+        assignment_id = self.request.query_params.get("assignment_id")
+        if assignment_id is not None:
+            queryset = queryset.filter(assignment_id=assignment_id)
+        return queryset
