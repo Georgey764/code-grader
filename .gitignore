@@ -5,6 +5,7 @@ data
 depracated
 
 # IGNORE TERRAFORM DATA
+localstack_providers_override.tf
 ls_data/
 .terraform/
 *.tfstate

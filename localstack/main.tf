@@ -4,6 +4,15 @@
 #   function_name = "student-code-runner"
 # }
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0, < 6.23.0" 
+    }
+  }
+}
+
 
 # The Core Bucket
 resource "aws_s3_bucket" "grader_storage" {
