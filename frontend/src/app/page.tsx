@@ -1,6 +1,21 @@
-import Image from "next/image";
-import { HomePage } from "@/components/HomePage";
+"use client";
 
-export default function Home() {
-  return <HomePage />;
+import { Header, Footer, Hero } from "./(helper)";
+import { useMetadata } from "@/context";
+import { LoadingPage } from "@/components/ui/sections";
+
+export default function HomePage() {
+  const { user, isLoading, name } = useMetadata();
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header name={name} user={user} />
+      <Hero user={user} />
+      <Footer />
+    </div>
+  );
 }
