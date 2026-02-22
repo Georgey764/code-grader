@@ -39,7 +39,8 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
         setAssignmentData(assignmentResponse.data);
       } catch (err) {
-        console.error("Failed to fetch assignment & roster details:", err);
+        console.log(err?.response?.data);
+        alert("Failed to fetch assignment & roster details");
       }
     };
 
@@ -55,7 +56,6 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       );
       if (response.data.status == "COMPLETE") {
         setResults(response?.data?.test_results);
-        console.log(response.data);
         setStatus("completed");
       } else if (attempt > 20) {
         throw new Error("Test run timed out");
@@ -79,7 +79,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
     } catch (e) {
       setStatus("idle");
       alert("Error while running tests");
-      console.log(e);
+      console.log(e?.response?.data);
     }
   };
 
@@ -96,9 +96,6 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       formData.append("group", assignmentData?.group);
     }
     formData.append("submitted_file", file);
-    // console.log(assignmentData?.id);
-    // console.log(roster?.id);
-    // console.log(assignmentData?.group);
 
     try {
       const response = await api.post("assessments/submissions/", formData);
@@ -106,6 +103,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       runTests(response.data);
     } catch (e) {
       setStatus("idle");
+      console.log(e?.response?.data);
       alert("Upload failed: " + e.toString());
     }
   };
