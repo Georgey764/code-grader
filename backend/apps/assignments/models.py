@@ -56,7 +56,7 @@ class TestCase(models.Model):
     # Test details
     input_text = models.TextField(blank=True, null=True)
     expected_output = models.TextField(blank=True, null=True)
-    time_limit = models.IntegerField(help_text="Time limit in seconds")
+    time_limit = models.IntegerField(help_text="Time limit in seconds", default=300)
     is_hidden = models.BooleanField(default=True)
     points_possible = models.FloatField()
 

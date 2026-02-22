@@ -4,7 +4,7 @@
 import { useMetadata } from "@/context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { LoadingPage } from "@/components/global/sections";
+import { LoadingPage } from "@/components/ui/sections";
 
 export default function RoleGuard({ children, allowedRoles = [] }) {
   const { user, isLoading } = useMetadata();

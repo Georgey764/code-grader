@@ -1,3 +1,3 @@
 export default function Page() {
-  return <></>;
+  return <>All Courses Page</>;
 }
