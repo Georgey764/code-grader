@@ -23,19 +23,17 @@ export default function Page() {
     if (user?.cwid) fetchPageData();
   }, [api, user.cwid]);
 
-  function Button() {
-    return (
-      <Link href="/faculty/create-course">
-        <Button className="bg-primary text-white px-6 py-2 rounded-md hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-2 cursor-pointer">
-          <Plus className="w-4 h-4" /> Create New Course
-        </Button>
-      </Link>
-    );
-  }
+  const CreateCourseButton = (
+    <Link href="/faculty/create-course">
+      <Button className="bg-primary text-white px-6 py-2 rounded-md hover:opacity-90 transition-opacity flex flex-row items-center justify-center gap-2 cursor-pointer">
+        <Plus className="w-4 h-4" /> Create New Course
+      </Button>
+    </Link>
+  );
 
   return (
-    <div className="flex bg-background min-h-screen">
-      <HeadingWrapper name="Courses" button={<Button />}>
+    <HeadingWrapper name="Courses" ButtonIn={CreateCourseButton}>
+      <div className="flex bg-background min-h-screen">
         <div className="w-full max-w-5xl mx-auto space-y-4">
           {courses.length > 0 ? (
             courses.map((course, index) => (
@@ -53,7 +51,7 @@ export default function Page() {
             </div>
           )}
         </div>
-      </HeadingWrapper>
-    </div>
+      </div>
+    </HeadingWrapper>
   );
 }

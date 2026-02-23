@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 export default function HeadingWrapper({
   children,
   name = "Dashboard",
-  button = null,
+  ButtonIn = null,
 }) {
   return (
     <div className="flex bg-background">
@@ -21,7 +21,7 @@ export default function HeadingWrapper({
               <p className="text-text-muted italic">Welcome back, Chief.</p>
             </div>
 
-            {button}
+            {ButtonIn}
           </div>
         </header>
 
