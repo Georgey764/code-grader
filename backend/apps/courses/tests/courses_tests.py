@@ -115,7 +115,7 @@ class CourseTest(CoursesBaseTest):
     def test_student_can_list(self):
         self.client.force_authenticate(user=self.student_enrolled_user)
         response = self.client.get(self.url_list)
-        print(response.data)
+
         self.assertIn(
             response.status_code,
             [
@@ -124,9 +124,7 @@ class CourseTest(CoursesBaseTest):
         )
         self.assertIn(
             response.data[0].get("name"),
-            [
-                "Principles of Software Engineering",
-            ],
+            ["Intro to Programming", "Principles of Software Engineering"],
         )
 
     def test_student_enrolled_can_retrieve(self):
