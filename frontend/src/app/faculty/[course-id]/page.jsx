@@ -8,6 +8,8 @@ import {
   ShieldCheck,
   ChevronRight,
   Activity,
+  ClipboardList,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -42,9 +44,9 @@ const Page = () => {
   }
 
   return (
-    <main className="flex-1 transition-all duration-300 p-4">
+    <main className="flex-1 transition-all duration-300 p-4 w-full">
       {/* Navigation Breadcrumb */}
-      <BackButton link="/student/courses" name={course?.short_name} />
+      <BackButton link="/faculty" name={`${course?.short_name}`} />
 
       {/* Course Header */}
       <header className="mb-12">
@@ -138,6 +140,52 @@ const Page = () => {
                 </p>
                 <p className="text-xs text-text-muted group-hover:text-white/60">
                   View all coursework
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className="text-text-muted group-hover:text-white"
+              size={20}
+            />
+          </button>
+          <button
+            onClick={() => router.push(`${courseId}/groups`)}
+            className="cursor-pointer w-full group bg-surface hover:bg-primary hover:border-primary p-6 rounded-lg border border-border shadow-subtle transition-all duration-300 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/5 group-hover:bg-white/10 rounded-md text-primary group-hover:text-white transition-colors">
+                <Users size={24} />
+              </div>
+              <div className="text-left">
+                <p className="font-black text-accent group-hover:text-white uppercase tracking-tight">
+                  Groups
+                </p>
+                <p className="text-xs text-text-muted group-hover:text-white/60">
+                  Manage student teams
+                </p>
+              </div>
+            </div>
+            <ChevronRight
+              className="text-text-muted group-hover:text-white"
+              size={20}
+            />
+          </button>
+
+          {/* NEW: Go to Roster */}
+          <button
+            onClick={() => router.push(`${courseId}/roster`)}
+            className="cursor-pointer w-full group bg-surface hover:bg-primary hover:border-primary p-6 rounded-lg border border-border shadow-subtle transition-all duration-300 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/5 group-hover:bg-white/10 rounded-md text-primary group-hover:text-white transition-colors">
+                <ClipboardList size={24} />
+              </div>
+              <div className="text-left">
+                <p className="font-black text-accent group-hover:text-white uppercase tracking-tight">
+                  Roster
+                </p>
+                <p className="text-xs text-text-muted group-hover:text-white/60">
+                  View enrolled students
                 </p>
               </div>
             </div>

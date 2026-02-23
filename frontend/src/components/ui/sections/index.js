@@ -1,2 +1,3 @@
 export { default as LoadingPage } from "./LoadingPage";
-export { default as Sidebar } from "./Sidebar";
+export { default as CourseDetailPage } from "./CourseDetailPage";
+export { default as HeadingWrapper } from "./HeadingWrapper";

@@ -99,7 +99,23 @@ class RosterModelViewSet(viewsets.ModelViewSet):
             return [IsEnrolledStudent()]
         if self.action in ["create"]:
             return [Is_Student()]
+        if self.action in ["list"]:
+            return [Is_Student()]
         return [DenyAll()]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Roster.objects.select_related("course", "student_profile__user")
+
+        # Filter by the logged-in user's profile
+        queryset = queryset.filter(student_profile__user=user)
+
+        # Check for courseId in the query params (e.g., /api/roster/?courseId=5)
+        course_id = self.request.query_params.get("courseId")
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+
+        return queryset
 
     # def get_object(self):
     #     queryset = self.get_queryset()

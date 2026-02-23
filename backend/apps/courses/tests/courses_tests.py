@@ -35,21 +35,21 @@ class CourseTest(CoursesBaseTest):
             "courses:course-detail", kwargs={"pk": self.owner_course.pk}
         )
 
-    # def test_faculty_owner_can_view_their_list(self):
-    #     """
-    #     Ensure faculties can only see courses that they own
-    #     """
-    #     self.client.force_authenticate(user=self.faculty_owner_user)
-    #     response = self.client.get(self.url_list)
-    #     self.assertEqual(len(response.data), 0)
+    def test_faculty_owner_can_view_their_list(self):
+        """
+        Ensure faculties can only see courses that they own
+        """
+        self.client.force_authenticate(user=self.faculty_owner_user)
+        response = self.client.get(self.url_list)
+        self.assertEqual(len(response.data), 2)
 
-    # def test_faculty_stranger_cannot_view_others_list(self):
-    #     """
-    #     Ensure faculty_stranger_cannot_view_others_list
-    #     """
-    #     self.client.force_authenticate(user=self.faculty_stranger_user)
-    #     response = self.client.get(self.url_list)
-    #     self.assertEqual(len(response.data), 0)
+    def test_faculty_stranger_cannot_view_others_list(self):
+        """
+        Ensure faculty_stranger_cannot_view_others_list
+        """
+        self.client.force_authenticate(user=self.faculty_stranger_user)
+        response = self.client.get(self.url_list)
+        self.assertEqual(len(response.data), 0)
 
     def test_faculty_owner_can_retrieve(self):
         """
@@ -112,21 +112,22 @@ class CourseTest(CoursesBaseTest):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data.get("crn"), 60128)
 
-    # def test_student_can_list(self):
-    #     self.client.force_authenticate(user=self.student_enrolled_user)
-    #     response = self.client.get(self.url_list)
-    #     self.assertIn(
-    #         response.status_code,
-    #         [
-    #             status.HTTP_200_OK,
-    #         ],
-    #     )
-    #     self.assertIn(
-    #         response.data[0].get("name"),
-    #         [
-    #             "Principles of Software Engineering",
-    #         ],
-    #     )
+    def test_student_can_list(self):
+        self.client.force_authenticate(user=self.student_enrolled_user)
+        response = self.client.get(self.url_list)
+        print(response.data)
+        self.assertIn(
+            response.status_code,
+            [
+                status.HTTP_200_OK,
+            ],
+        )
+        self.assertIn(
+            response.data[0].get("name"),
+            [
+                "Principles of Software Engineering",
+            ],
+        )
 
     def test_student_enrolled_can_retrieve(self):
         self.client.force_authenticate(user=self.student_enrolled_user)

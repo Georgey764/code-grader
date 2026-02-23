@@ -1,4 +1,4 @@
-import AssignmentUploadPage from "./(helper)/page";
+import AssignmentUploadPage from "./(helper)/AssignmentUploadPage";
 import { use } from "react";
 
 export default function Page({ params }) {

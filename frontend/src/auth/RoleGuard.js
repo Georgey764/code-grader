@@ -17,15 +17,13 @@ export default function RoleGuard({ children, allowedRoles = [] }) {
   }, [allowedRoles, router, user]);
 
   if (isLoading) {
-    // While checking localStorage, show a skeleton or loading bar
     return <LoadingPage />;
+  } else if (!user) {
+    return null;
   }
 
   // If useAuth redirected the user, this prevents the "protected"
   // content from flashing briefly
-  if (!user) {
-    return null;
-  }
 
   if (user && !allowedRoles.includes(user.role)) {
     return null;

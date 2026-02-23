@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from apps.assessments.models import Submission, RubricResult, TestResult
+from apps.assignments.serializers import TestCaseSerializer
 
 
 class RubricResultSerializer(serializers.ModelSerializer):
@@ -15,6 +16,8 @@ class RubricResultSerializer(serializers.ModelSerializer):
 
 
 class TestResultSerializer(serializers.ModelSerializer):
+    test_case = TestCaseSerializer(read_only=True)
+
     class Meta:
         model = TestResult
         fields = "__all__"

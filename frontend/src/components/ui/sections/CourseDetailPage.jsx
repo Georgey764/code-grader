@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import {
   BookOpen,
   FileText,
@@ -11,40 +10,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { LoadingPage } from "@/components/ui/sections";
-import { BackButton } from "@/components/ui/elements";
-import { useMetadata } from "@/context";
 
-const Page = () => {
+const Page = ({ course, role }) => {
   const router = useRouter();
   const { "course-id": courseId } = useParams();
-  const [course, setCourse] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-  const { api } = useMetadata();
-
-  useEffect(() => {
-    const fetchPageData = async () => {
-      try {
-        const response = await api.get(`courses/${courseId}`);
-        setCourse(response.data);
-      } catch (err) {
-        alert(`Error fetching courses`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPageData();
-  }, [api, courseId]);
-
-  if (isLoading) {
-    return <LoadingPage />;
-  }
 
   return (
     <main className="flex-1 transition-all duration-300 p-4">
       {/* Navigation Breadcrumb */}
-      <BackButton link="/student/courses" name={course?.short_name} />
+      <nav className="cursor-pointer flex items-center gap-2 text-text-muted text-xs mb-8 mt-4 md:mt-0">
+        <button className="hover:text-primary flex items-center gap-1 transition-colors">
+          <ArrowLeft size={16} />{" "}
+          <Link href="/student/courses"> Course List</Link>
+        </button>
+        <span>/</span>
+        <span className="font-bold text-xs text-accent uppercase tracking-wider">
+          {course?.short_name}
+        </span>
+      </nav>
 
       {/* Course Header */}
       <header className="mb-12">
@@ -64,16 +47,18 @@ const Page = () => {
           </div>
 
           {/* Course Status Badge */}
-          {/* <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest ${
-              course.is_active
-                ? "bg-green-50 text-green-700 border-green-200"
-                : "bg-red-50 text-error border-error/20"
-            }`}
-          >
-            <Activity size={14} />{" "}
-            {course.is_active ? "Active Course" : "Inactive"}
-          </div> */}
+          {role?.toLowerCase() == "fa" && (
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-widest ${
+                course.is_active
+                  ? "bg-green-50 text-green-700 border-green-200"
+                  : "bg-red-50 text-error border-error/20"
+              }`}
+            >
+              <Activity size={14} />{" "}
+              {course.is_active ? "Active Course" : "Inactive"}
+            </div>
+          )}
         </div>
         <div className="h-[2px] bg-secondary w-24 mt-6" />
       </header>
@@ -125,7 +110,9 @@ const Page = () => {
 
           {/* Go to Assignments */}
           <button
-            onClick={() => router.push(`${courseId}/assignments`)}
+            onClick={() =>
+              router.push(`/student/courses/${courseId}/assignments`)
+            }
             className="cursor-pointer w-full group bg-surface hover:bg-primary hover:border-primary p-6 rounded-lg border border-border shadow-subtle transition-all duration-300 flex items-center justify-between"
           >
             <div className="flex items-center gap-4">
