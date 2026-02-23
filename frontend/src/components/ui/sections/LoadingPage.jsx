@@ -29,11 +29,6 @@ export default function LoadingPage() {
         <div className="animate-loading mt-8 h-1 w-48 overflow-hidden rounded-full bg-border">
           <div className="h-full w-1/3 animate-[loading_2s_ease-in-out_infinite] bg-primary" />
         </div>
-
-        {/* Technical Detail */}
-        <p className="text-caption mt-6 font-mono text-[10px]">
-          STATUS: <span className="text-secondary">FETCHING_WARHAWK_DATA</span>
-        </p>
       </div>
     </div>
   );

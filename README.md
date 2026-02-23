@@ -44,13 +44,13 @@ An artificial intelligence–based code grading system developed as part of the 
     > $docker compose build --no-cache  
     > $docker compose up -d  
 3. Run python migrate command
-    > $dcdev run --rm backend python manage.py migrate  
+    > $docker compose run --rm backend python manage.py migrate  
 4. Run the piston package install command
     > cd piston-engine/cli && npm i && cd -
     > piston-engine/cli/index.js ppman install python=3.9. 
 4. View frontend at localhost:3000 & backend at localhost:8000
 5. To turn off use: 
-    > $dcdev down -v  
+    > $docker compose down -v  
 
 ## Documentation
 
