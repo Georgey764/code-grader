@@ -12,37 +12,22 @@ import {
 import { useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
-const Sidebar = () => {
+const Sidebar = ({ navItems }) => {
   const { name } = useMetadata();
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
-  const navItems = [
-    {
-      icon: <LayoutDashboard size={22} />,
-      label: "Dashboard",
-      route: "/student/",
-    },
-    {
-      icon: <BookOpen size={22} />,
-      label: "Courses",
-      route: "/student/courses",
-    },
-    {
-      icon: <CheckSquare size={22} />,
-      label: "To-Do",
-      route: "/student/to-do",
-    },
-    { icon: <User size={22} />, label: "Profile", route: "/404" },
-    { icon: <Settings size={22} />, label: "Settings", route: "/404" },
-  ];
-
   return (
     <>
       {/* MOBILE HAMBURGER BUTTON - Only visible on small screens */}
+      <div className="drop-shadow shadow-lg md:hidden fixed top-0 left-0 z-[55] bg-primary w-full h-[80px]">
+        <p className="fixed top-[calc(40px-1.5rem)] left-[1rem] text-white font-mono text-[2rem]">
+          {name}
+        </p>
+      </div>
       <button
         onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-[60] p-2 bg-primary text-white rounded-md shadow-lg"
+        className="md:hidden fixed top-4 right-4 z-[60] p-2 bg-primary text-white rounded-md shadow-lg drop-shadow"
       >
         <Menu size={24} />
       </button>
@@ -83,7 +68,7 @@ const Sidebar = () => {
               <button
                 key={index}
                 onClick={() => router.push(item.route)}
-                className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/10 hover:text-secondary transition-all group"
+                className="cursor-pointer flex items-center gap-4 p-3 rounded-lg hover:bg-white/10 hover:text-secondary transition-all group"
               >
                 <div className="min-w-[24px]">{item.icon}</div>
                 <span className="font-medium text-sm lg:block md:hidden truncate">

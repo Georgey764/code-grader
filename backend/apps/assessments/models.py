@@ -15,7 +15,9 @@ class Submission(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # References the student in the course roster
-    roster = models.ForeignKey(Roster, on_delete=models.CASCADE)
+    roster = models.ForeignKey(
+        Roster, on_delete=models.CASCADE, related_name="submissions"
+    )
     # References the specific assignment
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
     # Optional field for group-based work

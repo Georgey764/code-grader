@@ -2,17 +2,22 @@
 
 import { MoreVertical, Book, Hash } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-const CourseList = ({ course }) => {
+const CourseList = ({ course, role }) => {
   const router = useRouter();
 
   return (
     <>
       {course.is_active && (
         <div
-          onClick={() => router.push(`/student/courses/${course.id}`)}
+          onClick={() =>
+            role?.toLowerCase() == "st"
+              ? router.push(`/student/courses/${course.id}`)
+              : router.push(`/faculty/${course.id}`)
+          }
           key={course.id}
-          className="group relative flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-surface border border-border rounded-md shadow-subtle hover:border-secondary transition-all"
+          className="cursor-pointer group relative flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-surface border border-border rounded-md shadow-subtle hover:border-secondary transition-all"
         >
           {/* Main Info Section */}
           <div className="flex items-start gap-5 w-full md:w-auto">

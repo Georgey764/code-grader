@@ -6,6 +6,7 @@ from apps.accounts.shared_serializers import (
     StudentSimpleSerializer,
 )
 from apps.assignments.serializers import AssignmentSerializer
+from apps.assessments.serializers import SubmissionSerializer
 
 
 class CourseSerializer(BaseSerializers):
@@ -39,8 +40,9 @@ class RosterSerializer(BaseSerializers):
     course_id = serializers.PrimaryKeyRelatedField(
         queryset=Course.objects.all(), source="course", write_only=True
     )
+    submissions = SubmissionSerializer(many=True, read_only=True)
 
     class Meta(BaseSerializers.Meta):
         model = Roster
         fields = "__all__"
-        read_only_fields = ["student_profile"]
+        read_only_fields = ["student_profile", "submissions"]

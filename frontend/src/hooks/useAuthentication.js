@@ -84,7 +84,7 @@ export default function useAuthentication() {
     };
 
     checkAuth();
-  }, [router]);
+  }, [router, pathname]);
 
   return { user, isLoading, logout };
 }
