@@ -1,34 +1,13 @@
-from django.urls import path
+from django.urls import path, include
 from apps.courses.views import CourseModelViewset, RosterModelViewSet
+from rest_framework_nested import routers
 
 app_name = "courses"
 
-urlpatterns = [
-    path(
-        "",
-        CourseModelViewset.as_view({"post": "create", "get": "list"}),
-        name="course-list",
-    ),
-    path(
-        "<uuid:pk>/",
-        CourseModelViewset.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="course-detail",
-    ),
-    path(
-        "roster/<uuid:pk>",
-        RosterModelViewSet.as_view({"delete": "destroy"}),
-        name="roster-destroy",
-    ),
-    path(
-        "roster/",
-        RosterModelViewSet.as_view({"get": "list", "post": "create"}),
-        name="roster-create",
-    ),
-]
+router = routers.DefaultRouter()
+router.register(r"", CourseModelViewset, basename="course")
+
+roster_router = routers.NestedDefaultRouter(router, r"", lookup="course")
+roster_router.register(r"rosters", RosterModelViewSet, basename="roster")
+
+urlpatterns = [path("", include(router.urls)), path("", include(roster_router.urls))]

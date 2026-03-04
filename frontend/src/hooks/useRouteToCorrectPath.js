@@ -11,10 +11,10 @@ export default function useRouteToCorrectPath() {
   useEffect(() => {
     if (user) {
       if (user.role == "FA") {
-        router.push("/faculty");
+        router.push("/app/faculty");
       }
       if (user.role == "ST") {
-        router.push("/student");
+        router.push("/app/student/courses");
       }
     }
   }, [user, router]);

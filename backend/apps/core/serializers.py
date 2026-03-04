@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class BaseSerializers(serializers.ModelSerializer):
     class Meta:
+        fields = ["created_at", "updated_at"]
         read_only_fields = ["id", "created_at", "updated_at"]
 
 

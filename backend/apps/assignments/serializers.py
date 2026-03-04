@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from .models import Assignment, RubricCriteria, TestCase
+from apps.assignments.models import (
+    Assignment,
+    RubricCriteria,
+    TestCase,
+    Group,
+    GroupsMembership,
+)
 from apps.core.serializers import BaseSerializers
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class RubricCriteriaSerializer(BaseSerializers):
@@ -18,16 +25,7 @@ class RubricCriteriaSerializer(BaseSerializers):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
-class TestCaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TestCase
-        fields = "__all__"
-
-
 class AssignmentSerializer(BaseSerializers):
-    rubrics = RubricCriteriaSerializer(many=True, read_only=True)
-    test_cases = TestCaseSerializer(many=True, read_only=True)
-
     class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
@@ -39,7 +37,7 @@ class AssignmentSerializer(BaseSerializers):
             "starter_code",
             "max_points_allowed",
             "is_grouped",
-            "rubrics",
+            "rubric_criterias",
             "test_cases",
             "created_at",
             "updated_at",
@@ -53,97 +51,81 @@ class AssignmentSerializer(BaseSerializers):
         return value
 
 
-class AssignmentDetailSerializer(BaseSerializers):
-    """Detailed serializer with nested relationships"""
-
-    rubrics = RubricCriteriaSerializer(many=True, read_only=True)
-    test_cases = TestCaseSerializer(many=True, read_only=True)
-    course_name = serializers.CharField(source="course.name", read_only=True)
-    course_short_name = serializers.CharField(
-        source="course.short_name", read_only=True
-    )
-
-    class Meta(BaseSerializers.Meta):
-        model = Assignment
-        fields = [
-            "id",
-            "course",
-            "course_name",
-            "course_short_name",
-            "name",
-            "description",
-            "deadline",
-            "starter_code",
-            "max_points_allowed",
-            "is_grouped",
-            "rubrics",
-            "test_cases",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+class TestCaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestCase
+        fields = "__all__"
 
 
-class AssignmentListSerializer(BaseSerializers):
-    """Lightweight serializer for list views"""
-
-    course_name = serializers.CharField(source="course.name", read_only=True)
-    rubric_count = serializers.IntegerField(source="rubrics.count", read_only=True)
-    test_case_count = serializers.IntegerField(
-        source="test_cases.count", read_only=True
-    )
-
-    class Meta(BaseSerializers.Meta):
-        model = Assignment
-        fields = [
-            "id",
-            "course",
-            "course_name",
-            "name",
-            "deadline",
-            "max_points_allowed",
-            "is_grouped",
-            "rubric_count",
-            "test_case_count",
-            "created_at",
-        ]
-        read_only_fields = ["id", "created_at"]
-
-
-class AssignmentCreateSerializer(BaseSerializers):
-    """Serializer for creating assignments with nested rubrics and test cases"""
-
-    rubrics = RubricCriteriaSerializer(many=True, required=False)
-    test_cases = TestCaseSerializer(many=True, required=False)
-
-    class Meta(BaseSerializers.Meta):
-        model = Assignment
-        fields = [
-            "id",
-            "course",
-            "name",
-            "description",
-            "deadline",
-            "starter_code",
-            "max_points_allowed",
-            "is_grouped",
-            "rubrics",
-            "test_cases",
-        ]
+class GroupsMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupsMembership
+        fields = ["id", "group", "roster", "is_leader"]
         read_only_fields = ["id"]
+        validators = [
+            UniqueTogetherValidator(
+                queryset=GroupsMembership.objects.all(),
+                fields=["group", "roster"],
+                message="This student is already a member of this group",
+            ),
+        ]
 
-    def create(self, validated_data):
-        rubrics_data = validated_data.pop("rubrics", [])
-        test_cases_data = validated_data.pop("test_cases", [])
+    def validate(self, attrs):
+        # CUSTOM CHECK: Ensure student isn't in another group for this assignment
+        roster = attrs.get("roster")
+        group = attrs.get("group")
 
-        assignment = Assignment.objects.create(**validated_data)
+        if (
+            GroupsMembership.objects.filter(
+                roster=roster, group__assignment=group.assignment
+            )
+            .exclude(group=group)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                "This student is already assigned to a group for this assignment."
+            )
 
-        # Create rubrics
-        for rubric_data in rubrics_data:
-            RubricCriteria.objects.create(assignment=assignment, **rubric_data)
+        return attrs
 
-        # Create test cases
-        for test_case_data in test_cases_data:
-            TestCase.objects.create(assignment=assignment, **test_case_data)
 
-        return assignment
+class GroupSerializer(serializers.ModelSerializer):
+    current_count = serializers.IntegerField(source="memberships.count", read_only=True)
+    group_memberships = GroupsMembershipSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Group
+        fields = [
+            "id",
+            "assignment",
+            "name",
+            "max_members",
+            "current_count",
+            "group_memberships",
+        ]
+        read_only_fields = ["id", "group_memberships"]
+
+    def validate(self, data):
+        """
+        Optional: Check if max_members is a positive integer.
+        """
+        if data.get("max_members", 1) < 1:
+            raise serializers.ValidationError("A group must allow at least 1 member.")
+
+        # 1. Access the assignment object from the validated data
+        assignment = data.get("assignment")
+
+        # 2. Check if the assignment allows grouping
+        # Note: We check this only during 'create' (when assignment is provided)
+        if assignment and not assignment.is_grouped:
+            raise serializers.ValidationError(
+                {
+                    "assignment": "Groups cannot be created for this assignment because is_grouped is False."
+                }
+            )
+
+        # 3. Existing check for max_members
+        if data.get("max_members", 1) < 1:
+            raise serializers.ValidationError("A group must allow at least 1 member.")
+
+        return data

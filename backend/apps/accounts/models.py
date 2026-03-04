@@ -11,6 +11,7 @@ from django.core.exceptions import ValidationError
 class Roles(models.TextChoices):
     FACULTY = "FA", "Faculty"
     STUDENT = "ST", "Student"
+    GRADING_ASSISTANT = "GA", "Grading Assistant"
 
 
 class UserManager(BaseUserManager):
@@ -96,6 +97,32 @@ class StudentProfile(BaseModel):
         if not self.user or self.user.role != Roles.STUDENT:
             raise ValidationError(
                 f"User with the email {self.user.email} is not a student"
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.first_name} - {self.user.cwid}"
+
+
+class GradingAssistantProfile(BaseModel):
+    user = models.OneToOneField(
+        "User",
+        on_delete=models.CASCADE,
+        related_name="grading_assistant_profile",
+    )
+
+    class Meta:
+        db_table = "grading_assistant_profile"
+        verbose_name = "Grading Assistant Profile"
+        verbose_name_plural = "Grading Assistant Profiles"
+
+    def clean(self):
+        if not self.user or self.user.role != Roles.GRADING_ASSISTANT:
+            raise ValidationError(
+                f"User with the email {self.user.email} is not a grading assistant"
             )
 
     def save(self, *args, **kwargs):

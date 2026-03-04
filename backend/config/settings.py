@@ -56,7 +56,6 @@ LOCAL_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.courses",
-    "apps.groups",
     "apps.assignments",
     "apps.assessments",
 ]
