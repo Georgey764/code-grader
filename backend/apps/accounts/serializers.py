@@ -1,9 +1,14 @@
 from apps.core.serializers import BaseSerializers
 from rest_framework import serializers
-from apps.accounts.models import User, Roles, FacultyProfile, StudentProfile
+from apps.accounts.models import (
+    User,
+    Roles,
+    FacultyProfile,
+    StudentProfile,
+    GradingAssistantProfile,
+)
 from django.db import transaction
 from phonenumber_field.phonenumber import to_python
-from apps.courses.serializers import RosterSerializer, CourseSerializer
 
 
 class RegisterSerializer(BaseSerializers):
@@ -73,6 +78,9 @@ class RegisterSerializer(BaseSerializers):
                 classification=classification,
             )
 
+        elif validated_data["role"] == Roles.GRADING_ASSISTANT:
+            GradingAssistantProfile.objects.create(user=user)
+
         return user
 
 
@@ -115,7 +123,6 @@ class UserDetailSerializer(BaseSerializers):
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
-    rosters = RosterSerializer(many=True, read_only=True)
 
     class Meta(BaseSerializers.Meta):
         model = StudentProfile
@@ -143,11 +150,10 @@ class StudentSerializer(BaseSerializers):
 
 class FacultySerializer(BaseSerializers):
     user = UserDetailSerializer()
-    courses = CourseSerializer(many=True, read_only=True)
 
     class Meta(BaseSerializers.Meta):
         model = FacultyProfile
-        fields = ["id", "user", "title", "phone", "courses"]
+        fields = ["id", "user", "title", "phone"]
 
     def to_internal_value(self, data):
         # This runs BEFORE is_valid()
@@ -175,3 +181,31 @@ class FacultySerializer(BaseSerializers):
             raise serializers.ValidationError("Please provide a valid US phone number.")
 
         return phone_obj.as_e164
+
+
+class GradingAssistantSerializer(BaseSerializers):
+    user = UserDetailSerializer()
+
+    class Meta(BaseSerializers.Meta):
+        model = GradingAssistantProfile
+        fields = ["id", "user"]
+
+    def to_internal_value(self, data):
+        # This runs BEFORE is_valid()
+        # We manually inject the user instance into the nested serializer
+        if self.instance and hasattr(self.instance, "user"):
+            self.fields["user"].instance = self.instance.user
+        return super().to_internal_value(data)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)
+        super().update(instance, validated_data)
+        if user_data:
+            # Reuse the shared UserDetailSerializer to update nested user fields
+            user_serializer = UserDetailSerializer(
+                instance.user, data=user_data, partial=True
+            )
+            user_serializer.is_valid(raise_exception=True)
+            user_serializer.save()
+        return instance

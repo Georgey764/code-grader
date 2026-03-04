@@ -1,5 +1,5 @@
 "use client"; // Required for useState in Next.js
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -8,14 +8,58 @@ import {
   Settings,
   Menu,
   X,
+  Home,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
-const Sidebar = ({ navItems }) => {
-  const { name } = useMetadata();
+const navItemsKey = {
+  student: [
+    {
+      icon: <BookOpen size={22} />,
+      label: "Courses",
+      route: "/app/student/courses",
+    },
+    {
+      icon: <Settings size={22} />,
+      label: "Settings",
+      route: "/app/student/settings",
+    },
+  ],
+  faculty: [
+    {
+      icon: <BookOpen size={22} />,
+      label: "Courses",
+      route: "/app/faculty",
+    },
+    {
+      icon: <Settings size={22} />,
+      label: "Settings",
+      route: "/app/faculty/settings",
+    },
+  ],
+  ga: [
+    {
+      icon: <BookOpen size={22} />,
+      label: "Courses",
+      route: "/app/student/courses",
+    },
+    {
+      icon: <Settings size={22} />,
+      label: "Settings",
+      route: "/app/student/settings",
+    },
+  ],
+};
+
+const Sidebar = () => {
+  const { name, user } = useMetadata();
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const navItems = useMemo(() => {
+    return navItemsKey[pathname.split("/")[2]?.toLowerCase()];
+  }, []);
 
   return (
     <>

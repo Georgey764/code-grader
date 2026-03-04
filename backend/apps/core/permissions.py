@@ -2,7 +2,7 @@ from rest_framework.permissions import BasePermission
 from apps.accounts.models import Roles
 
 
-class Is_Faculty(BasePermission):
+class IsFaculty(BasePermission):
     message = "Access denied. Only Faculty accounts can perform this action."
 
     def has_permission(self, request, view):
@@ -12,13 +12,23 @@ class Is_Faculty(BasePermission):
         )
 
 
-class Is_Student(BasePermission):
+class IsStudent(BasePermission):
     message = "Access denied. Only Student accounts can perform this action."
 
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and getattr(request.user, "role", None) == Roles.STUDENT
+        )
+
+
+class IsGradingAssistant(BasePermission):
+    message = "Access denied. Only Grading Assistants can perform this action."
+
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and getattr(request.user, "role", None) == Roles.GRADING_ASSISTANT
         )
 
 
