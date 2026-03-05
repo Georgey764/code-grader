@@ -4,7 +4,31 @@ from apps.accounts.models import User, Roles, FacultyProfile, StudentProfile
 from django.db import transaction
 from phonenumber_field.phonenumber import to_python
 from apps.courses.serializers import RosterSerializer, CourseSerializer
+import re
 
+def validate_name(value):
+    # Name should be at least 2 characters long and no more than 50 characters
+    length = len(value)
+    if length < 2 or length > 50:
+        raise serializers.ValidationError("Name must be at least 2 characters long and no more than 50 characters.")
+
+    # Checks if the name contains a letter, eliminates names that are only hyphens, apostrophes, and/or spaces
+    if not re.search(r"[a-zA-Z]", value):
+        raise serializers.ValidationError("Name must contain at least one letter.")
+    
+    # Name should only contain letters, spaces, hyphens, and apostrophes
+    if not re.match(r"^[a-zA-Z\s'-]+$", value):
+        raise serializers.ValidationError(
+            "Name can only contain letters, spaces, hyphens, and apostrophes."
+        )
+
+    # Name cannot have consecutive hyphens, apostrophes, or spaces
+    if re.search(r"(--|''|\s\s)", value):
+        raise serializers.ValidationError(
+            "Name cannot have consecutive hyphens, apostrophes, or spaces."
+        )
+
+    return value
 
 class RegisterSerializer(BaseSerializers):
     password = serializers.CharField(write_only=True)
@@ -112,6 +136,8 @@ class UserDetailSerializer(BaseSerializers):
             raise serializers.ValidationError("A user with this cwid already exists.")
         return attrs
 
+    first_name = serializers.CharField(validators=[validate_name])
+    last_name = serializers.CharField(validators=[validate_name])
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
