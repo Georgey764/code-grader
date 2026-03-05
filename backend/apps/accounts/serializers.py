@@ -55,6 +55,33 @@ class RegisterSerializer(BaseSerializers):
             "classification",
         ]
 
+    def validate_password(self, value):
+        # Must be at least 8 characters
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        
+        # Must only contain ASCII characters
+        if not value.isascii():
+            raise serializers.ValidationError("Password must only contain ASCII characters.")
+
+        # Must contain an uppercase letter
+        if not re.search(r"[A-Z]", value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        
+        # Must contain a lowercase letter
+        if not re.search(r"[a-z]", value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        
+        # Must contain a number
+        if not re.search(r"[0-9]", value):
+            raise serializers.ValidationError("Password must contain at least one number.")
+        
+        # Must contain a special character
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        return value
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
