@@ -82,6 +82,24 @@ class RegisterSerializer(BaseSerializers):
         
         return value
 
+    def validate_cwid(self, value):
+        # CWID must be a number
+        if not value.isdigit():
+            print(f"Invalid CWID: {value} is not a number.")
+            raise serializers.ValidationError("CWID must contain only digits.")
+        
+        # CWID must be between 8 and 10 digits long
+        if len(value) < 8 or len(value) > 10:
+            print(f"Invalid CWID: {value} does not have a valid length.")
+            raise serializers.ValidationError("CWID must be between 8 and 10 digits long.")
+        
+        # CWID must be positive
+        if int(value) < 0:
+            print(f"Invalid CWID: {value} is not a positive number.")
+            raise serializers.ValidationError("CWID must be a positive number.")
+
+        return value
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
