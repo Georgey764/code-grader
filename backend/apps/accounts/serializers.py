@@ -100,6 +100,33 @@ class RegisterSerializer(BaseSerializers):
 
         return value
 
+    def validate_title(self, value):
+        # Title is required for faculty role
+        if not value:
+            raise serializers.ValidationError("Title cannot be empty.")
+        
+        # Title must be between 2 and 50 characters long
+        if len(value) < 2 or len(value) > 50:
+            raise serializers.ValidationError("Title must be between 2 and 50 characters long.")
+
+        # Title can only contain letters, hyphens, spaces, and periods
+        if not re.match(r"^[a-zA-Z\s\-.]+$", value):
+            raise serializers.ValidationError("Title can only contain letters, hyphens, spaces, and periods.")
+        
+        # Title cannot have consecutive hyphens, spaces, or periods
+        if re.search(r"(--|\s\s|\.\.)", value):
+            raise serializers.ValidationError("Title cannot have consecutive hyphens, spaces, or periods.")
+        
+        # Title cannot have a mix of special characters (e.g., "Professor-Assistant" is valid, but "Professor--Assistant" is not)
+        if re.search(r"([-.][-.])", value):
+            raise serializers.ValidationError("Title cannot have consecutive special characters.")
+
+        # Title cannot contain non-ascii characters
+        if not value.isascii():
+            raise serializers.ValidationError("Title must only contain ASCII characters.")
+
+        return value
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
