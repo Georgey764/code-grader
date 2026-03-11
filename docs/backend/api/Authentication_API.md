@@ -1,12 +1,13 @@
-# Authentication API Documentation
+# Accounts API Documentation
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Authentication](#authentication)
 - [Base URL](#base-url)
 - [Common Headers](#common-headers)
 - [Endpoints](#endpoints)
-  - [Summary](#endpoints-summary)
+  - [Endpoints List](#endpoints-list)
   - [Getting An Access Token](#getting-an-access-token)
 - [Status Codes](#status-codes)
 
@@ -30,22 +31,21 @@ Content-Type: application/json
 
 ## Endpoints
 
-### Endpoints Summary
+### Endpoints List
 
-| Method | Endpoint | Description                              |
-| ------ | -------- | ---------------------------------------- |
-| POST   | /token/  | Retrieves the access and refresh tokens. |
+| Method               | Endpoint | Description                              |
+| -------------------- | -------- | ---------------------------------------- |
+| ${\color{gold}POST}$ | /token/  | Retrieves the access and refresh tokens. |
 
 ### Getting An Access Token
 
-- **Method**: POST
-- **Path**: /token/
+- **Method**: ${\color{gold}POST}$
+- **Path(s)**:
+  - /token/
 - **Auth Required**: No
 - **Description**: Retrieves the access and refresh tokens when provided the user's credentials.
 
-**NOTE**: Use the access token for any requests that requires user authentication.
-
-#### Request Body
+#### Request
 
 ```JSON
 {
@@ -54,16 +54,14 @@ Content-Type: application/json
 }
 ```
 
-##### Request Body Fields
-
-| Field    |  Type  | Required |       Role        | Description          |
-| -------- | :----: | :------: | :---------------: | -------------------- |
-| email    | string |   Yes    | Student + Faculty | User's email address |
-| password | string |   Yes    | Student + Faculty | User's password      |
+| Field    |  Type  | Required? | Description          |
+| :------- | :----: | :-------: | :------------------- |
+| email    | string |    Yes    | User's email address |
+| password | string |    Yes    | User's password      |
 
 #### Responses
 
-**200 OK**
+##### 200 OK
 
 ```JSON
 {
@@ -72,7 +70,23 @@ Content-Type: application/json
 }
 ```
 
-**401 Unauthorized** (Authentication Error)
+| Field   | Type   | Description                                                                          |
+| ------- | ------ | ------------------------------------------------------------------------------------ |
+| refresh | string | Refresh token used to obtain new access tokens when the current access token expires |
+| access  | string | Access token used for authenticating API requests                                    |
+
+##### 400 Bad Request
+
+```JSON
+{
+    "email": [
+        "This field is required."
+    ],
+    ...
+}
+```
+
+##### 401 Unauthorized
 
 ```JSON
 {
@@ -80,9 +94,10 @@ Content-Type: application/json
 }
 ```
 
-| Code                          | Description                                                                                   |
-| ----------------------------- | --------------------------------------------------------------------------------------------- |
-| **200** OK                    | Everything worked as expected.                                                                |
-| **401** Unauthorized          | The request is unauthenticated.                                                               |
-| **404** Not Found             | The server cannot find the requested resource.                                                |
-| **500** Internal Server Error | The server encountered an unexpected condition that prevented it from fulfilling the request. |
+## Status Codes
+
+| Code                 | Description                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **200** OK           | Everything worked as expected.                                                                                                          |
+| **400** Bad Request  | The server cannot process the request due to something the server considered to be a client error. Most likely invalid request message. |
+| **401** Unauthorized | The request is unauthenticated.                                                                                                         |

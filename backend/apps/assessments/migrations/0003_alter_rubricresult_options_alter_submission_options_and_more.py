@@ -5,88 +5,97 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('assessments', '0002_alter_rubricresult_submission_and_more'),
-        ('assignments', '0008_alter_testcase_assignment_alter_testcase_test_input_and_more'),
-        ('courses', '0006_alter_course_faculty_profile_alter_roster_course_and_more'),
-        ('groups', '0005_rename_course_group_assignment'),
+        ("assessments", "0002_alter_rubricresult_submission_and_more"),
+        (
+            "assignments",
+            "0008_alter_testcase_assignment_alter_testcase_test_input_and_more",
+        ),
+        ("courses", "0006_alter_course_faculty_profile_alter_roster_course_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='rubricresult',
+            name="rubricresult",
             options={},
         ),
         migrations.AlterModelOptions(
-            name='submission',
+            name="submission",
             options={},
         ),
         migrations.AlterModelOptions(
-            name='testresult',
+            name="testresult",
             options={},
         ),
         migrations.AlterUniqueTogether(
-            name='rubricresult',
+            name="rubricresult",
             unique_together=set(),
         ),
         migrations.RemoveField(
-            model_name='submission',
-            name='code_submitted',
+            model_name="submission",
+            name="code_submitted",
         ),
         migrations.AddField(
-            model_name='submission',
-            name='submitted_file',
-            field=models.ForeignKey(default=123, on_delete=django.db.models.deletion.PROTECT, to='assignments.testfile'),
+            model_name="submission",
+            name="submitted_file",
+            field=models.ForeignKey(
+                default=123,
+                on_delete=django.db.models.deletion.PROTECT,
+                to="assignments.testfile",
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='rubricresult',
-            name='rubric_criteria',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='assignments.rubriccriteria'),
+            model_name="rubricresult",
+            name="rubric_criteria",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                to="assignments.rubriccriteria",
+            ),
         ),
         migrations.AlterField(
-            model_name='submission',
-            name='assignment',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='assignments.assignment'),
+            model_name="submission",
+            name="assignment",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="assignments.assignment"
+            ),
         ),
         migrations.AlterField(
-            model_name='submission',
-            name='group',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='groups.group'),
+            model_name="submission",
+            name="roster",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="courses.roster"
+            ),
         ),
         migrations.AlterField(
-            model_name='submission',
-            name='roster',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='courses.roster'),
-        ),
-        migrations.AlterField(
-            model_name='testresult',
-            name='execution_time_ms',
+            model_name="testresult",
+            name="execution_time_ms",
             field=models.FloatField(default=123),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='testresult',
-            name='points_earned',
+            model_name="testresult",
+            name="points_earned",
             field=models.FloatField(default=123),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='testresult',
-            name='test_case',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='assignments.testcase'),
+            model_name="testresult",
+            name="test_case",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="assignments.testcase"
+            ),
         ),
         migrations.AlterModelTable(
-            name='rubricresult',
+            name="rubricresult",
             table=None,
         ),
         migrations.AlterModelTable(
-            name='submission',
+            name="submission",
             table=None,
         ),
         migrations.AlterModelTable(
-            name='testresult',
+            name="testresult",
             table=None,
         ),
     ]

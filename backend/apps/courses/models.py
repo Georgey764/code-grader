@@ -1,6 +1,6 @@
 from django.db import models
 from apps.core.models import BaseModel
-from apps.accounts.models import FacultyProfile, StudentProfile
+from apps.accounts.models import FacultyProfile, StudentProfile, GradingAssistantProfile
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
@@ -8,6 +8,13 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 class Course(BaseModel):
     faculty_profile = models.ForeignKey(
         FacultyProfile, on_delete=models.CASCADE, related_name="courses"
+    )
+    grading_assistant_profile = models.ForeignKey(
+        GradingAssistantProfile,
+        on_delete=models.CASCADE,
+        related_name="courses",
+        null=True,
+        blank=True,
     )
     name = models.CharField(max_length=255)
     short_name = models.CharField(max_length=50)

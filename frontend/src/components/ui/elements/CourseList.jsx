@@ -3,18 +3,21 @@
 import { MoreVertical, Book, Hash } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useMetadata } from "@/context";
 
-const CourseList = ({ course, role }) => {
+const CourseList = ({ course }) => {
   const router = useRouter();
+  const { user } = useMetadata();
+  const role = user?.role.toLowerCase();
 
   return (
     <>
       {course.is_active && (
         <div
           onClick={() =>
-            role?.toLowerCase() == "st"
-              ? router.push(`/student/courses/${course.id}`)
-              : router.push(`/faculty/${course.id}`)
+            role == "st"
+              ? router.push(`/app/student/courses/${course.id}`)
+              : router.push(`/app/faculty/${course.id}`)
           }
           key={course.id}
           className="cursor-pointer group relative flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-surface border border-border rounded-md shadow-subtle hover:border-secondary transition-all"

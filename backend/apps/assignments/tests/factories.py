@@ -1,7 +1,13 @@
 import factory
 from django.utils import timezone
-from apps.assignments.models import Assignment, RubricCriteria, TestCase
-from apps.courses.tests.factories import CourseFactory
+from apps.assignments.models import (
+    Assignment,
+    RubricCriteria,
+    TestCase,
+    Group,
+    GroupsMembership,
+)
+from apps.courses.tests.factories import CourseFactory, RosterFactory
 
 
 class AssignmentFactory(factory.django.DjangoModelFactory):
@@ -40,3 +46,23 @@ class TestCaseFactory(factory.django.DjangoModelFactory):
     time_limit = factory.Iterator([5, 10, 30])
     is_hidden = factory.Faker("boolean")
     points_possible = factory.Iterator([5, 10, 20])
+
+
+class GroupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Group
+
+    id = factory.Faker("uuid4")
+    assignment = factory.SubFactory(AssignmentFactory)
+    name = factory.Sequence(lambda n: f"Group {n}")
+    max_members = 4
+
+
+class GroupsMembershipFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = GroupsMembership
+
+    id = factory.Faker("uuid4")
+    group = factory.SubFactory(GroupFactory)
+    roster = factory.SubFactory(RosterFactory)
+    is_leader = False
