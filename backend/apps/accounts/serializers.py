@@ -9,6 +9,7 @@ from apps.accounts.models import (
 )
 from django.db import transaction
 from phonenumber_field.phonenumber import to_python
+import re
 
 def validate_name(value):
     # Name should be at least 2 characters long and no more than 50 characters
