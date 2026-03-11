@@ -2,11 +2,12 @@ import uuid
 from django.db import models
 from apps.courses.models import Roster
 from apps.assignments.models import Assignment, RubricCriteria, TestCase
-from apps.groups.models import Group
+from apps.assignments.models import Group
 from django.db import transaction
+from apps.core.models import BaseModel
 
 
-class Submission(models.Model):
+class Submission(BaseModel):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
         PROCESSING = "PROCESSING", "Processing"
@@ -19,7 +20,9 @@ class Submission(models.Model):
         Roster, on_delete=models.CASCADE, related_name="submissions"
     )
     # References the specific assignment
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE)
+    assignment = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, related_name="submissions"
+    )
     # Optional field for group-based work
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     # Reference to the metadata of the submitted file
@@ -50,7 +53,9 @@ class RubricResult(models.Model):
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="rubric_results"
     )
-    rubric_criteria = models.ForeignKey(RubricCriteria, on_delete=models.CASCADE)
+    rubric_criteria = models.ForeignKey(
+        RubricCriteria, on_delete=models.CASCADE, related_name="rubric_results"
+    )
     points_awarded = models.FloatField()
     optional_feedback = models.TextField(null=True, blank=True)
 
@@ -61,6 +66,12 @@ class RubricResult(models.Model):
         db_table = "rubric_result"
         verbose_name = "Rubric Result"
         verbose_name_plural = "Rubric Results"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission", "rubric_criteria"],
+                name="unique_submission_rubric_criteria",
+            )
+        ]
 
 
 class TestResult(models.Model):

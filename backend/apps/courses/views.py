@@ -1,38 +1,50 @@
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, mixins
 from apps.courses.models import Course, Roster
 from apps.courses.serializers import CourseSerializer, RosterSerializer
-from apps.core.permissions import Is_Faculty, DenyAll
-from apps.courses.permissions import Is_Course_Owner
+from apps.core.permissions import IsFaculty, DenyAll, IsStudent
+from apps.courses.permissions import IsCourseOwner, IsCourseAffiliated, IsRosterOwner
 from apps.accounts.models import Roles, FacultyProfile, StudentProfile
 from rest_framework import status
 from rest_framework.response import Response
-from apps.core.permissions import Is_Student, Is_Faculty
-from apps.courses.permissions import (
-    Is_Course_Affiliated,
-    IsEnrolledStudent,
-)
-from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.generics import get_object_or_404
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
+from rest_framework import serializers
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 
 
 class CourseModelViewset(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related("faculty_profile__user").prefetch_related(
-        "assignments"
-    )
+    queryset = Course.objects.select_related(
+        "faculty_profile__user",
+        "grading_assistant_profile__user",
+    ).prefetch_related("rosters")
     serializer_class = CourseSerializer
+    lookup_field = "id"
 
     def get_permissions(self):
         if self.action in ["create"]:
-            return [Is_Faculty()]
+            return [IsFaculty()]
         elif self.action in ["destroy", "partial_update", "update"]:
-            return [Is_Course_Owner()]
-        elif self.action in ["retrieve", "list"]:
-            return [Is_Course_Affiliated()]
+            return [IsCourseOwner()]
+        elif self.action == "retrieve":
+            return [IsCourseAffiliated()]
+        elif self.action == "list":
+            return [IsAuthenticated()]
         else:
             return [DenyAll()]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+
+        if user.role == Roles.FACULTY:
+            return queryset.filter(faculty_profile__user=user)
+        elif user.role == Roles.STUDENT:
+            return queryset.filter(rosters__student_profile__user=user)
+        elif user.role == Roles.GRADING_ASSISTANT:
+            return queryset.filter(grading_assistant_profile__user=user)
+
+        return Course.objects.none()
 
     def create(self, request, *args, **kwargs):
         faculty_profile_instance = FacultyProfile.objects.filter(
@@ -46,95 +58,80 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
         body_data = request.data
         serializer = self.get_serializer(data=body_data)
-
         serializer.is_valid(raise_exception=True)
-
         serializer.save(faculty_profile=faculty_profile_instance)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def get_queryset(self):
-        user = self.request.user
 
-        if user.is_anonymous:
-            return Course.objects.none()
-        if user.role == Roles.FACULTY:
-            return Course.objects.filter(faculty_profile__user=user)
-        else:
-            roster_list = Roster.objects.filter(student_profile__user=user)
-            course_ids = roster_list.values_list("course__id", flat=True)
-            return Course.objects.filter(id__in=course_ids)
-
-
-class RosterModelViewSet(viewsets.ModelViewSet):
-    queryset = Roster.objects.select_related("course", "student_profile__user")
+class RosterModelViewSet(
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    queryset = Roster.objects.select_related(
+        "course", "student_profile__user"
+    ).prefetch_related("course__assignments")
     serializer_class = RosterSerializer
-
-    # def get_queryset(self):
-    #     if self.request.user.role == Roles.FACULTY:
-    #         faculty_profile_instance = FacultyProfile.objects.filter(
-    #             user=self.request.user
-    #         ).first()
-    #         faculty_owned_course = Course.objects.filter(
-    #             faculty_profile=faculty_profile_instance
-    #         )
-    #         serializer = CourseSerializer(faculty_owned_course, many=True)
-    #         faculty_owned_courses = serializer.data
-    #         owned_courses_id = [
-    #             item["id"] for item in faculty_owned_courses if "id" in item
-    #         ]
-    #         owned_rosters = Roster.objects.filter(course_id__in=owned_courses_id)
-    #         return owned_rosters
-    #     else:
-    #         student_profile_instance = StudentProfile.objects.filter(
-    #             user=self.request.user
-    #         ).first()
-    #         owned_rosters = Roster.objects.filter(
-    #             student_profile_id=student_profile_instance
-    #         )
-    #         return owned_rosters
+    lookup_field = "id"
 
     def get_permissions(self):
         if self.action in ["destroy"]:
-            return [IsEnrolledStudent()]
-        if self.action in ["create"]:
-            return [Is_Student()]
-        if self.action in ["list"]:
-            return [Is_Student()]
+            return [(IsFaculty & IsRosterOwner)()]
+        elif self.action == "create":
+            return [(IsStudent | IsFaculty)()]
+        elif self.action in ["list"]:
+            return [IsAuthenticated()]
+        elif self.action == "leave_course":
+            return [(IsStudent & IsRosterOwner)()]
         return [DenyAll()]
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Roster.objects.select_related("course", "student_profile__user")
 
-        # Filter by the logged-in user's profile
-        queryset = queryset.filter(student_profile__user=user)
+        course_id = self.kwargs.get("course_id")
+        assignment_id = self.request.GET.get("assignment_id")
 
-        # Check for courseId in the query params (e.g., /api/roster/?courseId=5)
-        course_id = self.request.query_params.get("courseId")
-        if course_id:
-            queryset = queryset.filter(course_id=course_id)
+        queryset = super().get_queryset().filter(course_id=course_id)
 
-        return queryset
+        if assignment_id:
+            queryset.filter(course__assignments__id=assignment_id)
 
-    # def get_object(self):
-    #     queryset = self.get_queryset()
-    #     user = self.request.user
-    #     if user.role == Roles.FACULTY:
-    #         raise PermissionDenied("Faculty is not allowed to get rosters")
-    #     obj = get_object_or_404(
-    #         queryset, course_id=self.kwargs["pk"], student_profile__user=user
-    #     )
-    #     return obj
+        if user.role == Roles.STUDENT:
+            return queryset.filter(student_profile__user=user)
 
-    # def get_queryset(self):
-    #     course_pk = self.kwargs.get("pk")
-    #     return Roster.objects.filter(course_id=course_pk)
+        if user.role == Roles.FACULTY:
+            return queryset.filter(course__faculty_profile__user=user)
+
+        if user.role == Roles.GRADING_ASSISTANT:
+            return queryset.filter(course__grading_assistant_profile__user=user)
+
+        return queryset.none()
 
     def perform_create(self, serializer):
-        course_pk = self.request.data.get("course_id")
-        enrolling_course = get_object_or_404(Course, pk=course_pk)
-        student_profile = get_object_or_404(StudentProfile, user=self.request.user)
+        course_id = self.kwargs.get("course_id")
+        cwid = self.request.GET.get("cwid")
+        user = self.request.user
+
+        if not course_id:
+            raise serializers.ValidationError("course_id is required in URL")
+        enrolling_course = get_object_or_404(Course, pk=course_id)
+
+        if user.role == Roles.FACULTY:
+            try:
+                if enrolling_course.faculty_profile.user != user:
+                    raise ValidationError("Error validating faculty ownership")
+            except AttributeError:
+                raise ValidationError("Error validating faculty ownership")
+
+            if not cwid:
+                raise ValidationError({"cwid": "This search param is required"})
+
+            student_profile = get_object_or_404(StudentProfile, user__cwid=cwid)
+        else:
+            student_profile = get_object_or_404(StudentProfile, user=self.request.user)
+
         if Roster.objects.filter(
             course=enrolling_course, student_profile=student_profile
         ).exists():
@@ -142,17 +139,15 @@ class RosterModelViewSet(viewsets.ModelViewSet):
 
         serializer.save(course=enrolling_course, student_profile=student_profile)
 
-    # def destroy(self, request, *args, **kwargs):
-    #     course_pk = self.kwargs.get("pk")
-
-    #     student_profile = get_object_or_404(StudentProfile, user=request.user)
-    #     roster_query = get_object_or_404(
-    #         Roster, course_id=course_pk, student_profile=student_profile
-    #     )
-    #     deleted_count = roster_query.delete()[0]
-    #     message = (
-    #         "Roster entry deleted."
-    #         if deleted_count == 1
-    #         else f"{deleted_count} entries deleted."
-    #     )
-    #     return Response({"message": message}, status=204)
+    @action(detail=False, methods=["delete"], url_path="me")
+    def leave_course(self, request, course_pk=None):
+        """
+        Endpoint: DELETE /courses/<uuid:course_pk>/roster/unenroll/
+        Allows a student to unenroll themselves.
+        """
+        # Find the specific roster record for this user in this course
+        instance = get_object_or_404(
+            Roster, course_id=course_pk, student_profile__user=request.user
+        )
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

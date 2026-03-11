@@ -1,41 +1,32 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import AssignmentViewSet, RubricViewSet, TestCaseViewSet
+from rest_framework_nested import routers
+from apps.assignments.views import (
+    AssignmentViewSet,
+    RubricViewSet,
+    TestCaseViewSet,
+    GroupViewSet,
+    GroupsMembershipViewSet,
+)
+
 
 app_name = "assignments"
 
-
-router = DefaultRouter()
-router.register(r"test-cases", TestCaseViewSet, basename="testcase")
+router = routers.DefaultRouter()
 router.register(r"", AssignmentViewSet, basename="assignment")
 
+test_case_router = routers.NestedDefaultRouter(router, r"", lookup="assignment")
+test_case_router.register(r"test-cases", TestCaseViewSet, basename="testcase")
+
+rubric_criteria_router = routers.NestedDefaultRouter(router, r"", lookup="assignment")
+rubric_criteria_router.register(r"rubric-criteria", RubricViewSet, basename="rubric")
+
+group_router = routers.NestedDefaultRouter(router, r"", lookup="assignment")
+group_router.register(r"groups", GroupViewSet, basename="group")
+
+
 urlpatterns = [
-    # Standard CRUD + Stats + Clone (handled by Router & Actions)
     path("", include(router.urls)),
-    # Nested resources for specific Assignments
-    # path(
-    #     "<uuid:assignment_id>/",
-    #     include(
-    #         [
-    #             path(
-    #                 "rubrics/",
-    #                 RubricViewSet.as_view({"get": "list", "post": "create"}),
-    #                 name="assignment-rubrics",
-    #             ),
-    #             path(
-    #                 "test-cases/",
-    #                 TestCaseViewSet.as_view({"get": "list", "post": "create"}),
-    #                 name="assignment-testcases",
-    #             ),
-    #         ]
-    #     ),
-    # ),
-    # Direct access to children
-    path(
-        "rubrics/<uuid:id>/",
-        RubricViewSet.as_view(
-            {"get": "retrieve", "put": "update", "delete": "destroy"},
-        ),
-        name="rubric-detail",
-    ),
+    path("", include(test_case_router.urls)),
+    path("", include(rubric_criteria_router.urls)),
+    path("", include(group_router.urls)),
 ]

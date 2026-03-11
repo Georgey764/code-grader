@@ -179,6 +179,17 @@ export default function RegisterPage() {
                   />
                   <span className="text-body">Faculty</span>
                 </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    value="GA"
+                    checked={role === "GA"}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <span className="text-body">Grading Assistant</span>
+                </label>
               </div>
             </div>
 

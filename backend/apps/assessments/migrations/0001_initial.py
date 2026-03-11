@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ("assignments", "0004_remove_testcase_test_type"),
         ("courses", "0005_roster_unique_student_course"),
-        ("groups", "0003_remove_group_created_at_remove_group_updated_at_and_more"),
     ]
 
     operations = [
@@ -34,16 +33,6 @@ class Migration(migrations.Migration):
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="submissions",
                         to="assignments.assignment",
-                    ),
-                ),
-                (
-                    "group",
-                    models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="submissions",
-                        to="groups.group",
                     ),
                 ),
                 (
