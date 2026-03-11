@@ -1,5 +1,5 @@
 import pytest
-from backend.apps.accounts.serializers import RegisterSerializer, Roles
+from apps.accounts.serializers import RegisterSerializer, Roles
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("title, is_valid", [

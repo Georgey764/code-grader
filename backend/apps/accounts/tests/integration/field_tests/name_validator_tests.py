@@ -1,5 +1,5 @@
 import pytest
-from backend.apps.accounts.serializers import UserDetailSerializer
+from apps.accounts.serializers import UserDetailSerializer
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("name, is_valid", [

@@ -1,5 +1,5 @@
 import pytest
-from backend.apps.accounts.serializers import RegisterSerializer
+from apps.accounts.serializers import RegisterSerializer
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("password, is_valid", [
