@@ -1,5 +1,5 @@
 import pytest
-from apps.accounts.serializers import UserDetailSerializer
+from apps.accounts.serializers import RegisterSerializer, Roles
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("name, is_valid", [
@@ -26,17 +26,19 @@ from apps.accounts.serializers import UserDetailSerializer
 ])
 def test_validate_name(name, is_valid):
     data = {
-        "user": "testuser",
-        "email": "test@example.com",
-        "password": "testpassword",
         "first_name": name,
         "last_name": name,
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "Password123!",
+        "password_confirm": "Password123!",
         "cwid": "12345678",
-        "role": "Student",
+        "role": Roles.STUDENT,
+        "major": "Computer Science"
     }
-    serializer = UserDetailSerializer(data=data)
-    serializer.is_valid()
-    assert serializer.is_valid() == is_valid
+    serializer = RegisterSerializer(data=data)
+    valid = serializer.is_valid()
+    assert valid == is_valid
     if not is_valid:
         assert "first_name" in serializer.errors or "last_name" in serializer.errors
 
