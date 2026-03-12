@@ -21,6 +21,10 @@ def validate_name(value):
     if not re.search(r"[a-zA-Z]", value):
         raise serializers.ValidationError("Name must contain at least one letter.")
     
+    # Must only contain ASCII characters
+    if not value.isascii():
+        raise serializers.ValidationError("Password must only contain ASCII characters.")
+
     # Name should only contain letters, spaces, hyphens, and apostrophes
     if not re.match(r"^[a-zA-Z\s'-]+$", value):
         raise serializers.ValidationError(
@@ -43,6 +47,7 @@ def validate_password(value):
     # Must only contain ASCII characters
     if not value.isascii():
         raise serializers.ValidationError("Password must only contain ASCII characters.")
+    
     # Must contain an uppercase letter
     if not re.search(r"[A-Z]", value):
         raise serializers.ValidationError("Password must contain at least one uppercase letter.")
@@ -62,22 +67,19 @@ def validate_password(value):
     return value
 
 def validate_cwid(value):
-        # CWID must be a number
-        if not value.isdigit():
-            print(f"Invalid CWID: {value} is not a number.")
-            raise serializers.ValidationError("CWID must contain only digits.")
+    # CWID must be a number
+    if not value.isdigit():
+        raise serializers.ValidationError("CWID must contain only digits.")
         
-        # CWID must be between 8 and 10 digits long
-        if len(value) < 8 or len(value) > 10:
-            print(f"Invalid CWID: {value} does not have a valid length.")
-            raise serializers.ValidationError("CWID must be between 8 and 10 digits long.")
+    # CWID must be between 8 and 10 digits long
+    if len(value) < 8 or len(value) > 10:
+        raise serializers.ValidationError("CWID must be between 8 and 10 digits long.")
         
-        # CWID must be positive
-        if int(value) < 0:
-            print(f"Invalid CWID: {value} is not a positive number.")
-            raise serializers.ValidationError("CWID must be a positive number.")
+    # CWID must be positive
+    if int(value) < 0:
+        raise serializers.ValidationError("CWID must be a positive number.")
 
-        return value
+    return value
 
 def validate_title(value):
     # Title is required for faculty role
@@ -130,6 +132,7 @@ class RegisterSerializer(BaseSerializers):
     last_name = serializers.CharField(validators=[validate_name])
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    cwid = serializers.CharField(validators=[validate_cwid])
     role = serializers.ChoiceField(choices=Roles.choices, required=True)
     title = serializers.CharField(required=False, validators=[validate_title])
     phone = serializers.CharField(required=False)
@@ -235,9 +238,6 @@ class UserDetailSerializer(BaseSerializers):
         if qs.exists():
             raise serializers.ValidationError("A user with this cwid already exists.")
         return attrs
-
-    #first_name = serializers.CharField(validators=[validate_name])
-    #last_name = serializers.CharField(validators=[validate_name])
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
