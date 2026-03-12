@@ -35,59 +35,33 @@ def validate_name(value):
 
     return value
 
-class RegisterSerializer(BaseSerializers):
-    password = serializers.CharField(write_only=True)
-    password_confirm = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(choices=Roles.choices, required=True)
-    title = serializers.CharField(required=False)
-    phone = serializers.CharField(required=False)
-    major = serializers.CharField(required=False)
-    classification = serializers.CharField(required=False)
+def validate_password(value):
+    # Must be at least 8 characters
+    if len(value) < 8:
+        raise serializers.ValidationError("Password must be at least 8 characters long.")
+    
+    # Must only contain ASCII characters
+    if not value.isascii():
+        raise serializers.ValidationError("Password must only contain ASCII characters.")
+    # Must contain an uppercase letter
+    if not re.search(r"[A-Z]", value):
+        raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+    
+    # Must contain a lowercase letter
+    if not re.search(r"[a-z]", value):
+        raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+    
+    # Must contain a number
+    if not re.search(r"[0-9]", value):
+        raise serializers.ValidationError("Password must contain at least one number.")
+    
+    # Must contain a special character
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+        raise serializers.ValidationError("Password must contain at least one special character.")
+    
+    return value
 
-    class Meta(BaseSerializers.Meta):
-        model = User
-        fields = [
-            "email",
-            "first_name",
-            "last_name",
-            "role",
-            "password",
-            "password_confirm",
-            "title",
-            "phone",
-            "cwid",
-            "major",
-            "classification",
-        ]
-
-    def validate_password(self, value):
-        # Must be at least 8 characters
-        if len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters long.")
-        
-        # Must only contain ASCII characters
-        if not value.isascii():
-            raise serializers.ValidationError("Password must only contain ASCII characters.")
-
-        # Must contain an uppercase letter
-        if not re.search(r"[A-Z]", value):
-            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
-        
-        # Must contain a lowercase letter
-        if not re.search(r"[a-z]", value):
-            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
-        
-        # Must contain a number
-        if not re.search(r"[0-9]", value):
-            raise serializers.ValidationError("Password must contain at least one number.")
-        
-        # Must contain a special character
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-            raise serializers.ValidationError("Password must contain at least one special character.")
-        
-        return value
-
-    def validate_cwid(self, value):
+def validate_cwid(value):
         # CWID must be a number
         if not value.isdigit():
             print(f"Invalid CWID: {value} is not a number.")
@@ -105,32 +79,78 @@ class RegisterSerializer(BaseSerializers):
 
         return value
 
-    def validate_title(self, value):
-        # Title is required for faculty role
-        if not value:
-            raise serializers.ValidationError("Title cannot be empty.")
+def validate_title(value):
+    # Title is required for faculty role
+    if not value:
+        raise serializers.ValidationError("Title cannot be empty.")
         
-        # Title must be between 2 and 50 characters long
-        if len(value) < 2 or len(value) > 50:
-            raise serializers.ValidationError("Title must be between 2 and 50 characters long.")
+    # Title must be between 2 and 50 characters long
+    if len(value) < 2 or len(value) > 50:
+        raise serializers.ValidationError("Title must be between 2 and 50 characters long.")
 
-        # Title can only contain letters, hyphens, spaces, and periods
-        if not re.match(r"^[a-zA-Z\s\-.]+$", value):
-            raise serializers.ValidationError("Title can only contain letters, hyphens, spaces, and periods.")
+    # Title can only contain letters, hyphens, spaces, and periods
+    if not re.match(r"^[a-zA-Z\s\-.]+$", value):
+        raise serializers.ValidationError("Title can only contain letters, hyphens, spaces, and periods.")
         
-        # Title cannot have consecutive hyphens, spaces, or periods
-        if re.search(r"(--|\s\s|\.\.)", value):
-            raise serializers.ValidationError("Title cannot have consecutive hyphens, spaces, or periods.")
+    # Title cannot have consecutive hyphens, spaces, or periods
+    if re.search(r"(--|\s\s|\.\.)", value):
+        raise serializers.ValidationError("Title cannot have consecutive hyphens, spaces, or periods.")
         
-        # Title cannot have a mix of special characters (e.g., "Professor-Assistant" is valid, but "Professor--Assistant" is not)
-        if re.search(r"([-.][-.])", value):
-            raise serializers.ValidationError("Title cannot have consecutive special characters.")
+    # Title cannot have a mix of special characters (e.g., "Professor-Assistant" is valid, but "Professor--Assistant" is not)
+    if re.search(r"([-.][-.])", value):
+        raise serializers.ValidationError("Title cannot have consecutive special characters.")
 
-        # Title cannot contain non-ascii characters
-        if not value.isascii():
-            raise serializers.ValidationError("Title must only contain ASCII characters.")
+    # Title cannot contain non-ascii characters
+    if not value.isascii():
+        raise serializers.ValidationError("Title must only contain ASCII characters.")
 
-        return value
+    return value
+
+def validate_major(value):
+    # Major must be between 2 and 50 characters long
+    if len(value) < 2 or len(value) > 50:
+        raise serializers.ValidationError("Major must be between 2 and 50 characters long.")
+
+    # Major can only contain letters and spaces
+    if not re.match(r"^[a-zA-Z\s]+$", value):
+        raise serializers.ValidationError("Major can only contain letters and spaces.")
+        
+    # Major cannot have consecutive spaces
+    if re.search(r"\s\s", value):
+        raise serializers.ValidationError("Major cannot have consecutive spaces.")
+
+    # Major cannot contain non-ascii characters
+    if not value.isascii():
+        raise serializers.ValidationError("Major must only contain ASCII characters.")
+
+    return value
+
+class RegisterSerializer(BaseSerializers):
+    first_name = serializers.CharField(validators=[validate_name])
+    last_name = serializers.CharField(validators=[validate_name])
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(choices=Roles.choices, required=True)
+    title = serializers.CharField(required=False, validators=[validate_title])
+    phone = serializers.CharField(required=False)
+    major = serializers.CharField(required=False, validators=[validate_major])
+    classification = serializers.CharField(required=False)
+
+    class Meta(BaseSerializers.Meta):
+        model = User
+        fields = [
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "password",
+            "password_confirm",
+            "title",
+            "phone",
+            "cwid",
+            "major",
+            "classification",
+        ]
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
@@ -216,8 +236,8 @@ class UserDetailSerializer(BaseSerializers):
             raise serializers.ValidationError("A user with this cwid already exists.")
         return attrs
 
-    first_name = serializers.CharField(validators=[validate_name])
-    last_name = serializers.CharField(validators=[validate_name])
+    #first_name = serializers.CharField(validators=[validate_name])
+    #last_name = serializers.CharField(validators=[validate_name])
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
