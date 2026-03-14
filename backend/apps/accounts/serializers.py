@@ -127,6 +127,13 @@ def validate_major(value):
 
     return value
 
+def validate_classification(value):
+    allowed = ["freshman", "sophomore", "junior", "senior", "graduate"]
+    if not value or not isinstance(value, str) or value.strip().lower() not in allowed:
+        raise serializers.ValidationError("Invalid classification.")
+    
+    return value
+
 class RegisterSerializer(BaseSerializers):
     first_name = serializers.CharField(validators=[validate_name])
     last_name = serializers.CharField(validators=[validate_name])
@@ -137,7 +144,7 @@ class RegisterSerializer(BaseSerializers):
     title = serializers.CharField(required=False, validators=[validate_title])
     phone = serializers.CharField(required=False)
     major = serializers.CharField(required=False, validators=[validate_major])
-    classification = serializers.CharField(required=False)
+    classification = serializers.CharField(required=False, validators=[validate_classification])
 
     class Meta(BaseSerializers.Meta):
         model = User
@@ -204,6 +211,11 @@ class RegisterSerializer(BaseSerializers):
 
 
 class UserDetailSerializer(BaseSerializers):
+    first_name = serializers.CharField(validators=[validate_name])
+    last_name = serializers.CharField(validators=[validate_name])
+    cwid = serializers.CharField(validators=[validate_cwid])
+    role = serializers.ChoiceField(choices=Roles.choices, required=True)
+
     class Meta(BaseSerializers.Meta):
         model = User
         fields = [
@@ -241,6 +253,8 @@ class UserDetailSerializer(BaseSerializers):
 
 class StudentSerializer(BaseSerializers):
     user = UserDetailSerializer()
+    major = serializers.CharField(required=False, validators=[validate_major])
+    classification = serializers.CharField(required=False, validators=[validate_classification])
 
     class Meta(BaseSerializers.Meta):
         model = StudentProfile
@@ -268,6 +282,8 @@ class StudentSerializer(BaseSerializers):
 
 class FacultySerializer(BaseSerializers):
     user = UserDetailSerializer()
+    title = serializers.CharField(required=False, validators=[validate_title])
+    phone = serializers.CharField(required=False)
 
     class Meta(BaseSerializers.Meta):
         model = FacultyProfile
