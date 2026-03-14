@@ -38,8 +38,34 @@ export default function CreateCoursePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setMessage({ type: "", text: "" });
+
+    // Validation: CRN exactly 5 digits
+    if (!/^\d{5}$/.test(formData.crn.trim())) {
+      setMessage({
+        type: "error",
+        text: "CRN must be exactly 5 digits (numbers only).",
+      });
+      return;
+    }
+    // Short name: letters and numbers only
+    if (!/^[A-Za-z0-9]+$/.test(formData.short_name.trim())) {
+      setMessage({
+        type: "error",
+        text: "Short name may only contain letters and numbers.",
+      });
+      return;
+    }
+    // Full course name: letters only (allow spaces between words)
+    if (!/^[A-Za-z\s]+$/.test(formData.name.trim())) {
+      setMessage({
+        type: "error",
+        text: "Full course name may only contain letters (and spaces).",
+      });
+      return;
+    }
+
+    setLoading(true);
 
     // Prepare data: Ensure GA is null if not needed
     const submissionData = {
@@ -87,10 +113,17 @@ export default function CreateCoursePage() {
                 <input
                   required
                   maxLength={5}
+                  minLength={5}
                   name="crn"
                   value={formData.crn}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "");
+                    setFormData((prev) => ({ ...prev, crn: v }));
+                  }}
                   placeholder="e.g. 10293"
+                  pattern="^\d{5}$"
+                  title="CRN must be exactly 5 digits."
+                  inputMode="numeric"
                   className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none transition-all font-mono"
                 />
               </div>
@@ -104,8 +137,13 @@ export default function CreateCoursePage() {
                   required
                   name="short_name"
                   value={formData.short_name}
-                  onChange={handleChange}
-                  placeholder="e.g. CSCI 4060"
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^A-Za-z0-9]/g, "");
+                    setFormData((prev) => ({ ...prev, short_name: v }));
+                  }}
+                  placeholder="e.g. CSCI4060"
+                  pattern="^[A-Za-z0-9]+$"
+                  title="Short name may only contain letters and numbers."
                   className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none transition-all"
                 />
               </div>
@@ -119,8 +157,13 @@ export default function CreateCoursePage() {
                   required
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^A-Za-z\s]/g, "");
+                    setFormData((prev) => ({ ...prev, name: v }));
+                  }}
                   placeholder="e.g. Software Engineering Fundamentals"
+                  pattern="^[A-Za-z\s]+$"
+                  title="Full course name may only contain letters and spaces."
                   className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none transition-all"
                 />
               </div>
