@@ -28,7 +28,6 @@ services:
     ports:
       - "6379:6379"
 
-
   localstack:
     container_name: localstack
     build:
@@ -56,8 +55,6 @@ services:
     networks:
       - app-network
   
-    
-
   backend:
     container_name: backend
     depends_on:
