@@ -37,18 +37,14 @@ class AssignmentSerializer(BaseSerializers):
             "starter_code",
             "max_points_allowed",
             "is_grouped",
+            "language",  # Added
+            "is_file_input",  # Added
             "rubric_criterias",
             "test_cases",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
-
-    def validate_max_points_allowed(self, value):
-        """Ensure max points is positive"""
-        if value <= 0:
-            raise serializers.ValidationError("Max points must be greater than 0")
-        return value
 
 
 class TestCaseSerializer(serializers.ModelSerializer):

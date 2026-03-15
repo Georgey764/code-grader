@@ -1,7 +1,7 @@
 from celery import shared_task
 from apps.assessments.models import Submission, TestResult
-from apps.assessments.services import run_untrusted_python
-from apps.assignments.models import TestCase
+from apps.assessments.services import run_untrusted_python, run_untrusted_java
+from apps.assignments.models import Assignment, TestCase
 
 
 @shared_task
@@ -13,7 +13,10 @@ def run_submission_tests_task(submission_id):
         return f"Submission {submission_id} not found."
 
     # Your logic (Copied from your View)
-    test_case_objects = TestCase.objects.filter(assignment__pk=submission.assignment.pk)
+    assignment = submission.assignment
+    language = assignment.language
+    is_file_input = assignment.is_file_input
+    test_case_objects = TestCase.objects.filter(assignment__pk=assignment.pk)
 
     test_cases = [
         {
@@ -31,7 +34,10 @@ def run_submission_tests_task(submission_id):
     try:
         submission.update_test_status(status=Submission.Status.PROCESSING)
         submission.save()
-        results = run_untrusted_python(student_code, test_cases)
+        if language == Assignment.Language.PYTHON:
+            results = run_untrusted_python(student_code, test_cases, is_file_input)
+        if language == Assignment.Language.JAVA:
+            results = run_untrusted_java(student_code, test_cases, is_file_input)
         TestResult.save_test_results(submission, results)
 
         return f"Success for submission {submission_id}"

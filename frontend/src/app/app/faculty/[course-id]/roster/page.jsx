@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
-import { Roster } from "@/components/graders/elements";
+import { RosterMain } from "@/components/graders/elements";
 import { Users, Search, IdCard, AlertTriangle, X } from "lucide-react";
 
 export default function RosterListPage() {
@@ -20,6 +20,15 @@ export default function RosterListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Function to handle navigation to student-specific results
+  const handleViewResults = (rosterId) => {
+    // Path becomes: /app/faculty/[course-id]/roster/[roster-id]/results
+    router.push(`${pathname}/${rosterId}`);
+  };
 
   useEffect(() => {
     const fetchRoster = async () => {
@@ -107,10 +116,11 @@ export default function RosterListPage() {
         </div>
       </div>
 
-      <Roster
+      <RosterMain
         searchTerm={searchTerm}
         rosters={filteredRoster}
         onDelete={confirmDelete}
+        onViewResults={handleViewResults}
       />
 
       {/* --- Confirmation Modal --- */}

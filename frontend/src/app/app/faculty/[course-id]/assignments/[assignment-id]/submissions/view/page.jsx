@@ -36,8 +36,6 @@ export default function SubmissionsPage() {
   const [assignmentData, setAssignmentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewingResults, setViewingResults] = useState(null);
-
-  // Grading State
   const [gradingSubmission, setGradingSubmission] = useState(null);
 
   useEffect(() => {
@@ -84,7 +82,6 @@ export default function SubmissionsPage() {
         <EmptyState />
       ) : (
         <div className="space-y-4">
-          {/* Mobile Card List */}
           <div className="md:hidden space-y-4">
             {submissions.map((sub, index) => (
               <SubmissionCard
@@ -101,7 +98,6 @@ export default function SubmissionsPage() {
             ))}
           </div>
 
-          {/* Desktop Table */}
           <div className="hidden md:block bg-surface border border-border rounded-xl overflow-hidden shadow-subtle">
             <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
               <thead className="bg-background border-b border-border">
@@ -112,7 +108,7 @@ export default function SubmissionsPage() {
                   <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">
                     Timestamp
                   </th>
-                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] w-32">
+                  <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] w-40">
                     Status
                   </th>
                   <th className="px-6 py-4 text-[10px] font-black text-text-muted uppercase tracking-[0.2em] text-right w-80">
@@ -140,7 +136,6 @@ export default function SubmissionsPage() {
         </div>
       )}
 
-      {/* Grading Modal */}
       {gradingSubmission && (
         <GradingModal
           submission={gradingSubmission}
@@ -148,6 +143,136 @@ export default function SubmissionsPage() {
           onClose={() => setGradingSubmission(null)}
         />
       )}
+    </div>
+  );
+}
+
+/** * --- Component: Grading Logic Helper --- */
+function getGradingInfo(sub, rubricCriteriaCount) {
+  const gradedCount = sub?.rubric_results?.length || 0;
+
+  if (rubricCriteriaCount === 0)
+    return { label: "No Rubric", color: "text-slate-400" };
+  if (gradedCount === 0) return { label: "Ungraded", color: "text-error" };
+  if (gradedCount < rubricCriteriaCount)
+    return {
+      label: `Partial (${gradedCount}/${rubricCriteriaCount})`,
+      color: "text-secondary",
+    };
+  return { label: "Fully Graded", color: "text-green-600" };
+}
+
+/** * --- Sub-Components: Row & Card --- */
+function SubmissionRow({
+  sub,
+  index,
+  isLatest,
+  rubricCriteriaCount,
+  onViewResults,
+  onGrade,
+}) {
+  const grading = getGradingInfo(sub, rubricCriteriaCount);
+
+  return (
+    <tr className="hover:bg-slate-50/50 transition-colors group">
+      <td className="px-6 py-4 font-black text-accent text-sm">
+        <Hash size={14} className="inline mr-2 text-secondary" />
+        {index}
+        {isLatest && (
+          <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/40 text-[9px] font-black uppercase tracking-widest text-secondary">
+            Latest
+          </span>
+        )}
+      </td>
+      <td className="px-6 py-4 text-xs font-bold text-accent">
+        <div className="flex flex-col gap-1">
+          <span>
+            <Calendar size={14} className="inline mr-2 text-primary" />
+            {new Date(sub.created_at).toLocaleString()}
+          </span>
+          <span
+            className={`text-[9px] font-black uppercase tracking-widest ${grading.color}`}
+          >
+            {grading.label}
+          </span>
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <StatusBadge status={sub.status} />
+      </td>
+      <td className="px-6 py-4 text-right">
+        <div className="flex items-center justify-end gap-3">
+          <ActionButton
+            onClick={() => onGrade(sub)}
+            icon={<ClipboardCheck size={14} />}
+            label="Grade"
+          />
+          {sub.submitted_file && (
+            <a
+              href={sub.submitted_file}
+              download
+              target="_blank"
+              className="text-text-muted hover:text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-colors"
+            >
+              <FileDown size={14} /> File
+            </a>
+          )}
+          <button
+            onClick={() => onViewResults(sub.test_results)}
+            className="text-primary hover:text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all"
+          >
+            View Results <ChevronRight size={14} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function SubmissionCard({
+  sub,
+  index,
+  isLatest,
+  rubricCriteriaCount,
+  onViewResults,
+  onGrade,
+}) {
+  const grading = getGradingInfo(sub, rubricCriteriaCount);
+
+  return (
+    <div className="bg-surface border border-border rounded-lg shadow-sm p-5 space-y-4">
+      <div className="flex justify-between items-center">
+        <span className="font-black text-accent text-xs uppercase tracking-widest">
+          Attempt {index}
+          {isLatest && (
+            <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/40 text-[9px] font-black uppercase tracking-widest text-secondary">
+              Latest
+            </span>
+          )}
+        </span>
+        <div className="flex flex-col items-end gap-1">
+          <StatusBadge status={sub.status} />
+          <span
+            className={`text-[9px] font-black uppercase tracking-widest ${grading.color}`}
+          >
+            {grading.label}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={() => onGrade(sub)}
+          className="flex-1 py-3 bg-secondary/10 text-secondary border border-secondary/20 rounded font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
+        >
+          <ClipboardCheck size={14} /> Grade Attempt
+        </button>
+        <button
+          onClick={() => onViewResults(sub.test_results)}
+          className="flex-1 py-3 bg-primary text-white rounded font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
+        >
+          Results <ChevronRight size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -429,125 +554,6 @@ export function GradingModal({ submission, assignmentId, onClose }) {
   );
 
   return createPortal(modalContent, document.body);
-}
-
-/** * --- Sub-Components: Row & Card --- */
-function SubmissionRow({
-  sub,
-  index,
-  isLatest = false,
-  rubricCriteriaCount = 0,
-  onViewResults,
-  onGrade,
-}) {
-  const gradedCount = sub?.rubric_results?.length || 0;
-  const isGraded =
-    rubricCriteriaCount > 0 && gradedCount >= rubricCriteriaCount;
-
-  return (
-    <tr className="hover:bg-slate-50/50 transition-colors group">
-      <td className="px-6 py-4 font-black text-accent text-sm">
-        <Hash size={14} className="inline mr-2 text-secondary" />
-        {index}
-        {isLatest && (
-          <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/40 text-[9px] font-black uppercase tracking-widest text-secondary">
-            Latest
-          </span>
-        )}
-      </td>
-      <td className="px-6 py-4 text-xs font-bold text-accent">
-        <div className="flex flex-col gap-1">
-          <span>
-            <Calendar size={14} className="inline mr-2 text-primary" />
-            {new Date(sub.created_at).toLocaleString()}
-          </span>
-          {rubricCriteriaCount > 0 && (
-            <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">
-              {isGraded ? "Graded" : "Not graded"}
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <StatusBadge status={sub.status} />
-      </td>
-      <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-3">
-          <ActionButton
-            onClick={() => onGrade(sub)}
-            icon={<ClipboardCheck size={14} />}
-            label="Grade"
-          />
-          {sub.submitted_file && (
-            <a
-              href={sub.submitted_file}
-              download
-              target="_blank"
-              className="text-text-muted hover:text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-colors"
-            >
-              <FileDown size={14} /> File
-            </a>
-          )}
-          <button
-            onClick={() => onViewResults(sub.test_results)}
-            className="text-primary hover:text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all"
-          >
-            View Results <ChevronRight size={14} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-function SubmissionCard({
-  sub,
-  index,
-  isLatest = false,
-  rubricCriteriaCount = 0,
-  onViewResults,
-  onGrade,
-}) {
-  const gradedCount = sub?.rubric_results?.length || 0;
-  const isGraded =
-    rubricCriteriaCount > 0 && gradedCount >= rubricCriteriaCount;
-
-  return (
-    <div className="bg-surface border border-border rounded-lg shadow-sm p-5 space-y-4">
-      <div className="flex justify-between items-center">
-        <span className="font-black text-accent text-xs uppercase tracking-widest">
-          Attempt {index}
-          {isLatest && (
-            <span className="ml-3 inline-flex items-center px-2 py-0.5 rounded-full bg-secondary/10 border border-secondary/40 text-[9px] font-black uppercase tracking-widest text-secondary">
-              Latest
-            </span>
-          )}
-        </span>
-        <div className="flex flex-col items-end gap-1">
-          <StatusBadge status={sub.status} />
-          {rubricCriteriaCount > 0 && (
-            <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">
-              {isGraded ? "Graded" : "Not graded"}
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={() => onGrade(sub)}
-          className="flex-1 py-3 bg-secondary/10 text-secondary border border-secondary/20 rounded font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
-        >
-          <ClipboardCheck size={14} /> Grade Attempt
-        </button>
-        <button
-          onClick={() => onViewResults(sub.test_results)}
-          className="flex-1 py-3 bg-primary text-white rounded font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-2"
-        >
-          Results <ChevronRight size={14} />
-        </button>
-      </div>
-    </div>
-  );
 }
 
 function ActionButton({ onClick, icon, label }) {

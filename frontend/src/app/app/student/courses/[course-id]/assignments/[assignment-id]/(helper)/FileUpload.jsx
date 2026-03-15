@@ -3,10 +3,31 @@
 import React from "react";
 import { CloudUpload, FileCode, X, CheckCircle2 } from "lucide-react";
 
-export default function FileUpload({ handleUpload, file, setFile, children }) {
+export default function FileUpload({
+  handleUpload,
+  file,
+  setFile,
+  language,
+  children,
+}) {
+  // Determine file requirements based on schema ENUM
+  const isJava = language === "java";
+  const extension = isJava ? ".java" : ".py";
+  const displayLang = isJava ? "Java" : "Python";
+
   const onFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+
+      // Basic validation check for extension
+      if (!selectedFile.name.endsWith(extension)) {
+        alert(
+          `Invalid file type. Please upload a ${displayLang} source file (${extension}).`,
+        );
+        return;
+      }
+
+      setFile(selectedFile);
     }
   };
 
@@ -24,7 +45,7 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
             Submit Your Code
           </h2>
           <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold mt-1">
-            Python Source File (.py)
+            {displayLang} Source File ({extension})
           </p>
         </div>
         <div className="flex items-center">{children}</div>
@@ -44,7 +65,6 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
             `}
           >
             <div className="flex flex-col items-center justify-center p-6 text-center">
-              {/* Dynamic Icon State */}
               <div
                 className={`mb-4 p-4 rounded-full transition-transform duration-500 ${
                   file
@@ -61,7 +81,7 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
                     {file.name}
                   </p>
                   <p className="text-[10px] text-secondary font-bold uppercase tracking-widest flex items-center justify-center gap-1">
-                    <CheckCircle2 size={12} /> Ready for upload
+                    <CheckCircle2 size={12} /> Ready for evaluation
                   </p>
                 </div>
               ) : (
@@ -73,7 +93,7 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
                     <span className="hidden sm:inline"> or drag and drop</span>
                   </p>
                   <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-medium opacity-60">
-                    Maximum size: 5MB
+                    Expected format: {extension}
                   </p>
                 </div>
               )}
@@ -81,13 +101,12 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
 
             <input
               type="file"
-              accept=".py"
+              accept={extension} // Restricted by assignment language
               className="hidden"
               onChange={onFileChange}
             />
           </label>
 
-          {/* Clear Selection Button */}
           {file && (
             <button
               onClick={clearFile}
@@ -99,7 +118,6 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
           )}
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={!file}
@@ -112,7 +130,9 @@ export default function FileUpload({ handleUpload, file, setFile, children }) {
             }
           `}
         >
-          {file ? "Begin Grading Sequence" : "Select a File to Continue"}
+          {file
+            ? `Begin ${displayLang} Grading Sequence`
+            : `Select a ${extension} File`}
         </button>
       </form>
     </section>

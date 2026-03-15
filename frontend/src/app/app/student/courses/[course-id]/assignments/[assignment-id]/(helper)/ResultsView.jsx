@@ -8,6 +8,8 @@ import {
   ShieldAlert,
   ChevronRight,
   Trophy,
+  CornerDownRight,
+  Code2,
 } from "lucide-react";
 
 export default function ResultsView({
@@ -35,22 +37,22 @@ export default function ResultsView({
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* --- Summary Overview Card --- */}
       <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
-        <div className="p-1 bg-primary w-full" /> {/* Warhawk Maroon Accent */}
+        <div className="p-1 bg-primary w-full" />
         <div className="p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-h2 border-none pb-0 uppercase tracking-tighter flex items-center gap-2">
               <Terminal size={24} className="text-primary" />
-              Autograder Test Summary
+              Evaluation Summary
             </h2>
             <p className="text-caption mt-1 italic">
-              Automated public test case results for this submission.
+              Automated and manual grading results for this attempt.
             </p>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1">
-                Autograder Points Awarded
+                Autograder Score
               </p>
               <p className="text-3xl font-black text-secondary leading-none">
                 {totalEarned}
@@ -61,31 +63,16 @@ export default function ResultsView({
         </div>
       </div>
 
-      {/* --- Rubric Evaluation (if graded) --- */}
+      {/* --- Rubric Evaluation Section --- */}
       {hasRubric && (
         <div className="space-y-4">
           <h3 className="text-[10px] font-black text-accent uppercase tracking-[0.2em] px-2 flex items-center gap-2">
             <ChevronRight size={14} className="text-secondary" />
-            Rubric Evaluation (Instructor Grading)
+            Instructor Rubric Results
           </h3>
-
           <div className="space-y-3">
-            <div className="flex items-center justify-between px-3 py-2 bg-background rounded border border-border">
-              <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">
-                Total Rubric Points Awarded
-              </span>
-              <span className="text-sm font-black text-secondary">
-                {rubricTotal}
-              </span>
-            </div>
-
             {rubricResults.map((res, index) => {
               const criterion = res.rubric_criteria_detail;
-              const name =
-                criterion?.name || `Criterion ${index + 1}`;
-              const description = criterion?.description;
-              const maxPts = criterion?.max_points;
-
               return (
                 <div
                   key={res.id || index}
@@ -96,24 +83,23 @@ export default function ResultsView({
                       <div className="flex items-center gap-2">
                         <Trophy size={14} className="text-secondary" />
                         <span className="text-xs font-black uppercase tracking-widest text-accent">
-                          {name}
+                          {criterion?.name || `Criterion ${index + 1}`}
                         </span>
                       </div>
-                      {description && (
+                      {criterion?.description && (
                         <p className="text-[11px] text-text-muted leading-snug">
-                          {description}
+                          {criterion.description}
                         </p>
                       )}
                     </div>
-                    <span className="text-xs font-bold text-accent">
-                      {res.points_awarded}
-                      {typeof maxPts === "number" ? ` / ${maxPts}` : ""} pts
+                    <span className="text-xs font-bold text-accent shrink-0">
+                      {res.points_awarded} / {criterion?.max_points || "?"} pts
                     </span>
                   </div>
                   {res.optional_feedback && (
-                    <p className="text-[11px] text-text-muted leading-relaxed">
-                      {res.optional_feedback}
-                    </p>
+                    <div className="mt-2 p-2 bg-slate-50 border-l-2 border-secondary rounded-r text-[11px] text-text-muted italic">
+                      &quot;{res.optional_feedback}&quot;
+                    </div>
                   )}
                 </div>
               );
@@ -122,19 +108,19 @@ export default function ResultsView({
         </div>
       )}
 
-      {/* --- Individual Test Case Breakdown --- */}
+      {/* --- Detailed Test Case Breakdown --- */}
       <div className="space-y-4">
         <h3 className="text-[10px] font-black text-accent uppercase tracking-[0.2em] px-2 flex items-center gap-2">
           <ChevronRight size={14} className="text-secondary" />
-          Detailed Breakdown
+          Test Execution Details
         </h3>
 
         {results.map((test, index) => {
-          // Faculty can see hidden tests, but students cannot
           if (test?.test_case?.is_hidden) return null;
 
           const isSuccess = test?.is_success;
           const points = test?.test_case?.points || 0;
+          const testCase = test?.test_case;
 
           return (
             <div
@@ -143,17 +129,17 @@ export default function ResultsView({
                 isSuccess ? "border-green-500" : "border-error"
               }`}
             >
-              <div className="p-5 flex flex-col gap-4">
-                {/* Status Header */}
+              <div className="p-5 space-y-6">
+                {/* Header: Title and Points */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div
                       className={isSuccess ? "text-green-500" : "text-error"}
                     >
                       {isSuccess ? (
-                        <CheckCircle2 size={20} />
+                        <CheckCircle2 size={22} />
                       ) : (
-                        <XCircle size={20} />
+                        <XCircle size={22} />
                       )}
                     </div>
                     <div>
@@ -161,7 +147,7 @@ export default function ResultsView({
                         Test Case {index + 1}
                       </h4>
                       <p className="text-[10px] text-text-muted font-mono">
-                        UID: {test?.test_case?.id?.slice(0, 8)}
+                        UID: {testCase?.id?.slice(0, 8)}
                       </p>
                     </div>
                   </div>
@@ -185,24 +171,52 @@ export default function ResultsView({
                   </div>
                 </div>
 
-                {/* Technical Output (Stdout/Stderr) */}
-                {(test?.stdout || test?.stderr) && (
-                  <div className="mt-2 space-y-2">
+                {/* Requirements: Input & Expected Output */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
-                      <Terminal size={12} /> Console Logs
+                      <CornerDownRight size={12} className="text-secondary" />{" "}
+                      Standard Input
                     </p>
-                    <div className="code-block bg-code-bg text-code-string p-4 rounded-md text-xs font-mono border-l-0 overflow-x-auto max-h-40">
+                    <pre className="p-3 bg-slate-50 border border-border rounded text-[11px] font-mono text-accent min-h-[50px] overflow-x-auto">
+                      {testCase?.input_text || (
+                        <span className="italic opacity-50">
+                          No input provided
+                        </span>
+                      )}
+                    </pre>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                      <CheckCircle2 size={12} className="text-primary" />{" "}
+                      Expected Output
+                    </p>
+                    <pre className="p-3 bg-slate-50 border border-border rounded text-[11px] font-mono text-accent min-h-[50px] overflow-x-auto">
+                      {testCase?.expected_output || (
+                        <span className="italic opacity-50">
+                          No output expected
+                        </span>
+                      )}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Actual Results: Stdout/Stderr */}
+                {(test?.stdout || test?.stderr) && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <p className="text-[9px] font-black text-text-muted uppercase tracking-widest flex items-center gap-2">
+                      <Code2 size={12} /> Execution Logs
+                    </p>
+                    <div className="code-block bg-[#1e1e1e] text-slate-300 p-4 rounded-md text-xs font-mono overflow-x-auto max-h-48 border border-white/5">
                       {test?.stdout && (
-                        <div className="mb-2 whitespace-pre-wrap">
-                          <span className="text-code-keyword mr-2">
-                            $ stdout:
-                          </span>
+                        <div className="mb-2 whitespace-pre-wrap text-white">
+                          <span className="text-green-400 mr-2">$ stdout:</span>
                           {test.stdout}
                         </div>
                       )}
                       {test?.stderr && (
-                        <div className="text-error/90 whitespace-pre-wrap">
-                          <span className="font-bold mr-2">$ stderr:</span>
+                        <div className="text-red-400 whitespace-pre-wrap font-bold">
+                          <span className="mr-2">$ stderr:</span>
                           {test.stderr}
                         </div>
                       )}
@@ -215,16 +229,15 @@ export default function ResultsView({
         })}
       </div>
 
-      {/* --- Footer / Note --- */}
-      <div className="p-4 bg-background border border-border border-dashed rounded-lg flex gap-3 items-start">
+      {/* --- Compliance Footer --- */}
+      <footer className="p-4 bg-background border border-border border-dashed rounded-lg flex gap-3 items-start opacity-70">
         <ShieldAlert size={18} className="text-text-muted shrink-0 mt-0.5" />
-        <p className="text-[11px] text-text-muted leading-relaxed">
-          <strong className="text-accent uppercase">Privacy Note:</strong> Your
-          code was executed in a sandboxed environment. Any hidden test cases
-          are not shown here but are calculated in your final grade on the
-          dashboard.
+        <p className="text-[10px] text-text-muted leading-relaxed uppercase tracking-wide">
+          <strong className="text-accent">Integrity Notice:</strong> Hidden test
+          cases contribute to the aggregate grade but are omitted here to
+          prevent hard-coding.
         </p>
-      </div>
+      </footer>
     </section>
   );
 }

@@ -5,6 +5,12 @@ from apps.courses.models import Course, Roster
 
 
 class Assignment(BaseModel):
+    # Enum choices for language
+    class Language(models.TextChoices):
+        PYTHON = "python", "python"
+        JAVA = "java", "java"
+
+    # Existing fields...
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     course = models.ForeignKey(
         Course, on_delete=models.CASCADE, related_name="assignments"
@@ -16,13 +22,16 @@ class Assignment(BaseModel):
     max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
+    # Updated fields based on your requirements
+    language = models.CharField(
+        max_length=10, choices=Language.choices, default=Language.PYTHON
+    )
+    is_file_input = models.BooleanField(default=False)
+
     class Meta:
         db_table = "assignment"
         verbose_name = "Assignment"
         verbose_name_plural = "Assignments"
-
-    def __str__(self):
-        return self.name
 
 
 class RubricCriteria(BaseModel):

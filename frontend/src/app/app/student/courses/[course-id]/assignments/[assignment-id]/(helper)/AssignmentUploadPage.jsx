@@ -149,7 +149,9 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
           {status === "list" && (
             <SubmissionList
               submissions={submissions}
-              rubricCriteriaCount={assignmentData?.rubric_criterias?.length || 0}
+              rubricCriteriaCount={
+                assignmentData?.rubric_criterias?.length || 0
+              }
               onSelectSubmission={(sub) => {
                 setResults(sub.test_results || []);
                 setRubricResults(sub.rubric_results || []);
@@ -175,6 +177,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
                 file={file}
                 setFile={setFile}
                 handleUpload={handleUpload}
+                language={assignmentData?.language} // Pass language from schema
               >
                 <button
                   onClick={() => resetWorkflow("list")}
