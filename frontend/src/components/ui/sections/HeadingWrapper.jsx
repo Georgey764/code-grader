@@ -55,6 +55,22 @@ const linker = {
     ),
   },
   // Faculty Assignment Detail
+  "/app/faculty/id/assignments/id": {
+    name: "Assignment Detail",
+    message: "View Assignment Detail Selected Assignment",
+    buttonIn: (
+      <CreateButton message="Edit Assignment" childLink="edit-assignment" />
+    ),
+  },
+  // Edit Faculty Assignment Detail
+  "/app/faculty/id/assignments/id/edit-assignment": {
+    name: "Edit Assignment Detail",
+    message: "Edit Assignment Detail Selected Assignment",
+    buttonIn: (
+      <CreateButton message="Edit Assignment" childLink="edit-assignment" />
+    ),
+  },
+  // Faculty Assignment Submissions Detail
   "/app/faculty/id/assignments/id/submissions": {
     name: "Submissions",
     message: "View all Submissions for Selected Assignment",

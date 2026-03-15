@@ -32,7 +32,7 @@ export default function Page() {
   }
 
   return (
-    <>
+    <div className="space-y-4">
       {coursesData.length > 0 ? (
         coursesData.map((course, index) => (
           <CourseList key={index} course={course} role={user?.role} />
@@ -40,6 +40,6 @@ export default function Page() {
       ) : (
         <NoItemFound name="courses" />
       )}
-    </>
+    </div>
   );
 }

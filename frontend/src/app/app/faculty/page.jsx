@@ -26,7 +26,7 @@ export default function Page() {
   return (
     <div className="pt-6 md:pt-0">
       <div className="flex bg-background">
-        <div className="w-full max-w-5xl mx-auto space-y-4">
+        <div className="w-full mx-auto space-y-4">
           {courses.length > 0 ? (
             courses.map((course, index) => (
               <CourseList key={index} course={course} role={user.role} />

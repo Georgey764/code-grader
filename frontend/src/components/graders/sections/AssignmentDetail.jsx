@@ -58,7 +58,7 @@ export default function AssignmentDetailsPage() {
   const isOverdue = deadline < new Date();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-5">
+    <div className="mx-auto space-y-5">
       {/* ── PAGE HEADER ── */}
       <div className="bg-surface rounded-md shadow-subtle border border-border overflow-hidden">
         <div className="h-1 bg-primary w-full" />
