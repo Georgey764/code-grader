@@ -9,9 +9,14 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [role, setRole] = useState("student");
+  const [password, setPassword] = useState("");
   const { baseUrl } = useMetadata();
   const { user, isLoading } = useRouteToCorrectPath();
   const router = useRouter();
+
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+  const hasMinLength = password.length >= 5;
 
   if (isLoading) {
     return <LoadingPage />;
@@ -98,6 +103,8 @@ export default function RegisterPage() {
                 placeholder="Ace"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
+                pattern="^[A-Za-z]+$"
+                title="First name should only contain letters."
               />
             </div>
 
@@ -111,6 +118,8 @@ export default function RegisterPage() {
                 placeholder="Warhawk"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
+                pattern="^[A-Za-z]+$"
+                title="Last name should only contain letters."
               />
             </div>
 
@@ -124,6 +133,8 @@ export default function RegisterPage() {
                 placeholder="warhawk@ulm.edu"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
+                pattern="^[A-Za-z0-9._%+-]+@ulm\.edu$"
+                title="Email must be a ULM address ending with @ulm.edu."
               />
             </div>
 
@@ -135,9 +146,26 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
+                pattern="^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{5,}$"
+                title="Password must be at least 5 characters, include at least one uppercase letter and one special character."
               />
+
+              {/* Live Password Checker */}
+              <div className="text-sm mt-2 space-y-1">
+                <p className={hasMinLength ? "text-green-600" : "text-red-500"}>
+                  {hasMinLength ? "✓" : "✗"} At least 5 characters
+                </p>
+                <p className={hasUppercase ? "text-green-600" : "text-red-500"}>
+                  {hasUppercase ? "✓" : "✗"} One uppercase letter
+                </p>
+                <p className={hasSpecialChar ? "text-green-600" : "text-red-500"}>
+                  {hasSpecialChar ? "✓" : "✗"} One special character
+                </p>
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -148,6 +176,9 @@ export default function RegisterPage() {
                 placeholder="12345678"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
+                pattern="^\d{8}$"
+                inputMode="numeric"
+                title="CWID must be exactly 8 digits."
               />
             </div>
 
