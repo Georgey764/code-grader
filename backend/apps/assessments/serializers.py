@@ -74,7 +74,7 @@ class TestResultSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         submission = attrs.get('submission', getattr(self.instance, 'submission', None))
         test_case = attrs.get('test_case', getattr(self.instance, 'test_case', None))
-        # FIX 1: We use is_success because points_earned doesn't exist in the model
+        #  We use is_success because points_earned doesn't exist in the model
         is_success = attrs.get('is_success', getattr(self.instance, 'is_success', False))
 
         if not submission or not test_case:
@@ -95,7 +95,7 @@ class TestResultSerializer(serializers.ModelSerializer):
                 submission=submission
             ).aggregate(total=Sum('points_awarded'))['total'] or 0
             
-            # FIX 3: We sum the 'weight' from the parent TestCase instead of the missing points_earned field
+            # We sum the 'weight' from the parent TestCase instead of the missing points_earned field
             existing_test_points = TestResult.objects.filter(
                 submission=submission, 
                 is_success=True
