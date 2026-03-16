@@ -83,11 +83,6 @@ resource "aws_instance" "grader_engine" {
               systemctl enable nginx
               systemctl start nginx
 
-              
-
-              TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-              PUBLIC_IP=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/public-ipv4)
-
               # 4. App Directory & Env Setup
               mkdir -p /home/ec2-user/app
               cat <<ENV_FILE > /home/ec2-user/app/.env
@@ -99,11 +94,11 @@ resource "aws_instance" "grader_engine" {
 
               DEBUG=${var.debug}
               ALLOWED_HOST=backend
-              ALLOWED_HOST_2=$PUBLIC_IP
-              ALLOWED_ORIGIN=http://$PUBLIC_IP
+              ALLOWED_HOST_2=${var.allowed_host}
+              ALLOWED_ORIGIN=${var.allowed_origin}
               SECRET_KEY=${var.secret_key}
 
-              NEXT_PUBLIC_URL=http://$PUBLIC_IP/api/
+              NEXT_PUBLIC_URL=${var.next_public_url}
 
               CELERY_BROKER_URL=${var.celery_broker_url}
               CELERY_RESULT_BACKEND=${var.celery_result_backend}
