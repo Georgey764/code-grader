@@ -23,6 +23,11 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
+resource "aws_iam_instance_profile" "grader_engine_profile" {
+  name = "grader-engine-instance-profile"
+  role = aws_iam_role.grader_engine_role.name
+}
+
 resource "aws_instance" "grader_engine" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.medium"
@@ -32,6 +37,7 @@ resource "aws_instance" "grader_engine" {
   associate_public_ip_address = true
   user_data_replace_on_change = false
   key_name = aws_key_pair.deployer.key_name
+  iam_instance_profile = aws_iam_instance_profile.grader_engine_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
@@ -57,7 +63,7 @@ resource "aws_instance" "grader_engine" {
               cat <<NGINX_CONF > /etc/nginx/conf.d/grader_proxy.conf
               server {
                   listen 80;
-                  server_name _;
+                  server_name code-grader.duckdns.org;
 
                   # Forward /api/ requests to localhost:8000
                   location /api/ {
@@ -132,6 +138,28 @@ resource "aws_instance" "grader_engine" {
 
               sleep 5
               docker compose -f docker-compose.prod.yml up -d --wait
+
+              # 1. Install system dependencies
+              sudo dnf install -y python3.12 python3.12-pip augeas-libs
+
+              # 2. Set up the virtual environment
+              sudo python3 -m venv /opt/certbot/
+              sudo /opt/certbot/bin/pip install --upgrade pip
+
+              # 3. Install Certbot and the Nginx plugin
+              sudo /opt/certbot/bin/pip install certbot certbot-nginx
+
+              # 4. Create a shortcut so you can just type 'certbot'
+              sudo ln -s /opt/certbot/bin/certbot /usr/bin/certbot
+
+              sudo certbot --nginx \
+              -d code-grader.duckdns.org \
+              --non-interactive \
+              --agree-tos \
+              -m georgesamuel764@gmail.com \
+              --redirect
+
+              (sudo crontab -l 2>/dev/null; echo "0 0,12 * * * perl -e 'sleep int(rand(3600))' && /usr/bin/certbot renew -q --post-hook 'systemctl reload nginx'") | sudo crontab -
               EOF
 
   tags = {
