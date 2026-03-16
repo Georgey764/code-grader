@@ -243,32 +243,6 @@ export default function FacultySettingsPage() {
           </div>
         </form>
       </Card>
-
-      {/* Account actions */}
-      <Card className="max-w-none border-dashed border-error/20">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-secondary/10 rounded-lg">
-            <LogOut className="text-secondary" size={24} />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-accent uppercase tracking-tight">
-              Session
-            </h2>
-            <p className="text-sm text-text-muted">
-              Securely sign out of the system.
-            </p>
-          </div>
-        </div>
-        <Link href="/logout">
-          <Button
-            variant="outline"
-            type="button"
-            className="cursor-pointer rounded px-4 py-2 text-error bg-error text-white transition-colors"
-          >
-            Log out
-          </Button>
-        </Link>
-      </Card>
     </div>
   );
 }

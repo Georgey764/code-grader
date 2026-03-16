@@ -8,6 +8,7 @@ from apps.assignments.models import (
 )
 from apps.core.serializers import BaseSerializers
 from rest_framework.validators import UniqueTogetherValidator
+from django.db.models import Sum
 
 
 class RubricCriteriaSerializer(BaseSerializers):
@@ -17,12 +18,44 @@ class RubricCriteriaSerializer(BaseSerializers):
             "id",
             "assignment",
             "name",
-            "description",
-            "max_points",
+            "weight",  # Added
+            "desc_one",  # Added
+            "desc_two",  # Added
+            "desc_three",  # Added
+            "desc_four",  # Added
+            "desc_five",  # Added
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, data):
+        """
+        Check that the sum of weights for the assignment does not exceed 100.
+        """
+        assignment = data.get("assignment")
+        new_weight = data.get("weight", 0)
+
+        # Calculate existing weights for this assignment
+        existing_weight_sum = (
+            RubricCriteria.objects.filter(assignment=assignment).aggregate(
+                total=Sum("weight")
+            )["total"]
+            or 0
+        )
+
+        # If updating an existing instance, subtract its current weight from the sum
+        if self.instance:
+            existing_weight_sum -= self.instance.weight
+
+        if existing_weight_sum + new_weight > 100:
+            raise serializers.ValidationError(
+                {
+                    "weight": f"Total weight for this assignment would be {existing_weight_sum + new_weight}. It must not exceed 100."
+                }
+            )
+
+        return data
 
 
 class AssignmentSerializer(BaseSerializers):
@@ -37,18 +70,14 @@ class AssignmentSerializer(BaseSerializers):
             "starter_code",
             "max_points_allowed",
             "is_grouped",
+            "language",  # Added
+            "is_file_input",  # Added
             "rubric_criterias",
             "test_cases",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
-
-    def validate_max_points_allowed(self, value):
-        """Ensure max points is positive"""
-        if value <= 0:
-            raise serializers.ValidationError("Max points must be greater than 0")
-        return value
 
 
 class TestCaseSerializer(serializers.ModelSerializer):

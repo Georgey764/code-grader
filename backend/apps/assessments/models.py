@@ -49,6 +49,14 @@ class Submission(BaseModel):
 
 
 class RubricResult(models.Model):
+    # Using IntegerChoices to represent the enum(1,2,3,4,5)
+    class PointScale(models.IntegerChoices):
+        ONE = 1, "1"
+        TWO = 2, "2"
+        THREE = 3, "3"
+        FOUR = 4, "4"
+        FIVE = 5, "5"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="rubric_results"
@@ -56,11 +64,14 @@ class RubricResult(models.Model):
     rubric_criteria = models.ForeignKey(
         RubricCriteria, on_delete=models.CASCADE, related_name="rubric_results"
     )
-    points_awarded = models.FloatField()
+
+    # Updated to IntegerField with choices to match enum(1,2,3,4,5)
+    points = models.IntegerField(choices=PointScale.choices)
+
     optional_feedback = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"Rubric {self.rubric_criteria.name}: {self.points_awarded}"
+        return f"{self.rubric_criteria.name} - {self.points} Points"
 
     class Meta:
         db_table = "rubric_result"

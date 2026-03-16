@@ -15,11 +15,6 @@ services:
 
   backend:
     container_name: backend
-    depends_on:
-      db:
-        condition: service_healthy
-      localstack:
-        condition: service_healthy
     networks:
       - app-network
     build:
@@ -90,8 +85,6 @@ services:
 
   frontend:
     container_name: frontend
-    depends_on:
-      - db
     networks:
       - app-network
     build:

@@ -68,6 +68,7 @@ class RosterModelViewSet(
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
     mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
     queryset = Roster.objects.select_related(
@@ -81,7 +82,7 @@ class RosterModelViewSet(
             return [(IsFaculty & IsRosterOwner)()]
         elif self.action == "create":
             return [(IsStudent | IsFaculty)()]
-        elif self.action in ["list"]:
+        elif self.action in ["list", "retrieve"]:
             return [IsAuthenticated()]
         elif self.action == "leave_course":
             return [(IsStudent & IsRosterOwner)()]

@@ -35,7 +35,7 @@ resource "aws_db_instance" "grader_db" {
   password             = var.postgres_password
   
   parameter_group_name = "default.postgres16"
-  skip_final_snapshot  = false
+  skip_final_snapshot  = true # WE NEED TO CHANGE THIS IN PRODUCTION FINAL
   publicly_accessible  = false
 
   vpc_security_group_ids = [aws_security_group.rds_sg.id]

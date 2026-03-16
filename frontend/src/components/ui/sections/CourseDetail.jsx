@@ -1,33 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
-import {
-  FileText,
-  ShieldCheck,
-  ChevronRight,
-  Copy,
-  Check,
-  Share2,
-  BookOpen,
-  Users,
-} from "lucide-react";
-
-const role_converter = { st: "student", ga: "faculty", fa: "faculty" };
+import { Hash, Info, User, Mail, Share2, Copy, Check } from "lucide-react";
 
 const Page = () => {
-  const router = useRouter();
   const { "course-id": courseId } = useParams();
   const { api, user } = useMetadata();
-
   const [course, setCourse] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const role = user?.role?.toLowerCase();
-  const isFaculty = role !== "st";
+  const isFaculty = user?.role?.toLowerCase() !== "st";
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -35,7 +21,7 @@ const Page = () => {
         const res = await api.get(`courses/${courseId}`);
         setCourse(res.data);
       } catch (err) {
-        console.error(err);
+        console.error("Sync error:", err);
       } finally {
         setIsLoading(false);
       }
@@ -50,180 +36,115 @@ const Page = () => {
   };
 
   if (isLoading) return <LoadingPage />;
-  if (!course) return <div className="p-8 text-error">Course not found.</div>;
+  if (!course)
+    return (
+      <div className="p-8 text-center font-black uppercase text-text-muted">
+        Course metadata not found.
+      </div>
+    );
 
   return (
-    <div className="mx-auto space-y-5">
-      {/* ── HEADER ── */}
-      <div className="bg-surface rounded-md shadow-subtle border border-border overflow-hidden">
-        <div className="h-1 bg-primary w-full" />
-        <div className="p-6 sm:p-8">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
+    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-500">
+      {/* 1. TYPOGRAPHIC HEADER */}
+      <header className="pb-8 border-b-2 border-primary/10">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded">
               {course.short_name}
             </span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest bg-secondary/10 text-secondary border border-secondary/30">
-              CRN: {course.crn}
+            <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest px-2 py-0.5 bg-slate-100 rounded">
+              CRN {course.crn}
             </span>
           </div>
-          <h1 className="text-h1">{course.name}</h1>
+          <h1 className="text-4xl md:text-5xl font-black text-accent uppercase tracking-tighter leading-none">
+            {course.name}
+          </h1>
         </div>
-      </div>
+      </header>
 
-      {/* ── DESCRIPTION ── */}
-      <div className="bg-surface rounded-md shadow-subtle border border-border overflow-hidden">
-        <div className="px-6 sm:px-8 py-4 border-b border-border">
-          <h2 className="text-subheading text-sm">Course Overview</h2>
-        </div>
-        <div className="px-6 sm:px-8 py-6">
-          <p className="text-body leading-relaxed whitespace-pre-wrap">
-            {course.description || "No description provided for this course."}
-          </p>
-        </div>
-      </div>
-
-      {/* ── QUICK INFO ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* <InfoTile
-          icon={<ShieldCheck size={16} className="text-primary" />}
-          label="Instructor"
-          value={course?.faculty_profile?.first_name || "Not assigned"}
-        /> */}
-        <InfoTile
-          icon={<BookOpen size={16} className="text-primary" />}
-          label="Course Code"
-          value={course.short_name}
-        />
-      </div>
-
-      {/* ── ACTIONS ── */}
-      <div>
-        <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted mb-3 px-1">
-          Navigation
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <NavCard
-            icon={<FileText size={18} />}
-            label="Assignments"
-            description="View all assignments"
-            onClick={() =>
-              router.push(
-                `/app/${role_converter[role]}/${role === "st" ? "courses/" : ""}${courseId}/assignments`,
-              )
-            }
-            primary
-          />
-          {isFaculty && (
-            <NavCard
-              icon={<Users size={18} />}
-              label="Class Roster"
-              description="Manage enrolled students"
-              onClick={() => router.push(`/app/faculty/${courseId}/roster`)}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* ── INVITE (faculty only) ── */}
-      {isFaculty && (
-        <div className="bg-surface rounded-md shadow-subtle border border-border p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Share2 size={14} className="text-secondary" />
-            <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted">
-              Invite Students
+      {/* 2. MINIMALIST TWO-COLUMN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        {/* Main: Syllabus / Overview */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center gap-2 text-primary">
+            <Info size={18} />
+            <h2 className="text-sm font-black uppercase tracking-widest">
+              Syllabus Overview
+            </h2>
+          </div>
+          <div className="prose prose-slate max-w-none">
+            <p className="text-sm md:text-base leading-relaxed text-text-main whitespace-pre-wrap font-medium">
+              {course.description ||
+                "No official course description has been uploaded for this section yet."}
             </p>
           </div>
-          <p className="text-xs text-text-muted mb-3">
-            Share this Course ID with students to let them enroll.
-          </p>
-          <button
-            onClick={handleCopy}
-            className="cursor-pointer w-full flex items-center justify-between px-4 py-3 bg-background border border-border rounded hover:border-secondary transition-colors group"
-          >
-            <code className="text-sm font-mono text-accent truncate mr-3">
-              {courseId}
-            </code>
-            <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-text-muted group-hover:text-secondary transition-colors flex-none">
-              {copied ? (
-                <>
-                  <Check size={13} className="text-green-600" />
-                  <span className="text-green-600">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={13} />
-                  Copy
-                </>
-              )}
-            </span>
-          </button>
         </div>
-      )}
+
+        {/* Sidebar: Essential Staff & Join Info */}
+        <div className="space-y-6">
+          {/* Consolidated Instructor Card */}
+          <section className="bg-surface border border-border rounded-xl p-6 shadow-sm">
+            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-text-muted mb-5">
+              Lead Instructor
+            </h3>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-secondary/10 text-secondary rounded-xl flex items-center justify-center shadow-inner">
+                <User size={24} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black text-accent truncate">
+                  {course.faculty_profile?.user?.first_name}{" "}
+                  {course.faculty_profile?.user?.last_name}
+                </p>
+                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">
+                  Active • 2026
+                </p>
+              </div>
+            </div>
+
+            <a
+              href={`mailto:${course.faculty_profile?.user?.email}`}
+              className="flex items-center justify-center gap-2 w-full py-3 bg-slate-50 border border-border rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm"
+            >
+              <Mail size={14} /> Send Message
+            </a>
+          </section>
+
+          {/* Enrollment Section (Faculty Only) */}
+          {isFaculty && (
+            <section className="p-5 bg-primary/5 rounded-xl border border-primary/10 space-y-3">
+              <div className="flex items-center gap-2">
+                <Share2 size={14} className="text-primary" />
+                <p className="text-[9px] font-black uppercase text-text-muted tracking-widest">
+                  Enrollment Key
+                </p>
+              </div>
+              <button
+                onClick={handleCopy}
+                className="w-full flex items-center justify-between p-3 bg-white border border-border rounded-lg group hover:border-secondary transition-all"
+              >
+                <code className="text-xs font-mono font-bold text-accent truncate">
+                  {courseId}
+                </code>
+                {copied ? (
+                  <Check size={14} className="text-green-600" />
+                ) : (
+                  <Copy
+                    size={14}
+                    className="text-text-muted group-hover:text-secondary"
+                  />
+                )}
+              </button>
+            </section>
+          )}
+
+          <p className="px-1 text-[9px] text-text-muted font-bold uppercase tracking-widest opacity-40">
+            Warhawk Academic Portal • Secure Context
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
-
-// ── INFO TILE ──
-function InfoTile({ icon, label, value }) {
-  return (
-    <div className="bg-surface rounded-md shadow-subtle border border-border p-5 flex items-center gap-4">
-      <div className="p-2 rounded bg-primary/10 flex-none">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted mb-0.5">
-          {label}
-        </p>
-        <p className="text-sm font-semibold text-accent truncate">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-// ── NAV CARD ──
-function NavCard({ icon, label, description, onClick, primary = false }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`cursor-pointer group w-full text-left rounded-md border shadow-subtle p-5 transition-all duration-150 active:scale-[0.98] ${
-        primary
-          ? "bg-primary border-primary text-white hover:bg-accent hover:border-accent"
-          : "bg-surface border-border hover:border-primary"
-      }`}
-    >
-      <div
-        className={`inline-flex p-2 rounded mb-4 ${
-          primary ? "bg-white/15 text-white" : "bg-primary/10 text-primary"
-        }`}
-      >
-        {icon}
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        <div>
-          <p
-            className={`text-sm font-bold ${
-              primary ? "text-white" : "text-accent"
-            }`}
-          >
-            {label}
-          </p>
-          <p
-            className={`text-xs mt-0.5 ${
-              primary ? "text-white/70" : "text-text-muted"
-            }`}
-          >
-            {description}
-          </p>
-        </div>
-        <ChevronRight
-          size={14}
-          className={`flex-none mb-0.5 transition-colors ${
-            primary
-              ? "text-white/50 group-hover:text-white"
-              : "text-border group-hover:text-primary"
-          }`}
-        />
-      </div>
-    </button>
-  );
-}
 
 export default Page;

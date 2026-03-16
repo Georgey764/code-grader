@@ -25,7 +25,7 @@ data "aws_ami" "amazon_linux_2023" {
 
 resource "aws_instance" "grader_engine" {
   ami           = data.aws_ami.amazon_linux_2023.id
-  instance_type = "t3.micro"
+  instance_type = "t3.medium"
 
   # Attach the security group we made above
   vpc_security_group_ids      = [aws_security_group.web_access.id]
@@ -42,10 +42,16 @@ resource "aws_instance" "grader_engine" {
               systemctl enable docker
               systemctl start docker
               usermod -aG docker ec2-user
+
               sudo mkdir -p /usr/local/lib/docker/cli-plugins
-              sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
-              -o /usr/local/lib/docker/cli-plugins/docker-compose
-              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo curl -SL https://github.com/docker/buildx/releases/download/v0.19.1/buildx-v0.19.1.linux-amd64 \
+              -o /usr/local/lib/docker/cli-plugins/docker-buildx
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+
+              sudo mkdir -p /usr/libexec/docker/cli-plugins/
+              sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) \
+              -o /usr/libexec/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 
               # 2. Configure Nginx as a Reverse Proxy
               cat <<NGINX_CONF > /etc/nginx/conf.d/grader_proxy.conf
@@ -126,8 +132,11 @@ resource "aws_instance" "grader_engine" {
 
               cd /home/ec2-user/app/code
 
+              git stash
+              git pull origin main
+
               sleep 5
-              docker compose -f docker-compose.prod.yml up -d
+              docker compose -f docker-compose.prod.yml up -d --wait
               EOF
 
   tags = {

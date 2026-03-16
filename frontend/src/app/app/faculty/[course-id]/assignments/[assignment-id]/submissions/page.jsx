@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
-import { Roster } from "@/components/graders/elements";
+import { RosterAssignmentSpecific } from "@/components/graders/elements";
 
 export default function SubmissionsPage() {
   const param = useParams();
@@ -43,13 +43,15 @@ export default function SubmissionsPage() {
   }, [api, assignmentId, courseId]);
 
   if (loading) {
-    return <div className="p-4 text-sm text-text-muted">Loading submissions...</div>;
+    return (
+      <div className="p-4 text-sm text-text-muted">Loading submissions...</div>
+    );
   }
 
   return (
     <div>
       {isGrouped === false && (
-        <Roster
+        <RosterAssignmentSpecific
           rosters={rosters}
           onClick={(entry, current_pathname) =>
             router.push(current_pathname + "/view?roster_id=" + entry.id)

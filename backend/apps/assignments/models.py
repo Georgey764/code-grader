@@ -5,6 +5,12 @@ from apps.courses.models import Course, Roster
 
 
 class Assignment(BaseModel):
+    # Enum choices for language
+    class Language(models.TextChoices):
+        PYTHON = "python", "python"
+        JAVA = "java", "java"
+
+    # Existing fields...
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     course = models.ForeignKey(
         Course, on_delete=models.CASCADE, related_name="assignments"
@@ -16,31 +22,52 @@ class Assignment(BaseModel):
     max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
+    # Updated fields based on your requirements
+    language = models.CharField(
+        max_length=10, choices=Language.choices, default=Language.PYTHON
+    )
+    is_file_input = models.BooleanField(default=False)
+
     class Meta:
         db_table = "assignment"
         verbose_name = "Assignment"
         verbose_name_plural = "Assignments"
 
-    def __str__(self):
-        return self.name
 
-
-class RubricCriteria(BaseModel):
+class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updated_at
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     assignment = models.ForeignKey(
-        Assignment, on_delete=models.CASCADE, related_name="rubric_criterias"
+        "Assignment", on_delete=models.CASCADE, related_name="rubric_criterias"
     )
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
-    max_points = models.FloatField()
+
+    # Diagram shows weight as DECIMAL(5,2)
+    weight = models.DecimalField(max_digits=5, decimal_places=2)
+
+    # Detailed descriptions for each point in the 1-5 scale
+    desc_one = models.TextField(
+        help_text="Description for 1 point", null=True, blank=True
+    )
+    desc_two = models.TextField(
+        help_text="Description for 2 points", null=True, blank=True
+    )
+    desc_three = models.TextField(
+        help_text="Description for 3 points", null=True, blank=True
+    )
+    desc_four = models.TextField(
+        help_text="Description for 4 points", null=True, blank=True
+    )
+    desc_five = models.TextField(
+        help_text="Description for 5 points", null=True, blank=True
+    )
 
     class Meta:
         db_table = "rubric_criteria"
         verbose_name = "Rubric Criteria"
-        verbose_name_plural = "Rubric criteria"
+        verbose_name_plural = "Rubric Criterias"
 
     def __str__(self):
-        return f"{self.name} ({self.assignment.name})"
+        return f"{self.name} (Weight: {self.weight}%)"
 
 
 class TestCase(models.Model):
