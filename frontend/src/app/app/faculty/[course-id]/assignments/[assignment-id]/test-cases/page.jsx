@@ -53,11 +53,14 @@ export default function TestCasesListPage() {
     }
   };
 
-  const filteredCases = testCases.filter(
-    (tc) =>
-      tc?.input_text?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tc?.expected_output?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const filteredCases = testCases.filter((tc) => {
+    const inputContent =
+      tc?.input_data?.type === "text" ? tc.input_data.content : "";
+    return (
+      inputContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tc?.expected_output?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   if (loading) return <LoadingPage />;
 
@@ -115,14 +118,14 @@ export default function TestCasesListPage() {
                   Input Snippet
                 </span>
                 <code className="block bg-background p-2 rounded text-xs font-mono mt-1 border border-border/50 truncate">
-                  {tc.input_text || "Empty"}
+                  {tc.input_data?.type === "text"
+                    ? tc.input_data.content
+                    : tc.input_data?.type === "file"
+                      ? "[File input]"
+                      : "Empty"}
                 </code>
               </div>
-              <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-dashed border-border">
-                <div className="flex items-center text-xs font-medium text-text-main">
-                  <Hash size={14} className="mr-1 text-secondary" /> {tc.points}{" "}
-                  pts
-                </div>
+              <div className="flex justify-end items-center bg-slate-50 p-2 rounded border border-dashed border-border">
                 <div className="flex items-center text-xs text-text-muted">
                   <Clock size={14} className="mr-1" /> {tc.time_limit}ms
                 </div>
@@ -149,7 +152,7 @@ export default function TestCasesListPage() {
                     Expected Output
                   </th>
                   <th className="w-40 p-4 text-subheading text-[10px]">
-                    Config
+                    Time Limit
                   </th>
                   <th className="w-28 p-4 text-subheading text-[10px] text-right">
                     Actions
@@ -167,7 +170,13 @@ export default function TestCasesListPage() {
                     </td>
                     <td className="p-4 overflow-hidden">
                       <code className="text-[11px] bg-background p-1.5 rounded block truncate font-mono text-code-string border border-border/50">
-                        {tc.input_text || (
+                        {tc.input_data?.type === "text" ? (
+                          tc.input_data.content
+                        ) : tc.input_data?.type === "file" ? (
+                          <span className="italic opacity-70">
+                            [File input]
+                          </span>
+                        ) : (
                           <span className="italic opacity-50">Empty</span>
                         )}
                       </code>
@@ -179,10 +188,6 @@ export default function TestCasesListPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center space-x-4">
-                        <span className="flex items-center text-[11px] text-text-main font-medium">
-                          <Hash size={12} className="mr-1 text-secondary" />{" "}
-                          {tc.points}
-                        </span>
                         <span className="flex items-center text-[11px] text-text-muted">
                           <Clock size={12} className="mr-1" /> {tc.time_limit}ms
                         </span>

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import {
-  Award,
   CheckCircle2,
   AlertCircle,
   Type,
