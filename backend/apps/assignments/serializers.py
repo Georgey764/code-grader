@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from apps.assignments.models import (
     Assignment,
+    FileInputType,
     RubricCriteria,
     TestCase,
     Group,
     GroupsMembership,
+    TextInputType,
 )
 from apps.core.serializers import BaseSerializers
 from rest_framework.validators import UniqueTogetherValidator
@@ -59,6 +61,9 @@ class RubricCriteriaSerializer(BaseSerializers):
 
 
 class AssignmentSerializer(BaseSerializers):
+    # Using ChoiceField to ensure the ENUM is validated at the API level
+    language = serializers.ChoiceField(choices=Assignment.Language.choices)
+
     class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
@@ -68,12 +73,11 @@ class AssignmentSerializer(BaseSerializers):
             "description",
             "deadline",
             "starter_code",
-            "max_points_allowed",
             "is_grouped",
-            "language",  # Added
-            "is_file_input",  # Added
-            "rubric_criterias",
-            "test_cases",
+            "language",
+            "is_file_input",
+            "is_weighted",  # Added your new field
+            "rubric_criterias",  # Assuming this is a related field/nested serializer
             "created_at",
             "updated_at",
         ]
@@ -81,9 +85,62 @@ class AssignmentSerializer(BaseSerializers):
 
 
 class TestCaseSerializer(serializers.ModelSerializer):
+    input_data = serializers.SerializerMethodField()
+
     class Meta:
         model = TestCase
-        fields = "__all__"
+        fields = [
+            "id",
+            "assignment",
+            "test_case_input",
+            "expected_output",
+            "time_limit",
+            "is_hidden",
+            "input_data",
+        ]
+
+    def validate(self, data):
+        assignment = data["assignment"]
+
+        # Logical check: Assignment Type vs. Provided Data
+        if assignment.is_file_input and "input_file" not in data:
+            raise serializers.ValidationError("Assignment requires a file upload.")
+
+        if not assignment.is_file_input and "input_content" not in data:
+            raise serializers.ValidationError("Assignment requires text input.")
+
+        return data
+
+    def create(self, validated_data):
+        input_content = validated_data.pop("input_content", None)
+        input_file = validated_data.pop("input_file", None)
+        assignment = validated_data["assignment"]
+
+        # 1. Create the specific child input first
+        # (This automatically creates the parent TestCaseInput row)
+        if assignment.is_file_input:
+            input_obj = FileInputType.objects.create(file_url=input_file)
+        else:
+            input_obj = TextInputType.objects.create(input_text=input_content)
+
+        # 2. Create the TestCase and link it to the input_obj
+        # Note: input_obj 'is' a TestCaseInput because of inheritance
+        test_case = TestCase.objects.create(test_case_input=input_obj, **validated_data)
+        return test_case
+
+    def get_input_data(self, obj):
+        # Accessing the "Base" record
+        base_input = obj.test_case_input
+
+        # Check if it has a file child
+        if hasattr(base_input, "fileinputtype"):
+            return {"type": "file", "url": base_input.fileinputtype.file_url.url}
+
+        # Check if it has a text child
+        if hasattr(base_input, "textinputtype"):
+            return {"type": "text", "content": base_input.textinputtype.input_text}
+
+        return None
 
 
 class GroupsMembershipSerializer(serializers.ModelSerializer):

@@ -1,3 +1,4 @@
+from pyexpat import model
 import uuid
 from django.db import models
 from apps.core.models import BaseModel
@@ -19,7 +20,6 @@ class Assignment(BaseModel):
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
     starter_code = models.FileField(upload_to="starter-code/", null=True, blank=True)
-    max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
     # Updated fields based on your requirements
@@ -27,6 +27,8 @@ class Assignment(BaseModel):
         max_length=10, choices=Language.choices, default=Language.PYTHON
     )
     is_file_input = models.BooleanField(default=False)
+
+    is_weighted = models.BooleanField(default=False)
 
     class Meta:
         db_table = "assignment"
@@ -70,25 +72,48 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
         return f"{self.name} (Weight: {self.weight}%)"
 
 
-class TestCase(models.Model):
-    __test__ = False
-
+class TestCaseInput(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Linked to the Assignment (Foreign Key)
+    class Meta:
+        # This is where you define the table name or ordering
+        db_table = "test_case_inputs"
+        verbose_name = "Test Case Input"
+
+
+class FileInputType(TestCaseInput):
+    file_url = models.FileField(upload_to="test_inputs/")
+
+    class Meta:
+        db_table = "file_input_types"
+        # No need to set abstract=False, it's the default for inheritance!
+
+
+class TextInputType(TestCaseInput):
+    input_text = models.TextField()
+
+    class Meta:
+        db_table = "text_input_types"
+
+
+class TestCase(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     assignment = models.ForeignKey(
         "Assignment", on_delete=models.CASCADE, related_name="test_cases"
     )
 
-    # Test details
-    input_text = models.TextField(blank=True, null=True)
-    expected_output = models.TextField(blank=True, null=True)
-    time_limit = models.IntegerField(help_text="Time limit in seconds", default=300)
-    is_hidden = models.BooleanField(default=True)
-    points_possible = models.FloatField()
+    # Point to the Base Identity
+    test_case_input = models.OneToOneField(
+        TestCaseInput, on_delete=models.CASCADE, related_name="test_case"
+    )
 
-    def __str__(self):
-        return f"TestCase {self.id} for Assignment {self.assignment_id}"
+    expected_output = models.TextField()
+    time_limit = models.IntegerField(default=1000)
+    is_hidden = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "test_cases"
+        ordering = ["-id"]
 
 
 class Group(models.Model):

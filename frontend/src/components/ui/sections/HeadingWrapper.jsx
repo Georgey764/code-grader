@@ -106,6 +106,11 @@ const linker = {
     name: "View Submissions",
     message: "View all submissions for your Selected Assignment's Roster",
   },
+  // Faculty: Grade View Page
+  "/app/faculty/id/grades": {
+    name: "Gradebook",
+    message: "Weighted Points & Diagnostic Summary",
+  },
   // Student: Courses List
   "/app/student": {
     name: "Courses",

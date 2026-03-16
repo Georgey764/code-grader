@@ -37,7 +37,7 @@ export default function AssignmentDetails({ assignmentData }) {
           />
           <MetaInfo
             icon={<Trophy size={12} />}
-            text={`${assignmentData.max_points_allowed} pts`}
+            text={`${assignmentData.is_weighted ? "Weighted" : "Unweighted"}`}
           />
           <MetaInfo
             icon={

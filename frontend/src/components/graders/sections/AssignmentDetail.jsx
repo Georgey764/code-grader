@@ -56,14 +56,6 @@ export default function AssignmentDetailsPage() {
     <div className="max-w-5xl animate-in fade-in duration-500 pb-10">
       {/* 1. COMPACT HEADER */}
       <header className="border-b border-border pb-4 mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-2 py-0.5 rounded">
-            Faculty Portal
-          </span>
-          <span className="text-[10px] font-mono text-text-muted font-bold opacity-50">
-            ID: {assignment.id.slice(0, 8)}
-          </span>
-        </div>
         <h1 className="text-2xl md:text-3xl font-black text-accent uppercase tracking-tighter mb-4">
           {assignment.name}
         </h1>
@@ -77,8 +69,8 @@ export default function AssignmentDetailsPage() {
           />
           <MetaItem
             icon={<Trophy size={12} />}
-            label="Weight"
-            value={`${assignment.max_points_allowed} PTS`}
+            label="Is Weighted"
+            value={`${assignment.is_weighted}`}
           />
           <MetaItem
             icon={<Terminal size={12} />}

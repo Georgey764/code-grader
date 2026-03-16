@@ -78,10 +78,6 @@ export default function AssignmentList({ asgn }) {
               )}
               Due {dueDate.toLocaleDateString()}
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-              <Trophy size={12} className="text-secondary" />
-              {asgn.max_points_allowed} Points
-            </div>
           </div>
         </div>
       </div>
