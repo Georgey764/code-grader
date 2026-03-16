@@ -107,6 +107,9 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       const response = await api.post("assessments/submissions/", formData);
       runTests(response.data);
     } catch (e) {
+      console.log(e);
+      console.log(e.response);
+      console.log(e.response.data);
       setStatus("upload");
       alert("Upload failed. Ensure your file meets requirements.");
     }
