@@ -123,7 +123,7 @@ export default function ResultsView({
                         size={14}
                         className="text-secondary shrink-0 mt-0.5"
                       />
-                      "{res.optional_feedback}"
+                      &quot;{res.optional_feedback}&quot;
                     </div>
                   ) : (
                     <p className="text-[10px] text-text-muted italic opacity-50">

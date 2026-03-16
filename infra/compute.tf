@@ -132,10 +132,11 @@ resource "aws_instance" "grader_engine" {
 
               cd /home/ec2-user/app/code
 
+              git stash
               git pull origin main
 
               sleep 5
-              docker compose -f docker-compose.prod.yml up -d
+              docker compose -f docker-compose.prod.yml up -d --wait
               EOF
 
   tags = {
