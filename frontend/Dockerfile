@@ -7,8 +7,6 @@ ENV NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
 # 2. Set working directory
 WORKDIR /app
 
-RUN apk add --no-cache curl && which curl && curl --version
-
 # 3. Copy package.json and package-lock.json (or yarn.lock)
 COPY package*.json ./
 
@@ -26,22 +24,18 @@ RUN npm run build
 # -----------------------------
 FROM node:20-alpine AS runner
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Copy the standalone folder 
+COPY --from=builder /app/.next/standalone ./
+# Copy static files (Next.js expects these in a specific subfolder)
+COPY --from=builder /app/.next/static ./.next/static
 
-# Copy built files from the builder
-COPY --from=builder /app/.next .next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
 
-# Expose port 3000 (default Next.js)
 EXPOSE 3000
 
-# Start Next.js in production mode
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
