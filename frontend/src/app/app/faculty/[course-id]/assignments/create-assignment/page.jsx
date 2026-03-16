@@ -54,7 +54,7 @@ export default function CreateAssignmentPage() {
     setMessage({ type: "", text: "" });
 
     const data = new FormData();
-    data.append("course_id", course_id);
+    data.append("course", course_id);
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("deadline", formData.deadline);
@@ -81,6 +81,25 @@ export default function CreateAssignmentPage() {
         is_file_input: false,
       });
     } catch (error) {
+      if (error.response) {
+        // 1. The server responded with a status code outside the 2xx range
+        console.error("--- Server Error ---");
+        console.error("Status:", error.response.status); // e.g., 403 or 500
+        console.error("Data:", error.response.data); // The JSON error message from Django
+        console.error("Headers:", error.response.headers);
+      } else if (error.request) {
+        // 2. The request was made but no response was received
+        console.error("--- Network/No Response ---");
+        console.error("Request Details:", error.request);
+        // This often happens with CORS issues or server timeouts
+      } else {
+        // 3. Something happened in setting up the request that triggered an Error
+        console.error("--- Configuration Error ---");
+        console.error("Message:", error.message);
+      }
+
+      // Always useful for the full stack trace
+      console.debug("Full Config:", error.config);
       setMessage({
         type: "error",
         text: "Sync failed. Check required fields.",

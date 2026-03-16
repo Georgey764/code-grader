@@ -17,6 +17,14 @@ resource "aws_security_group" "web_access" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # HTTPS access (Port 443) - Added for your SSL/DuckDNS setup
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # SSH access (Optional: restrict this to your IP for better security)
   ingress {
     from_port   = 22
