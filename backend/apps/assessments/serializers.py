@@ -3,23 +3,23 @@ from apps.assessments.models import Submission, RubricResult, TestResult
 from apps.assignments.serializers import TestCaseSerializer, RubricCriteriaSerializer
 from apps.core.serializers import BaseSerializers
 
+from rest_framework import serializers
+
 
 class RubricResultSerializer(serializers.ModelSerializer):
-    # Expose rubric criterion details (name, description, max_points) for read-only use
-    rubric_criteria_detail = RubricCriteriaSerializer(
-        read_only=True, source="rubric_criteria"
-    )
-
     class Meta:
         model = RubricResult
-        fields = [
-            "id",
-            "submission",
-            "rubric_criteria",
-            "rubric_criteria_detail",
-            "points_awarded",
-            "optional_feedback",
-        ]
+        fields = ["id", "submission", "rubric_criteria", "points", "optional_feedback"]
+
+    def validate_points(self, value):
+        """
+        Validate that points are within the enum range (1-5).
+        """
+        if value not in [1, 2, 3, 4, 5]:
+            raise serializers.ValidationError(
+                "Points must be an integer between 1 and 5."
+            )
+        return value
 
 
 class TestResultSerializer(serializers.ModelSerializer):

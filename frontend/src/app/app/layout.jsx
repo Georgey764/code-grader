@@ -5,14 +5,13 @@ export default function Layout({ children }) {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out ml-0 md:ml-20 lg:ml-64">
-        <main className="p-4 md:p-8 lg:p-12">
-          <div className="mt-4 md:mt-0">
-            <BackButton />
-            <HeadingWrapper>{children}</HeadingWrapper>
-          </div>
-        </main>
-      </div>
+      {/* Margin left fixed to 64px (w-16) on desktop */}
+      <main className="flex-1 transition-all ml-0 md:ml-16 p-4 md:p-10">
+        <div className="mt-16 md:mt-0 max-w-7xl mx-auto">
+          <BackButton />
+          <HeadingWrapper>{children}</HeadingWrapper>
+        </div>
+      </main>
     </div>
   );
 }

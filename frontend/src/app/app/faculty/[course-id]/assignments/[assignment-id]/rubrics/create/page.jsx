@@ -3,15 +3,15 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
-import { BackButton } from "@/components/ui/elements";
 import {
   Award,
   CheckCircle2,
   AlertCircle,
   Type,
-  AlignLeft,
   PlusCircle,
   ArrowLeft,
+  Layers,
+  Scale,
 } from "lucide-react";
 
 const CreateRubricPage = () => {
@@ -27,22 +27,21 @@ const CreateRubricPage = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
-    max_points: 10.0,
+    weight: 20.0,
+    desc_one: "",
+    desc_two: "",
+    desc_three: "",
+    desc_four: "",
+    desc_five: "",
   });
 
   const handleChange = (e) => {
     if (status.type) setStatus({ type: null, message: "" });
-
     const { name, value } = e.target;
-
-    // Cast max_points to Float to match schema
-    let finalValue = value;
-    if (name === "max_points") finalValue = parseFloat(value) || 0;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: finalValue,
+      [name]: name === "weight" ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -52,7 +51,6 @@ const CreateRubricPage = () => {
     setStatus({ type: null, message: "" });
 
     try {
-      // POST to: assignments/<assignment_id>/rubric-criteria/
       await api.post(`assignments/${assignment_id}/rubric-criteria/`, {
         ...formData,
         assignment: assignment_id,
@@ -60,148 +58,176 @@ const CreateRubricPage = () => {
 
       setStatus({
         type: "success",
-        message: "Criterion added! It's now part of the grading rubric.",
+        message: "Criterion added successfully!",
       });
 
-      // Reset name and description for quick entry of the next item
       setFormData({
         name: "",
-        description: "",
-        max_points: 10.0,
+        weight: 20.0,
+        desc_one: "",
+        desc_two: "",
+        desc_three: "",
+        desc_four: "",
+        desc_five: "",
       });
     } catch (err) {
       setStatus({
         type: "error",
         message:
-          err.response?.data?.detail || "Failed to create rubric criterion.",
+          err.response?.data?.detail ||
+          "Failed to create criterion. Sum of weights cannot exceed 100%",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const levelLabels = [
+    { id: "desc_one", title: "Level 1", sub: "Beginning" },
+    { id: "desc_two", title: "Level 2", sub: "Developing" },
+    { id: "desc_three", title: "Level 3", sub: "Proficient" },
+    { id: "desc_four", title: "Level 4", sub: "Accomplished" },
+    { id: "desc_five", title: "Level 5", sub: "Exceptional" },
+  ];
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-8 bg-surface p-8 rounded-md border border-border shadow-subtle"
-    >
-      {/* Criterion Name (varchar 100) */}
-      <div className="space-y-2">
-        <label className="text-subheading flex items-center">
-          <Type size={16} className="mr-2 text-secondary" />
-          Criterion Name
-        </label>
-        <input
-          type="text"
-          name="name"
-          maxLength={100}
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full p-3 bg-background border border-border rounded text-body focus:ring-2 focus:ring-secondary outline-none transition-all"
-          placeholder="e.g., Code Readability or Logic Implementation"
-          required
-        />
-        <p className="text-[10px] text-text-muted">
-          Brief title for this grading category (Max 100 chars).
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto py-4 md:py-8 px-4">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+        {/* --- Header & Weight Card --- */}
+        <div className="bg-surface p-5 md:p-8 rounded-xl border border-border shadow-subtle flex flex-col md:flex-row gap-6">
+          <div className="flex-1 space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center">
+              <Type size={14} className="mr-2 text-secondary" />
+              Criterion Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              maxLength={100}
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full p-3 md:p-4 bg-background border border-border rounded-lg text-base md:text-lg font-bold text-accent outline-none focus:ring-2 focus:ring-secondary/20 transition-all"
+              placeholder="e.g., Logical Flow"
+              required
+            />
+          </div>
 
-      {/* Max Points (FLOAT) */}
-      <div className="space-y-2 max-w-xs">
-        <label className="text-subheading flex items-center">
-          <Award size={16} className="mr-2 text-primary" />
-          Weight (Max Points)
-        </label>
-        <input
-          type="number"
-          step="0.1"
-          name="max_points"
-          value={formData.max_points}
-          onChange={handleChange}
-          className="w-full p-3 bg-background border border-border rounded text-body font-bold focus:ring-2 focus:ring-secondary outline-none transition-all"
-          min="0"
-          required
-        />
-      </div>
-
-      {/* Description (TEXT) */}
-      <div className="space-y-2 pt-4 border-t border-border/50">
-        <label className="text-subheading flex items-center">
-          <AlignLeft size={16} className="mr-2 text-secondary" />
-          Grading Instructions / Description
-        </label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          className="w-full min-h-[150px] p-4 bg-background border border-border rounded text-body leading-relaxed focus:ring-2 focus:ring-secondary outline-none resize-y"
-          placeholder="Describe what a student must achieve to earn full marks in this category..."
-          required
-        />
-        <p className="text-[10px] text-text-muted italic">
-          This description helps students understand expectations and assists
-          graders in consistency.
-        </p>
-      </div>
-
-      {/* Feedback Section */}
-      {status.message && (
-        <div
-          className={`p-4 rounded flex items-start space-x-3 border ${
-            status.type === "error"
-              ? "bg-red-50 border-red-200 text-error"
-              : "bg-green-50 border-green-200 text-green-800"
-          }`}
-        >
-          {status.type === "error" ? (
-            <AlertCircle size={20} />
-          ) : (
-            <CheckCircle2 size={20} />
-          )}
-          <div className="flex-1">
-            <p className="text-sm font-bold">
-              {status.type === "error" ? "Error" : "Success"}
-            </p>
-            <p className="text-xs">{status.message}</p>
-
-            {status.type === "success" && (
-              <div className="mt-4 flex space-x-6">
-                <button
-                  type="button"
-                  onClick={() => setStatus({ type: null, message: "" })}
-                  className="cursor-pointer text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:text-primary transition-colors"
-                >
-                  <PlusCircle size={14} className="mr-1" /> Add Another
-                  Criterion
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    router.push(
-                      `/app/faculty/${course_id}/assignments/${assignment_id}/rubrics`,
-                    )
-                  }
-                  className="cursor-pointer text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:text-primary transition-colors"
-                >
-                  <ArrowLeft size={14} className="mr-1" /> View Full Rubric
-                </button>
-              </div>
-            )}
+          <div className="w-full md:w-56 space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center">
+              <Scale size={14} className="mr-2 text-primary" />
+              Weight (%)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                className="w-full p-3 md:p-4 bg-background border border-border rounded-lg text-base md:text-lg font-black text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                min="0"
+                max="100"
+                required
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-sm">
+                %
+              </span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={loading}
-        className={`cursor-pointer w-full py-4 bg-primary text-white font-black rounded shadow-subtle hover:bg-accent transition-all uppercase tracking-[0.25em] text-xs ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
-      >
-        {loading ? "Saving Criterion..." : "Add to Rubric"}
-      </button>
-    </form>
+        {/* --- Performance Grid --- */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <Layers size={18} className="text-secondary" />
+            <h3 className="text-sm font-black text-accent uppercase tracking-widest">
+              Performance Levels
+            </h3>
+          </div>
+
+          {/* Responsive Grid: 1 col on mobile, 5 on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            {levelLabels.map((level) => (
+              <div
+                key={level.id}
+                className="bg-surface border border-border rounded-xl p-4 md:p-5 shadow-sm space-y-3 md:space-y-4 flex flex-col"
+              >
+                <div className="border-b border-border pb-2 flex justify-between lg:block">
+                  <p className="text-[10px] font-black text-accent uppercase">
+                    {level.title}
+                  </p>
+                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
+                    {level.sub}
+                  </p>
+                </div>
+                <textarea
+                  name={level.id}
+                  value={formData[level.id]}
+                  onChange={handleChange}
+                  className="w-full flex-1 min-h-[120px] md:min-h-[160px] bg-transparent text-xs leading-relaxed outline-none resize-none text-text-main placeholder:text-text-muted/30"
+                  placeholder={`Requirements for ${level.sub}...`}
+                  required
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* --- Footer & Submission --- */}
+        <div className="space-y-6">
+          {status.message && (
+            <div
+              className={`p-4 rounded-lg flex items-start space-x-3 border animate-in fade-in slide-in-from-bottom-2 ${
+                status.type === "error"
+                  ? "bg-red-50 border-red-200 text-error"
+                  : "bg-green-50 border-green-200 text-green-800"
+              }`}
+            >
+              {status.type === "error" ? (
+                <AlertCircle size={18} />
+              ) : (
+                <CheckCircle2 size={18} />
+              )}
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider">
+                  {status.message}
+                </p>
+                {status.type === "success" && (
+                  <div className="mt-4 flex flex-wrap gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setStatus({ type: null, message: "" })}
+                      className="text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:underline"
+                    >
+                      <PlusCircle size={14} className="mr-1" /> Add Next
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        router.push(
+                          `/app/faculty/${course_id}/assignments/${assignment_id}/rubrics`,
+                        )
+                      }
+                      className="text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:underline"
+                    >
+                      <ArrowLeft size={14} className="mr-1" /> Done
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 md:py-5 bg-primary text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-[0.3em] text-xs disabled:opacity-50"
+          >
+            {loading ? "Saving..." : "Add to Rubric"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

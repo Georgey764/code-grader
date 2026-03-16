@@ -2,7 +2,7 @@
 
 import { useMetadata } from "@/context";
 import { useEffect, useState } from "react";
-import { CourseList, Button, NoItemFound } from "@/components/ui/elements";
+import { CourseCard, Button, NoItemFound } from "@/components/ui/elements";
 import { HeadingWrapper } from "@/components/ui/sections";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -24,18 +24,16 @@ export default function Page() {
   }, [api, user?.cwid]);
 
   return (
-    <div className="pt-6 md:pt-0">
-      <div className="flex bg-background">
-        <div className="w-full mx-auto space-y-4">
-          {courses.length > 0 ? (
-            courses.map((course, index) => (
-              <CourseList key={index} course={course} role={user.role} />
-            ))
-          ) : (
-            <NoItemFound name="courses" />
-          )}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-1">
+      {courses.length > 0 ? (
+        courses.map((course, index) => (
+          <CourseCard key={index} course={course} />
+        ))
+      ) : (
+        <div className="col-span-full">
+          <NoItemFound name="courses" />
         </div>
-      </div>
+      )}
     </div>
   );
 }

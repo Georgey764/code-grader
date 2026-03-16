@@ -1,135 +1,121 @@
-"use client"; // Required for useState in Next.js
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  LayoutDashboard,
-  BookOpen,
-  CheckSquare,
-  User,
-  Settings,
-  Menu,
-  X,
-  Home,
-} from "lucide-react";
+"use client";
+import React, { useState, useMemo } from "react";
+import { BookOpen, Settings, Menu, X, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
-const navItemsKey = {
+const navConfig = {
   student: [
     {
-      icon: <BookOpen size={22} />,
+      icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student/courses",
-    },
-    {
-      icon: <Settings size={22} />,
-      label: "Settings",
-      route: "/app/student/settings",
+      route: "/app/student",
     },
   ],
   faculty: [
-    {
-      icon: <BookOpen size={22} />,
-      label: "Courses",
-      route: "/app/faculty",
-    },
-    {
-      icon: <Settings size={22} />,
-      label: "Settings",
-      route: "/app/faculty/settings",
-    },
+    { icon: <BookOpen size={20} />, label: "Courses", route: "/app/faculty" },
   ],
   ga: [
     {
-      icon: <BookOpen size={22} />,
+      icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student/courses",
-    },
-    {
-      icon: <Settings size={22} />,
-      label: "Settings",
-      route: "/app/student/settings",
+      route: "/app/student",
     },
   ],
 };
 
-const Sidebar = () => {
-  const { name, user } = useMetadata();
+export default function Sidebar() {
+  const { name, logout } = useMetadata(); // Pull logout from context
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
   const navItems = useMemo(() => {
-    return navItemsKey[pathname.split("/")[2]?.toLowerCase()];
-  }, []);
+    const role = pathname.split("/")[2]?.toLowerCase();
+    return [
+      ...(navConfig[role] || []),
+      {
+        icon: <Settings size={20} />,
+        label: "Settings",
+        route: `/app/${role}/settings`,
+      },
+    ];
+  }, [pathname]);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <>
-      {/* MOBILE HAMBURGER BUTTON - Only visible on small screens */}
-      <div className="drop-shadow shadow-lg md:hidden fixed top-0 left-0 z-[55] bg-primary w-full h-[80px]">
-        <p className="fixed top-[calc(40px-1.5rem)] left-[1rem] text-white font-mono text-[2rem]">
-          {name}
-        </p>
+      {/* Mobile Top Bar */}
+      <div className="md:hidden fixed top-0 z-50 bg-primary w-full h-16 flex items-center justify-between px-4 shadow-md">
+        <span className="text-white font-mono text-xl tracking-tighter uppercase font-black">
+          {name ? name[0] : "W"}
+        </span>
+        <button onClick={() => setIsOpen(true)} className="p-2 text-white">
+          <Menu size={24} />
+        </button>
       </div>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="md:hidden fixed top-4 right-4 z-[60] p-2 bg-primary text-white rounded-md shadow-lg drop-shadow"
-      >
-        <Menu size={24} />
-      </button>
 
-      {/* BACKDROP - Dims the screen when sidebar is open on mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-
-      {/* SIDEBAR PANEL */}
+      {/* Sidebar Rail */}
       <aside
         className={`
-        fixed top-0 left-0 h-screen bg-primary text-white z-[70] transition-transform duration-300 ease-in-out
-        w-64 md:w-20 lg:w-64 
+        fixed top-0 left-0 h-screen bg-primary text-white z-[70] transition-all duration-300
+        w-64 md:w-16 
         ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}
       >
-        <div className="flex flex-col h-full py-6">
-          {/* Sidebar Header / Close Button */}
-          <div className="flex items-center justify-between px-6 mb-10">
-            <span className="font-bold tracking-tighter text-xl lg:block md:hidden">
-              {name}
+        <div className="flex flex-col h-full py-6 items-center">
+          <div className="mb-10 flex items-center justify-center">
+            <span className="font-black text-2xl tracking-tighter text-secondary hidden md:block">
+              {name ? name[0] : "W"}
             </span>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="md:hidden text-white/70"
-            >
-              <X size={24} />
-            </button>
+            <div className="md:hidden flex items-center justify-between w-48">
+              <span className="font-black text-xl uppercase tracking-widest">
+                {name}
+              </span>
+              <button onClick={() => setIsOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex flex-col gap-2 px-3">
-            {navItems.map((item, index) => (
+          <nav className="flex flex-col gap-4 w-full px-2">
+            {navItems.map((item, i) => (
               <button
-                key={index}
-                onClick={() => router.push(item.route)}
-                className="cursor-pointer flex items-center gap-4 p-3 rounded-lg hover:bg-white/10 hover:text-secondary transition-all group"
+                key={i}
+                onClick={() => {
+                  router.push(item.route);
+                  setIsOpen(false);
+                }}
+                className="relative flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 hover:text-secondary transition-all group"
               >
-                <div className="min-w-[24px]">{item.icon}</div>
-                <span className="font-medium text-sm lg:block md:hidden truncate">
+                <div className="mx-auto">{item.icon}</div>
+                <span className="font-bold text-xs md:hidden uppercase tracking-widest">
                   {item.label}
                 </span>
+                <div className="hidden md:group-hover:block absolute left-full ml-4 px-2 py-1 bg-accent text-[9px] font-black uppercase tracking-widest rounded whitespace-nowrap z-50">
+                  {item.label}
+                </div>
               </button>
             ))}
           </nav>
 
-          {/* Bottom Branding (Optional) */}
-          <div className="mt-auto px-6 text-[10px] text-white/40 uppercase tracking-widest lg:block md:hidden">
-            Warhawk Systems © 2026
-          </div>
+          {/* Logout Action Button */}
+          <button
+            onClick={handleLogout}
+            className="mt-auto p-3 text-white/40 hover:text-white transition-colors relative group"
+            title="Logout"
+          >
+            <LogOut size={20} />
+            <div className="hidden md:group-hover:block absolute left-full ml-4 px-2 py-1 bg-error text-[9px] font-black uppercase tracking-widest rounded whitespace-nowrap z-50">
+              Sign Out
+            </div>
+          </button>
         </div>
       </aside>
     </>
   );
-};
-
-export default Sidebar;
+}

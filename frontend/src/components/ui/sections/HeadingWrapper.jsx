@@ -66,9 +66,6 @@ const linker = {
   "/app/faculty/id/assignments/id/edit-assignment": {
     name: "Edit Assignment Detail",
     message: "Edit Assignment Detail Selected Assignment",
-    buttonIn: (
-      <CreateButton message="Edit Assignment" childLink="edit-assignment" />
-    ),
   },
   // Faculty Assignment Submissions Detail
   "/app/faculty/id/assignments/id/submissions": {
@@ -110,15 +107,25 @@ const linker = {
     message: "View all submissions for your Selected Assignment's Roster",
   },
   // Student: Courses List
-  "/app/student/courses": {
+  "/app/student": {
     name: "Courses",
     message: "View your Courses",
     buttonIn: <CreateButton message="Join New Course" childLink="join" />,
   },
+  // Course Detail
+  "/app/student/id": {
+    name: "Course Detail",
+    message: "View your Course Detail for Selected Course",
+  },
   // Student: Assignments List
-  "/app/student/courses/id/assignments": {
+  "/app/student/id/assignments": {
     name: "Assignments",
     message: "View all Assignments for your Selected Course",
+  },
+  // Student: Assignments Detail
+  "/app/student/id/assignments/id": {
+    name: "Assignment Detail",
+    message: "View Assignment Detail for your Selected Assignment",
   },
   // Student: Settings
   "/app/student/settings": {

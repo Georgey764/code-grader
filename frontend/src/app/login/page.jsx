@@ -74,7 +74,7 @@ export default function LoginPage() {
                 if (role == "FA") {
                   router.push("/app/faculty");
                 } else if (role == "ST") {
-                  router.push("/app/student/courses/");
+                  router.push("/app/student/");
                 } else if (role == "GA") {
                   router.push("app/faculty");
                 }

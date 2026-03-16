@@ -133,7 +133,7 @@ export default function RegisterPage() {
                 placeholder="warhawk@ulm.edu"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
-                pattern="^[A-Za-z0-9._%+-]+@ulm\.edu$"
+                pattern="^[A-Za-z0-9._%+\-]+@(warhawks\.)?ulm\.edu$"
                 title="Email must be a ULM address ending with @ulm.edu."
               />
             </div>
@@ -162,7 +162,9 @@ export default function RegisterPage() {
                 <p className={hasUppercase ? "text-green-600" : "text-red-500"}>
                   {hasUppercase ? "✓" : "✗"} One uppercase letter
                 </p>
-                <p className={hasSpecialChar ? "text-green-600" : "text-red-500"}>
+                <p
+                  className={hasSpecialChar ? "text-green-600" : "text-red-500"}
+                >
                   {hasSpecialChar ? "✓" : "✗"} One special character
                 </p>
               </div>
