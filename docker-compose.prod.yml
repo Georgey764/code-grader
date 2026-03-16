@@ -90,10 +90,9 @@ services:
       - app-network
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
-    command: npm run dev
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:3000/"]
     #   interval: 10s
