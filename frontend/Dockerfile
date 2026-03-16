@@ -7,6 +7,8 @@ ENV NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
 # 2. Set working directory
 WORKDIR /app
 
+RUN apk add --no-cache curl && which curl && curl --version
+
 # 3. Copy package.json and package-lock.json (or yarn.lock)
 COPY package*.json ./
 

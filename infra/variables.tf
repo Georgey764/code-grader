@@ -57,3 +57,21 @@ variable "e2b" {
   type = string
   sensitive = true
 } 
+
+variable "next_public_url" {
+  description = "URL for frontend to call backend"
+  type = string
+  sensitive = true
+}
+
+variable "allowed_origin" {
+  description = "allowed origin for django"
+  type = string
+  sensitive = true
+}
+
+variable "allowed_host" {
+  description = "allowed host for django"
+  type = string
+  sensitive = true
+}

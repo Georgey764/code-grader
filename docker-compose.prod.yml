@@ -19,7 +19,7 @@ services:
       - app-network
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
@@ -54,7 +54,7 @@ services:
   worker:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: worker
     command: celery -A config worker --loglevel=info
     volumes:
