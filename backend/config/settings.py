@@ -28,6 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "1") == "1"
 
 ALLOWED_HOSTS = [
+    "localhost",
     os.getenv("ALLOWED_HOST", "backend"),
     os.getenv("ALLOWED_HOST_2", "localhost"),
 ]
