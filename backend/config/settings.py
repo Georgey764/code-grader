@@ -33,6 +33,36 @@ ALLOWED_HOSTS = [
     os.getenv("ALLOWED_HOST_2", "localhost"),
 ]
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "ERROR",  # Only capture Errors and Criticals
+            "class": "logging.StreamHandler",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django": {  # Change this to 'flask' or your framework name
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+    },
+}
+
 CORS_ALLOWED_ORIGINS = [os.getenv("ALLOWED_ORIGIN", "http://localhost:3000")]
 
 # Application definition
