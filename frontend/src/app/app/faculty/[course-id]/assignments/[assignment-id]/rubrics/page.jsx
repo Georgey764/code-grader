@@ -21,6 +21,7 @@ export default function RubricListPage() {
 
   const courseId = params["course-id"];
   const assignmentId = params["assignment-id"];
+  const [assignment, setAssignment] = useState(null);
 
   const [rubrics, setRubrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,8 @@ export default function RubricListPage() {
         `assignments/${assignmentId}/rubric-criteria/`,
       );
       setRubrics(response.data);
+      const assignmentResponse = await api.get(`assignments/${assignmentId}/`);
+      setAssignment(assignmentResponse.data);
     } catch (error) {
       console.error("Failed to fetch rubric criteria", error);
     } finally {
@@ -76,10 +79,14 @@ export default function RubricListPage() {
             <h1 className="text-xl font-black text-accent uppercase tracking-tight">
               Grading Rubric
             </h1>
-            <p className="text-xs text-text-muted font-medium uppercase tracking-widest">
-              Total Weight:{" "}
-              <span className="text-secondary">{totalWeight.toFixed(2)}%</span>
-            </p>
+            {assignment.is_weighted && (
+              <p className="text-xs text-text-muted font-medium uppercase tracking-widest">
+                Total Weight:{" "}
+                <span className="text-secondary">
+                  {totalWeight.toFixed(2)}%
+                </span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -123,9 +130,11 @@ export default function RubricListPage() {
                     <p className="font-bold text-accent text-sm leading-tight">
                       {r.name}
                     </p>
-                    <div className="inline-flex items-center px-2 py-0.5 bg-accent text-white text-[10px] font-black rounded uppercase">
-                      {r.weight}%
-                    </div>
+                    {assignment.is_weighted && (
+                      <div className="inline-flex items-center px-2 py-0.5 bg-accent text-white text-[10px] font-black rounded uppercase">
+                        ${r.weight}%
+                      </div>
+                    )}
                   </div>
                 </td>
                 {[

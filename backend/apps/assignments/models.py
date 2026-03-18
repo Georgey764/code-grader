@@ -1,7 +1,9 @@
+from pyexpat import model
 import uuid
 from django.db import models
 from apps.core.models import BaseModel
 from apps.courses.models import Course, Roster
+from django.core.exceptions import ValidationError
 
 
 class Assignment(BaseModel):
@@ -19,7 +21,6 @@ class Assignment(BaseModel):
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
     starter_code = models.FileField(upload_to="starter-code/", null=True, blank=True)
-    max_points_allowed = models.IntegerField(default=100)
     is_grouped = models.BooleanField(default=False)
 
     # Updated fields based on your requirements
@@ -27,6 +28,8 @@ class Assignment(BaseModel):
         max_length=10, choices=Language.choices, default=Language.PYTHON
     )
     is_file_input = models.BooleanField(default=False)
+
+    is_weighted = models.BooleanField(default=False)
 
     class Meta:
         db_table = "assignment"
@@ -42,7 +45,7 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
     name = models.CharField(max_length=100)
 
     # Diagram shows weight as DECIMAL(5,2)
-    weight = models.DecimalField(max_digits=5, decimal_places=2)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     # Detailed descriptions for each point in the 1-5 scale
     desc_one = models.TextField(
@@ -71,24 +74,50 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
 
 
 class TestCase(models.Model):
-    __test__ = False
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    # Linked to the Assignment (Foreign Key)
     assignment = models.ForeignKey(
         "Assignment", on_delete=models.CASCADE, related_name="test_cases"
     )
 
-    # Test details
-    input_text = models.TextField(blank=True, null=True)
-    expected_output = models.TextField(blank=True, null=True)
-    time_limit = models.IntegerField(help_text="Time limit in seconds", default=300)
-    is_hidden = models.BooleanField(default=True)
-    points_possible = models.FloatField()
+    text_input = models.TextField(blank=True, null=True)
+    file_input = models.FileField(upload_to="test_cases/inputs/", blank=True, null=True)
 
-    def __str__(self):
-        return f"TestCase {self.id} for Assignment {self.assignment_id}"
+    time_limit = models.IntegerField(default=1000)
+    is_hidden = models.BooleanField(default=False)
+    expected_output = models.TextField()
+
+    def clean(self):
+        super().clean()
+        if self.assignment.is_file_input:
+            if not self.file_input:
+                raise ValidationError(
+                    {"file_input": "This assignment requires a file input."}
+                )
+            if self.text_input:
+                raise ValidationError(
+                    {
+                        "text_input": "Text input must be null when is_file_input is True."
+                    }
+                )
+        else:
+            if not self.text_input:
+                raise ValidationError(
+                    {"text_input": "This assignment requires text input."}
+                )
+            if self.file_input:
+                raise ValidationError(
+                    {
+                        "file_input": "File input must be null when is_file_input is False."
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Force validation before saving
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        db_table = "test_cases"
+        ordering = ["-id"]
 
 
 class Group(models.Model):

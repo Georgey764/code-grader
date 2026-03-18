@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import {
-  Award,
   CheckCircle2,
   AlertCircle,
   Type,
@@ -22,6 +21,7 @@ const CreateRubricPage = () => {
 
   const { api } = useMetadata();
 
+  const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: null, message: "" });
 
@@ -35,9 +35,27 @@ const CreateRubricPage = () => {
     desc_five: "",
   });
 
+  useEffect(() => {
+    const fetchAssignment = async () => {
+      try {
+        const res = await api.get(`assignments/${assignment_id}/`);
+        setAssignment(res.data);
+      } catch (err) {
+        console.error("Failed to load assignment for rubric", err);
+      }
+    };
+
+    fetchAssignment();
+  }, [api, assignment_id]);
+
   const handleChange = (e) => {
     if (status.type) setStatus({ type: null, message: "" });
     const { name, value } = e.target;
+
+    // When assignment is not weighted, ignore changes to the weight field
+    if (name === "weight" && assignment && !assignment.is_weighted) {
+      return;
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -51,10 +69,17 @@ const CreateRubricPage = () => {
     setStatus({ type: null, message: "" });
 
     try {
-      await api.post(`assignments/${assignment_id}/rubric-criteria/`, {
+      const payload = {
         ...formData,
         assignment: assignment_id,
-      });
+      };
+
+      // If assignment is not weighted, force weight to null
+      if (assignment && !assignment.is_weighted) {
+        payload.weight = null;
+      }
+
+      await api.post(`assignments/${assignment_id}/rubric-criteria/`, payload);
 
       setStatus({
         type: "success",
@@ -122,17 +147,26 @@ const CreateRubricPage = () => {
                 type="number"
                 step="0.01"
                 name="weight"
-                value={formData.weight}
+                value={
+                  assignment && !assignment.is_weighted ? "" : formData.weight
+                }
                 onChange={handleChange}
                 className="w-full p-3 md:p-4 bg-background border border-border rounded-lg text-base md:text-lg font-black text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 min="0"
                 max="100"
-                required
+                required={!!(assignment && assignment.is_weighted)}
+                disabled={assignment && !assignment.is_weighted}
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-sm">
                 %
               </span>
             </div>
+            {assignment && !assignment.is_weighted && (
+              <p className="text-[10px] text-text-muted mt-1">
+                This assignment is <span className="font-bold">unweighted</span>;
+                weights are ignored and stored as <span className="font-mono">null</span>.
+              </p>
+            )}
           </div>
         </div>
 

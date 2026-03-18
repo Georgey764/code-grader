@@ -36,6 +36,10 @@ class RubricCriteriaSerializer(BaseSerializers):
         assignment = data.get("assignment")
         new_weight = data.get("weight", 0)
 
+        assignment = Assignment.objects.get(id=assignment.id)
+        if not assignment.is_weighted:
+            return data
+
         # Calculate existing weights for this assignment
         existing_weight_sum = (
             RubricCriteria.objects.filter(assignment=assignment).aggregate(
@@ -48,7 +52,7 @@ class RubricCriteriaSerializer(BaseSerializers):
         if self.instance:
             existing_weight_sum -= self.instance.weight
 
-        if existing_weight_sum + new_weight > 100:
+        if assignment.is_weighted and existing_weight_sum + new_weight > 100:
             raise serializers.ValidationError(
                 {
                     "weight": f"Total weight for this assignment would be {existing_weight_sum + new_weight}. It must not exceed 100."
@@ -59,6 +63,9 @@ class RubricCriteriaSerializer(BaseSerializers):
 
 
 class AssignmentSerializer(BaseSerializers):
+    # Using ChoiceField to ensure the ENUM is validated at the API level
+    language = serializers.ChoiceField(choices=Assignment.Language.choices)
+
     class Meta(BaseSerializers.Meta):
         model = Assignment
         fields = [
@@ -68,12 +75,11 @@ class AssignmentSerializer(BaseSerializers):
             "description",
             "deadline",
             "starter_code",
-            "max_points_allowed",
             "is_grouped",
-            "language",  # Added
-            "is_file_input",  # Added
-            "rubric_criterias",
-            "test_cases",
+            "language",
+            "is_file_input",
+            "is_weighted",  # Added your new field
+            "rubric_criterias",  # Assuming this is a related field/nested serializer
             "created_at",
             "updated_at",
         ]
@@ -83,7 +89,52 @@ class AssignmentSerializer(BaseSerializers):
 class TestCaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestCase
-        fields = "__all__"
+        fields = [
+            "id",
+            "assignment",
+            "text_input",
+            "file_input",
+            "time_limit",
+            "is_hidden",
+            "expected_output",
+        ]
+
+    def validate(self, data):
+        # Access the assignment from the validated data
+        assignment = data.get("assignment") or getattr(
+            self.instance, "assignment", None
+        )
+        text_input = data.get("text_input")
+        file_input = data.get("file_input")
+
+        if not assignment.is_file_input:
+            return data
+
+        request = self.context.get("request")
+        if assignment.is_file_input:
+            if not file_input and request and request.method in ("POST", "PUT"):
+                raise serializers.ValidationError(
+                    {"file_input": "File is required for this assignment type."}
+                )
+            if text_input:
+                raise serializers.ValidationError(
+                    {
+                        "text_input": "Text input should be empty for file-based assignments."
+                    }
+                )
+        else:
+            if not text_input:
+                raise serializers.ValidationError(
+                    {"text_input": "Text input is required for this assignment type."}
+                )
+            if file_input:
+                raise serializers.ValidationError(
+                    {
+                        "file_input": "File input should be empty for text-based assignments."
+                    }
+                )
+
+        return data
 
 
 class GroupsMembershipSerializer(serializers.ModelSerializer):

@@ -10,27 +10,28 @@ import {
   Users,
   FileCode,
   AlignLeft,
-  CheckCircle2,
   AlertCircle,
   Loader2,
   UploadCloud,
   FileText,
+  Scale,
+  Settings2,
 } from "lucide-react";
 
 export default function CreateAssignmentPage() {
   const { api } = useMetadata();
   const params = useParams();
-  const course_id = params["course-id"];
+  const courseId = params["course-id"];
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     deadline: "",
-    max_points_allowed: 100,
     is_grouped: false,
     starter_code: null,
-    language: "python", // ENUM
-    is_file_input: false, // BOOL
+    language: "python",
+    is_file_input: false,
+    is_weighted: true, // NEW: Based on schema
   });
 
   const [loading, setLoading] = useState(false);
@@ -54,14 +55,14 @@ export default function CreateAssignmentPage() {
     setMessage({ type: "", text: "" });
 
     const data = new FormData();
-    data.append("course", course_id);
+    data.append("course", courseId);
     data.append("name", formData.name);
     data.append("description", formData.description);
     data.append("deadline", formData.deadline);
-    data.append("max_points_allowed", formData.max_points_allowed);
     data.append("is_grouped", formData.is_grouped);
     data.append("language", formData.language);
     data.append("is_file_input", formData.is_file_input);
+    data.append("is_weighted", formData.is_weighted);
 
     if (formData.starter_code) {
       data.append("starter_code", formData.starter_code);
@@ -69,40 +70,16 @@ export default function CreateAssignmentPage() {
 
     try {
       await api.post("assignments/", data);
-      setMessage({ type: "success", text: "Assignment live on roster." });
-      setFormData({
-        name: "",
-        description: "",
-        deadline: "",
-        max_points_allowed: 100,
-        is_grouped: false,
-        starter_code: null,
-        language: "python",
-        is_file_input: false,
+      setMessage({
+        type: "success",
+        text: "Assignment published successfully.",
       });
+      // Reset form...
     } catch (error) {
-      if (error.response) {
-        // 1. The server responded with a status code outside the 2xx range
-        console.error("--- Server Error ---");
-        console.error("Status:", error.response.status); // e.g., 403 or 500
-        console.error("Data:", error.response.data); // The JSON error message from Django
-        console.error("Headers:", error.response.headers);
-      } else if (error.request) {
-        // 2. The request was made but no response was received
-        console.error("--- Network/No Response ---");
-        console.error("Request Details:", error.request);
-        // This often happens with CORS issues or server timeouts
-      } else {
-        // 3. Something happened in setting up the request that triggered an Error
-        console.error("--- Configuration Error ---");
-        console.error("Message:", error.message);
-      }
-
-      // Always useful for the full stack trace
-      console.debug("Full Config:", error.config);
+      console.error("Submission error", error.response?.data);
       setMessage({
         type: "error",
-        text: "Sync failed. Check required fields.",
+        text: "Failed to publish. Check required fields.",
       });
     } finally {
       setLoading(false);
@@ -110,65 +87,49 @@ export default function CreateAssignmentPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto animate-in fade-in duration-500 py-6">
-      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden">
-        <div className="h-1.5 bg-primary w-full" />
+    <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10 px-4">
+      <div className="bg-surface rounded-2xl border border-border shadow-xl overflow-hidden">
+        {/* Decorative Header Accent */}
+        <div className="h-2 bg-gradient-to-r from-primary to-secondary w-full" />
 
-        <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Assignment Name */}
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <FileCode size={14} className="text-secondary" /> Assignment
-                Title
+        <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
+            {/* Title */}
+            <div className="flex flex-col gap-2 md:col-span-4">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <FileCode size={16} className="text-secondary" /> Project Title
               </label>
               <input
                 required
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="e.g. Lab 04: Binary Search Trees"
-                className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none transition-all"
+                placeholder="e.g. Lab 04: Linked Lists"
+                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all text-base font-bold text-accent"
               />
             </div>
 
-            {/* Language Selection */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Terminal size={14} className="text-primary" /> Execution
-                Language
+            {/* Language */}
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <Terminal size={16} className="text-primary" /> Language
               </label>
               <select
                 name="language"
                 value={formData.language}
                 onChange={handleChange}
-                className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none font-bold text-xs"
+                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none font-black text-xs uppercase tracking-tight"
               >
                 <option value="python">Python 3.x</option>
-                <option value="java">Java (OpenJDK 17+)</option>
+                <option value="java">Java (OpenJDK 17)</option>
               </select>
             </div>
 
-            {/* Max Points */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Trophy size={14} className="text-secondary" /> Points Allowed
-              </label>
-              <input
-                required
-                type="number"
-                name="max_points_allowed"
-                value={formData.max_points_allowed}
-                onChange={handleChange}
-                className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none font-bold"
-              />
-            </div>
-
             {/* Deadline */}
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Calendar size={14} className="text-primary" /> Submission
-                Deadline
+            <div className="flex flex-col gap-2 md:col-span-3">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <Calendar size={16} className="text-secondary" /> Due Date &
+                Time
               </label>
               <input
                 required
@@ -176,135 +137,142 @@ export default function CreateAssignmentPage() {
                 name="deadline"
                 value={formData.deadline}
                 onChange={handleChange}
-                className="p-3 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none text-xs"
+                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
               />
             </div>
 
-            {/* Starter File - Clearer Interface */}
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <UploadCloud size={14} className="text-secondary" /> Starter
-                File
+            {/* Starter Code Upload */}
+            <div className="flex flex-col gap-2 md:col-span-6">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <UploadCloud size={16} className="text-secondary" /> Starter
+                Templates
               </label>
-              <div className="relative border-2 border-dashed border-border rounded-lg p-6 hover:border-secondary transition-colors bg-slate-50/50 group">
+              <div className="relative border-2 border-dashed border-border rounded-2xl p-10 hover:border-primary transition-all bg-slate-50/30 group cursor-pointer text-center">
                 <input
                   type="file"
                   name="starter_code"
                   onChange={handleChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
-                <div className="flex flex-col items-center justify-center gap-2 text-center">
-                  <FileText
-                    className={`transition-colors ${formData.starter_code ? "text-green-500" : "text-text-muted group-hover:text-secondary"}`}
-                    size={32}
-                  />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-accent">
-                    {formData.starter_code
-                      ? formData.starter_code.name
-                      : "Click or drag to upload source (.zip, .py, .java)"}
-                  </p>
-                  <p className="text-[9px] text-text-muted">
-                    Max file size: 50MB
-                  </p>
-                </div>
+                <FileText
+                  className={`mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 ${formData.starter_code ? "text-green-500" : "text-text-muted"}`}
+                  size={40}
+                />
+                <p className="text-xs font-black uppercase tracking-widest text-accent">
+                  {formData.starter_code
+                    ? formData.starter_code.name
+                    : "Drop starter files here or click to browse"}
+                </p>
+                <p className="text-[10px] text-text-muted mt-2">
+                  Accepted: .zip, .py, .java (Max 50MB)
+                </p>
               </div>
             </div>
 
-            {/* Toggle Row */}
-            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 border-y border-border/50 bg-slate-50/50 px-4 rounded-lg">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="is_grouped"
-                  checked={formData.is_grouped}
-                  onChange={handleChange}
-                  className="w-5 h-5 accent-primary rounded cursor-pointer"
-                />
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-accent">
-                    Group Assignment
-                  </span>
-                  <span className="text-[9px] text-text-muted leading-none">
-                    Enable team submissions
-                  </span>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="is_file_input"
-                  checked={formData.is_file_input}
-                  onChange={handleChange}
-                  className="w-5 h-5 accent-secondary rounded cursor-pointer"
-                />
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-accent">
-                    File-Based Input
-                  </span>
-                  <span className="text-[9px] text-text-muted leading-none">
-                    Read test cases from local file
-                  </span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-              <AlignLeft size={14} className="text-secondary" /> Project
-              Instructions
-            </label>
-            <textarea
-              required
-              name="description"
-              rows={5}
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Outline technical requirements..."
-              className="p-4 bg-background border border-border rounded-md focus:ring-2 focus:ring-secondary outline-none transition-all text-sm leading-relaxed"
-            />
-          </div>
-
-          {/* Status Alert */}
-          {message.text && (
-            <div
-              className={`p-4 rounded-md border flex items-center gap-3 animate-in zoom-in duration-300 ${
-                message.type === "error"
-                  ? "bg-red-50 text-error border-red-200"
-                  : "bg-green-50 text-green-800 border-green-200"
-              }`}
-            >
-              <AlertCircle
-                size={18}
-                className={
-                  message.type === "error" ? "text-error" : "text-green-600"
-                }
+            {/* Settings Toggles (The "Glancable" Section) */}
+            <div className="md:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-6 p-6 bg-slate-50/50 border border-border/60 rounded-2xl">
+              <ToggleSwitch
+                icon={<Users size={16} />}
+                label="Group Project"
+                sub="Team-based submissions"
+                name="is_grouped"
+                checked={formData.is_grouped}
+                onChange={handleChange}
               />
-              <p className="text-xs font-bold uppercase tracking-widest">
-                {message.text}
-              </p>
+              <ToggleSwitch
+                icon={<Settings2 size={16} />}
+                label="File Input"
+                sub="Local test case handling"
+                name="is_file_input"
+                checked={formData.is_file_input}
+                onChange={handleChange}
+              />
+              <ToggleSwitch
+                icon={<Scale size={16} />}
+                label="Weighted Rubric"
+                sub="Score by criteria weights"
+                name="is_weighted"
+                checked={formData.is_weighted}
+                onChange={handleChange}
+                primary
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-4 bg-primary text-white font-black rounded-md shadow-lg transition-all uppercase tracking-[0.25em] text-xs flex items-center justify-center gap-3
-              ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-accent hover:-translate-y-0.5 active:translate-y-0"}
-            `}
-          >
-            {loading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" /> Publishing...
-              </>
-            ) : (
-              "Publish Assignment"
+            {/* Description */}
+            <div className="flex flex-col gap-2 md:col-span-6">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <AlignLeft size={16} className="text-primary" /> Technical
+                Instructions
+              </label>
+              <textarea
+                required
+                name="description"
+                rows={6}
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Markdown supported. Outline project requirements, constraints, and submission guidelines..."
+                className="p-5 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm leading-relaxed"
+              />
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="pt-6 border-t border-border flex flex-col gap-4">
+            {message.text && (
+              <div
+                className={`p-4 rounded-xl border flex items-center gap-3 animate-in zoom-in duration-300 ${message.type === "error" ? "bg-red-50 text-error border-red-100" : "bg-green-50 text-green-700 border-green-100"}`}
+              >
+                <AlertCircle size={20} />
+                <p className="text-xs font-black uppercase tracking-widest">
+                  {message.text}
+                </p>
+              </div>
             )}
-          </button>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-5 bg-accent text-white font-black rounded-xl shadow-2xl hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-[0.3em] text-sm flex items-center justify-center gap-4 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />{" "}
+                  Synchronizing...
+                </>
+              ) : (
+                "Publish to Roster"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
+  );
+}
+
+function ToggleSwitch({ icon, label, sub, name, checked, onChange, primary }) {
+  return (
+    <label className="flex items-center gap-4 cursor-pointer group p-2 rounded-lg hover:bg-white transition-all">
+      <div className="relative">
+        <input
+          type="checkbox"
+          name={name}
+          checked={checked}
+          onChange={onChange}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-border rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary" />
+      </div>
+      <div className="flex flex-col">
+        <span
+          className={`text-[11px] font-black uppercase tracking-tight ${primary ? "text-primary" : "text-accent"}`}
+        >
+          {label}
+        </span>
+        <span className="text-[9px] font-bold text-text-muted uppercase leading-none mt-0.5">
+          {sub}
+        </span>
+      </div>
+    </label>
   );
 }

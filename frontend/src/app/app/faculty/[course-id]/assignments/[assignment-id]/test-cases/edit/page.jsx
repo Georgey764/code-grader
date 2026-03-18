@@ -3,16 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMetadata } from "@/context";
-import { BackButton } from "@/components/ui/elements";
 import { LoadingPage } from "@/components/ui/sections";
 import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Trophy,
   EyeOff,
   CornerDownRight,
   ArrowLeft,
+  Paperclip,
 } from "lucide-react";
 
 export default function EditTestCasePage() {
@@ -25,36 +24,56 @@ export default function EditTestCasePage() {
   const courseId = params["course-id"];
   const testCaseId = searchParams.get("test_case_id");
 
+  const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState({ type: null, message: "" });
   const [formData, setFormData] = useState({
-    input_text: "",
+    text_input: "",
     expected_output: "",
     time_limit: 1000,
     is_hidden: false,
-    points_possible: 10,
+    file_input: null,
+    file_input_url: null,
   });
+  const [currentFileUrl, setCurrentFileUrl] = useState(null);
 
   useEffect(() => {
     if (!testCaseId || !assignmentId) {
       setLoading(false);
       return;
     }
-    const fetchTestCase = async () => {
+
+    const fetchData = async () => {
       try {
-        const response = await api.get(
-          `assignments/${assignmentId}/test-cases/${testCaseId}/`,
-        );
-        const data = response.data;
-        setFormData({
-          input_text: data.input_text ?? "",
-          expected_output: data.expected_output ?? "",
-          time_limit: parseInt(data.time_limit, 10) ?? 1000,
-          is_hidden: Boolean(data.is_hidden),
-          points_possible: parseFloat(data.points_possible) ?? 10,
-        });
+        const [assignRes, tcRes] = await Promise.all([
+          api.get(`assignments/${assignmentId}/`),
+          api.get(`assignments/${assignmentId}/test-cases/${testCaseId}/`),
+        ]);
+        setAssignment(assignRes.data);
+
+        const data = tcRes.data;
+
+        if (assignRes.data.is_file_input) {
+          setFormData({
+            text_input: null,
+            expected_output: data.expected_output ?? "",
+            time_limit: parseInt(data.time_limit, 10) || 1000,
+            is_hidden: Boolean(data.is_hidden),
+            file_input_url: data.file_input || null,
+          });
+          setCurrentFileUrl(data.file_input);
+        } else {
+          setFormData({
+            text_input: data.text_input ?? "",
+            expected_output: data.expected_output ?? "",
+            time_limit: parseInt(data.time_limit, 10) || 1000,
+            is_hidden: Boolean(data.is_hidden),
+            file_input_url: null,
+          });
+        }
       } catch (err) {
+        console.log(err);
         setStatus({
           type: "error",
           message: err.response?.data?.detail || "Failed to load test case.",
@@ -63,7 +82,8 @@ export default function EditTestCasePage() {
         setLoading(false);
       }
     };
-    fetchTestCase();
+
+    fetchData();
   }, [assignmentId, testCaseId, api]);
 
   const handleChange = (e) => {
@@ -72,29 +92,67 @@ export default function EditTestCasePage() {
     let finalValue = value;
     if (type === "checkbox") finalValue = checked;
     if (name === "time_limit") finalValue = parseInt(value, 10) || 0;
-    if (name === "points_possible") finalValue = parseFloat(value) || 0;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: finalValue,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
+  };
+
+  const handleFileChange = (e) => {
+    if (status.type) setStatus({ type: null, message: "" });
+    const file = e.target.files?.[0] ?? null;
+    setFormData((prev) => ({ ...prev, file_input: file }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!testCaseId || !assignmentId) return;
+
+    if (!formData.expected_output?.trim()) {
+      setStatus({ type: "error", message: "Expected output cannot be empty." });
+      return;
+    }
+    if (formData.time_limit < 100) {
+      setStatus({
+        type: "error",
+        message: "Time limit must be at least 100ms.",
+      });
+      return;
+    }
+
     setSaving(true);
     setStatus({ type: null, message: "" });
 
     try {
-      await api.patch(
-        `assignments/${assignmentId}/test-cases/${testCaseId}/`,
-        formData,
-      );
+      const isFileInput = Boolean(assignment?.is_file_input);
+
+      if (isFileInput) {
+        const payload = new FormData();
+        if (formData.file_input)
+          payload.append("file_input", formData.file_input);
+        payload.append("expected_output", formData.expected_output);
+        payload.append("time_limit", String(formData.time_limit));
+        payload.append("is_hidden", String(formData.is_hidden));
+        await api.patch(
+          `assignments/${assignmentId}/test-cases/${testCaseId}/`,
+          payload,
+          { headers: { "Content-Type": "multipart/form-data" } },
+        );
+      } else {
+        await api.patch(
+          `assignments/${assignmentId}/test-cases/${testCaseId}/`,
+          {
+            text_input: formData.text_input,
+            expected_output: formData.expected_output,
+            time_limit: formData.time_limit,
+            is_hidden: formData.is_hidden,
+          },
+        );
+      }
+
       setStatus({
         type: "success",
         message: "Test case updated successfully.",
       });
     } catch (err) {
+      console.log(err?.response);
       setStatus({
         type: "error",
         message:
@@ -113,18 +171,16 @@ export default function EditTestCasePage() {
 
   if (!testCaseId) {
     return (
-      <div>
-        <div className="mt-6 p-6 bg-surface border border-border rounded-md text-center">
-          <AlertCircle className="mx-auto text-error mb-3" size={32} />
-          <p className="text-body font-medium">
-            Missing <code className="text-accent">test_case_id</code> query
-            parameter.
-          </p>
-          <p className="text-caption text-text-muted mt-2">
-            Open this page from the test cases list using the edit action on a
-            test case.
-          </p>
-        </div>
+      <div className="mt-6 p-6 bg-surface border border-border rounded-md text-center">
+        <AlertCircle className="mx-auto text-error mb-3" size={32} />
+        <p className="text-body font-medium">
+          Missing <code className="text-accent">test_case_id</code> query
+          parameter.
+        </p>
+        <p className="text-caption text-text-muted mt-2">
+          Open this page from the test cases list using the edit action on a
+          test case.
+        </p>
       </div>
     );
   }
@@ -136,24 +192,57 @@ export default function EditTestCasePage() {
         className="mt-6 space-y-8 bg-surface p-8 rounded-md border border-border shadow-subtle"
       >
         <div className="grid grid-cols-1 gap-6">
+          {/* Input */}
           <div className="space-y-2">
             <label className="text-subheading flex items-center">
               <CornerDownRight size={16} className="mr-2 text-secondary" />
-              Standard Input
+              {assignment?.is_file_input ? "Input File" : "Standard Input"}
             </label>
-            <textarea
-              name="input_text"
-              value={formData.input_text}
-              onChange={handleChange}
-              className="text-white code-block w-full min-h-[120px] focus:ring-2 focus:ring-secondary outline-none resize-y"
-              placeholder="e.g. 5\n10"
-              required
-            />
-            <p className="text-[10px] text-text-muted italic">
-              The input provided to the student&rsquo;s program via stdin.
-            </p>
+
+            {assignment?.is_file_input ? (
+              <>
+                <p className="text-sm text-text-muted pb-4">
+                  <span className="text-sm font-bold">Current File URL:</span>{" "}
+                  <span className="text-sm text-blue-500 hover:underline cursor-pointer">
+                    {currentFileUrl}
+                  </span>
+                </p>
+                {/* Current file pill */}
+                {formData.file_input && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 border border-primary/20 text-primary rounded-lg text-xs font-semibold w-fit">
+                    <Paperclip size={12} />
+                    <span>{formData.file_input.name}</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  name="file_input"
+                  onChange={handleFileChange}
+                  className="w-full p-3 bg-background border border-border rounded text-sm focus:ring-2 focus:ring-secondary outline-none"
+                />
+                <p className="text-[10px] text-text-muted italic">
+                  Leave empty to keep the current file, or choose a new file to
+                  replace it.
+                </p>
+              </>
+            ) : (
+              <>
+                <textarea
+                  name="text_input"
+                  value={formData.text_input ?? ""}
+                  onChange={handleChange}
+                  className="text-white code-block w-full min-h-[120px] focus:ring-2 focus:ring-secondary outline-none resize-y"
+                  placeholder="e.g. 5\n10"
+                  required
+                />
+                <p className="text-[10px] text-text-muted italic">
+                  The input provided to the student&rsquo;s program via stdin.
+                </p>
+              </>
+            )}
           </div>
 
+          {/* Expected Output */}
           <div className="space-y-2">
             <label className="text-subheading flex items-center">
               <CornerDownRight size={16} className="mr-2 text-secondary" />
@@ -173,6 +262,7 @@ export default function EditTestCasePage() {
           </div>
         </div>
 
+        {/* Time Limit */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4 border-y border-border/50">
           <div className="space-y-2">
             <label className="text-subheading flex items-center">
@@ -187,24 +277,11 @@ export default function EditTestCasePage() {
               className="w-full p-2.5 bg-background border border-border rounded text-body focus:border-secondary outline-none"
               min="100"
             />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-subheading flex items-center">
-              <Trophy size={16} className="mr-2 text-primary" />
-              Weight / Points
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              name="points_possible"
-              value={formData.points_possible}
-              onChange={handleChange}
-              className="w-full p-2.5 bg-background border border-border rounded text-body focus:border-secondary outline-none"
-            />
+            <p className="text-[10px] text-text-muted italic">Minimum 100ms.</p>
           </div>
         </div>
 
+        {/* Hidden toggle */}
         <div className="flex items-start space-x-4 p-4 bg-slate-50 rounded border border-border">
           <div className="pt-0.5">
             <input
@@ -228,6 +305,7 @@ export default function EditTestCasePage() {
           </label>
         </div>
 
+        {/* Status */}
         {status.message && (
           <div
             className={`p-4 rounded flex items-start space-x-3 border ${
@@ -237,9 +315,9 @@ export default function EditTestCasePage() {
             }`}
           >
             {status.type === "error" ? (
-              <AlertCircle size={20} />
+              <AlertCircle size={20} className="shrink-0 mt-0.5" />
             ) : (
-              <CheckCircle2 size={20} />
+              <CheckCircle2 size={20} className="shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
               <p className="text-sm font-bold">

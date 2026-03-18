@@ -1,6 +1,11 @@
 from rest_framework import viewsets, mixins
+from apps.assessments.models import Submission
 from apps.courses.models import Course, Roster
-from apps.courses.serializers import CourseSerializer, RosterSerializer
+from apps.courses.serializers import (
+    CourseSerializer,
+    GradebookSubmissionSerializer,
+    RosterSerializer,
+)
 from apps.core.permissions import IsFaculty, DenyAll, IsStudent
 from apps.courses.permissions import IsCourseOwner, IsCourseAffiliated, IsRosterOwner
 from apps.accounts.models import Roles, FacultyProfile, StudentProfile
@@ -30,6 +35,8 @@ class CourseModelViewset(viewsets.ModelViewSet):
             return [IsCourseAffiliated()]
         elif self.action == "list":
             return [IsAuthenticated()]
+        elif self.action == "grades":
+            return [IsCourseOwner()]
         else:
             return [DenyAll()]
 
@@ -62,6 +69,69 @@ class CourseModelViewset(viewsets.ModelViewSet):
         serializer.save(faculty_profile=faculty_profile_instance)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"], url_path="grades")
+    def grades(self, request, *args, **kwargs):
+        course = self.get_object()
+        # We prefetch rubric_criterias so the count() call in the serializer
+        # doesn't hit the DB repeatedly
+        assignments = course.assignments.prefetch_related("rubric_criterias").all()
+        grade_data = []
+
+        for assignment in assignments:
+            assignment_info = {
+                "assignment_id": assignment.id,
+                "assignment_name": assignment.name,
+                "is_grouped": assignment.is_grouped,
+                "is_weighted": assignment.is_weighted,
+                "data": [],
+            }
+
+            # Determine entities (Groups vs Rosters)
+            if assignment.is_grouped:
+                entities = assignment.course.groups.all()
+            else:
+                entities = assignment.course.rosters.select_related(
+                    "student_profile__user"
+                ).all()
+
+            for entity in entities:
+                filter_kwargs = {"assignment": assignment}
+                student_info = None
+
+                if assignment.is_grouped:
+                    filter_kwargs["group"] = entity
+                else:
+                    filter_kwargs["roster"] = entity
+                    profile = entity.student_profile
+                    student_info = {
+                        "id": profile.id,
+                        "full_name": profile.user.get_full_name(),
+                        "email": profile.user.email,
+                    }
+
+                # Fetch latest submission
+                latest_sub = (
+                    Submission.objects.filter(**filter_kwargs)
+                    .prefetch_related("rubric_results__rubric_criteria", "test_results")
+                    .order_by("-created_at")
+                    .first()
+                )
+
+                assignment_info["data"].append(
+                    {
+                        "entity_id": entity.id,
+                        "entity_name": str(entity),
+                        "student_detail": student_info,
+                        "submission": GradebookSubmissionSerializer(latest_sub).data
+                        if latest_sub
+                        else None,
+                    }
+                )
+
+            grade_data.append(assignment_info)
+
+        return Response(grade_data, status=status.HTTP_200_OK)
 
 
 class RosterModelViewSet(

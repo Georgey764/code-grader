@@ -32,6 +32,7 @@ function ViewList({
     const isGraded =
       rubricCriteriaCount > 0 &&
       (sub?.rubric_results?.length || 0) >= rubricCriteriaCount;
+
     if (isGraded)
       return {
         label: "Graded",
@@ -39,7 +40,7 @@ function ViewList({
         icon: <CheckCircle2 size={14} />,
       };
     return {
-      label: "Pending",
+      label: "No Grade",
       color: "text-amber-500",
       icon: <CircleDashed size={14} className="animate-spin-slow" />,
     };
@@ -107,6 +108,7 @@ function ViewList({
                           })}
                         </div>
                       </td>
+
                       <td className="px-4 py-4">
                         <div
                           className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${evalStatus.color}`}

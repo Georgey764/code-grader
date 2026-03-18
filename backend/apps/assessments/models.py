@@ -11,8 +11,7 @@ class Submission(BaseModel):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
         PROCESSING = "PROCESSING", "Processing"
-        COMPLETE = "COMPLETE", "Complete"
-        INCOMPLETE = "INCOMPLETE", "Incomplete"
+        PROCESSED = "PROCESSED", "Processed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # References the student in the course roster
@@ -29,7 +28,7 @@ class Submission(BaseModel):
     submitted_file = models.FileField(upload_to="submissions/")
 
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
+        max_length=50, choices=Status.choices, default=Status.PENDING
     )
 
     def __str__(self):
@@ -39,6 +38,7 @@ class Submission(BaseModel):
         db_table = "submission"
         verbose_name = "submission"
         verbose_name_plural = "submissions"
+        ordering = ["-created_at"]
 
     def update_test_status(self, status):
         """
@@ -48,7 +48,7 @@ class Submission(BaseModel):
         self.save()
 
 
-class RubricResult(models.Model):
+class RubricResult(BaseModel):
     # Using IntegerChoices to represent the enum(1,2,3,4,5)
     class PointScale(models.IntegerChoices):
         ONE = 1, "1"
@@ -83,9 +83,10 @@ class RubricResult(models.Model):
                 name="unique_submission_rubric_criteria",
             )
         ]
+        ordering = ["-created_at"]
 
 
-class TestResult(models.Model):
+class TestResult(BaseModel):
     # Using UUID as the primary key as specified in the diagram
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -132,7 +133,18 @@ class TestResult(models.Model):
                     for item in results
                 ]
                 cls.objects.bulk_create(test_results_to_create)
-                submission.update_test_status(status=Submission.Status.COMPLETE)
         except Exception:
             submission.update_test_status(status=Submission.Status.INCOMPLETE)
-            raise
+            submission.save()
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Test Result"
+        verbose_name_plural = "Test Results"
+        db_table = "test_result"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission", "test_case"],
+                name="unique_submission_test_case",
+            )
+        ]
