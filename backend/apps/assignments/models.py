@@ -84,31 +84,6 @@ class TestCase(models.Model):
     is_hidden = models.BooleanField(default=False)
     expected_output = models.TextField()
 
-    def clean(self):
-        super().clean()
-        if self.assignment.is_file_input:
-            if not self.file_input:
-                raise ValidationError(
-                    {"file_input": "This assignment requires a file input."}
-                )
-            if self.text_input:
-                raise ValidationError(
-                    {
-                        "text_input": "Text input must be null when is_file_input is True."
-                    }
-                )
-        else:
-            if not self.text_input:
-                raise ValidationError(
-                    {"text_input": "This assignment requires text input."}
-                )
-            if self.file_input:
-                raise ValidationError(
-                    {
-                        "file_input": "File input must be null when is_file_input is False."
-                    }
-                )
-
     def save(self, *args, **kwargs):
         self.full_clean()  # Force validation before saving
         return super().save(*args, **kwargs)

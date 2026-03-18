@@ -96,13 +96,15 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
     if (!file) return;
 
     setStatus("uploading");
+
+    const submittedFile = await file.text();
     const formData = new FormData();
     formData.append("assignment", assignmentId);
     formData.append("roster", roster?.id);
     if (assignmentData?.is_grouped) {
       formData.append("group", assignmentData?.group_id);
     }
-    formData.append("submitted_file", file);
+    formData.append("submitted_file", submittedFile);
 
     try {
       const response = await api.post("assessments/submissions/", formData);

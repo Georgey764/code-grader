@@ -27,40 +27,10 @@ services:
       - app-network
     ports:
       - "6379:6379"
-
-  localstack:
-    container_name: localstack
-    build:
-      context: ./localstack
-      dockerfile: Dockerfile.dev
-    ports:
-      - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # Service port range
-    healthcheck:
-      test: ["CMD", "test", "-f", "/tmp/provisioned"]
-      interval: 5s
-      timeout: 10s
-      retries: 25
-    environment:
-      - DEBUG=1
-      - LS_LOG=trace
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - PERSISTENCE=1                    
-    volumes:
-      - "./data/ls_data:/var/lib/localstack"
-      - "./localstack:/docker-entrypoint-initaws.d/terraform"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./localstack/initialization.sh:/etc/localstack/init/ready.d/initialization.sh" # Automatic setup scripts
-    networks:
-      - app-network
-  
   backend:
     container_name: backend
     depends_on:
       db:
-        condition: service_healthy
-      localstack:
         condition: service_healthy
     networks:
       - app-network
@@ -131,8 +101,6 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
     depends_on:
       db:
-        condition: service_healthy
-      localstack:
         condition: service_healthy
       redis:
         condition: service_healthy

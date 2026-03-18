@@ -93,48 +93,10 @@ class TestCaseSerializer(serializers.ModelSerializer):
             "id",
             "assignment",
             "text_input",
-            "file_input",
             "time_limit",
             "is_hidden",
             "expected_output",
         ]
-
-    def validate(self, data):
-        # Access the assignment from the validated data
-        assignment = data.get("assignment") or getattr(
-            self.instance, "assignment", None
-        )
-        text_input = data.get("text_input")
-        file_input = data.get("file_input")
-
-        if not assignment.is_file_input:
-            return data
-
-        request = self.context.get("request")
-        if assignment.is_file_input:
-            if not file_input and request and request.method in ("POST", "PUT"):
-                raise serializers.ValidationError(
-                    {"file_input": "File is required for this assignment type."}
-                )
-            if text_input:
-                raise serializers.ValidationError(
-                    {
-                        "text_input": "Text input should be empty for file-based assignments."
-                    }
-                )
-        else:
-            if not text_input:
-                raise serializers.ValidationError(
-                    {"text_input": "Text input is required for this assignment type."}
-                )
-            if file_input:
-                raise serializers.ValidationError(
-                    {
-                        "file_input": "File input should be empty for text-based assignments."
-                    }
-                )
-
-        return data
 
 
 class GroupsMembershipSerializer(serializers.ModelSerializer):

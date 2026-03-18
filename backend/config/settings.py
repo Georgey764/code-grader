@@ -102,41 +102,6 @@ CELERY_RESULT_BACKEND = os.environ.get(
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 
-# AWS Creds
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME")
-
-STORAGES = {
-    # Default is used for ImageField and FileField (Media)
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "location": "workspace",  # All uploads go into a /media/ folder in S3
-            "default_acl": None,
-            "file_overwrite": False,
-        },
-    },
-    # Static files stay local
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
-
-if not DEBUG:
-    AWS_DEFAULT_ACL = None
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
-
-# 3. URL Settings
-# Media comes from S3
-MEDIA_URL = (
-    f"https://{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com/workspace/"
-)
-if DEBUG:
-    AWS_S3_ENDPOINT_URL = f"{os.getenv('AWS_S3_ENDPOINT_URL')}"
-    MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/workspace/"
-
 # Static stays on your local server/domain
 STATIC_URL = "/static/"
 

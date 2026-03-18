@@ -130,28 +130,12 @@ export default function ResultsView({
               {isOpen && (
                 <div className="px-4 pb-5 space-y-4 animate-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {test.test_case?.text_input ? (
-                      <DataBox
-                        label="Input Provided"
-                        content={test.test_case?.text_input}
-                        icon={<Database size={12} />}
-                      />
-                    ) : (
-                      <DataBox
-                        label="Input Provided"
-                        content={
-                          <a
-                            href={test.test_case?.file_input}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline"
-                          >
-                            View Submission
-                          </a>
-                        }
-                        icon={<Database size={12} />}
-                      />
-                    )}
+                    <DataBox
+                      label="Input Provided"
+                      content={test.test_case?.text_input}
+                      icon={<Database size={12} />}
+                    />
+
                     <DataBox
                       label="Expected Output"
                       content={test.test_case?.expected_output}

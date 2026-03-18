@@ -33,10 +33,7 @@ export default function EditTestCasePage() {
     expected_output: "",
     time_limit: 1000,
     is_hidden: false,
-    file_input: null,
-    file_input_url: null,
   });
-  const [currentFileUrl, setCurrentFileUrl] = useState(null);
 
   useEffect(() => {
     if (!testCaseId || !assignmentId) {
@@ -54,24 +51,12 @@ export default function EditTestCasePage() {
 
         const data = tcRes.data;
 
-        if (assignRes.data.is_file_input) {
-          setFormData({
-            text_input: null,
-            expected_output: data.expected_output ?? "",
-            time_limit: parseInt(data.time_limit, 10) || 1000,
-            is_hidden: Boolean(data.is_hidden),
-            file_input_url: data.file_input || null,
-          });
-          setCurrentFileUrl(data.file_input);
-        } else {
-          setFormData({
-            text_input: data.text_input ?? "",
-            expected_output: data.expected_output ?? "",
-            time_limit: parseInt(data.time_limit, 10) || 1000,
-            is_hidden: Boolean(data.is_hidden),
-            file_input_url: null,
-          });
-        }
+        setFormData({
+          text_input: data.text_input ?? "",
+          expected_output: data.expected_output ?? "",
+          time_limit: parseInt(data.time_limit, 10) || 1000,
+          is_hidden: Boolean(data.is_hidden),
+        });
       } catch (err) {
         console.log(err);
         setStatus({
@@ -95,12 +80,6 @@ export default function EditTestCasePage() {
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
   };
 
-  const handleFileChange = (e) => {
-    if (status.type) setStatus({ type: null, message: "" });
-    const file = e.target.files?.[0] ?? null;
-    setFormData((prev) => ({ ...prev, file_input: file }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!testCaseId || !assignmentId) return;
@@ -121,31 +100,12 @@ export default function EditTestCasePage() {
     setStatus({ type: null, message: "" });
 
     try {
-      const isFileInput = Boolean(assignment?.is_file_input);
-
-      if (isFileInput) {
-        const payload = new FormData();
-        if (formData.file_input)
-          payload.append("file_input", formData.file_input);
-        payload.append("expected_output", formData.expected_output);
-        payload.append("time_limit", String(formData.time_limit));
-        payload.append("is_hidden", String(formData.is_hidden));
-        await api.patch(
-          `assignments/${assignmentId}/test-cases/${testCaseId}/`,
-          payload,
-          { headers: { "Content-Type": "multipart/form-data" } },
-        );
-      } else {
-        await api.patch(
-          `assignments/${assignmentId}/test-cases/${testCaseId}/`,
-          {
-            text_input: formData.text_input,
-            expected_output: formData.expected_output,
-            time_limit: formData.time_limit,
-            is_hidden: formData.is_hidden,
-          },
-        );
-      }
+      await api.patch(`assignments/${assignmentId}/test-cases/${testCaseId}/`, {
+        text_input: formData.text_input,
+        expected_output: formData.expected_output,
+        time_limit: formData.time_limit,
+        is_hidden: formData.is_hidden,
+      });
 
       setStatus({
         type: "success",
@@ -196,50 +156,20 @@ export default function EditTestCasePage() {
           <div className="space-y-2">
             <label className="text-subheading flex items-center">
               <CornerDownRight size={16} className="mr-2 text-secondary" />
-              {assignment?.is_file_input ? "Input File" : "Standard Input"}
+              Input
             </label>
 
-            {assignment?.is_file_input ? (
-              <>
-                <p className="text-sm text-text-muted pb-4">
-                  <span className="text-sm font-bold">Current File URL:</span>{" "}
-                  <span className="text-sm text-blue-500 hover:underline cursor-pointer">
-                    {currentFileUrl}
-                  </span>
-                </p>
-                {/* Current file pill */}
-                {formData.file_input && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 border border-primary/20 text-primary rounded-lg text-xs font-semibold w-fit">
-                    <Paperclip size={12} />
-                    <span>{formData.file_input.name}</span>
-                  </div>
-                )}
-                <input
-                  type="file"
-                  name="file_input"
-                  onChange={handleFileChange}
-                  className="w-full p-3 bg-background border border-border rounded text-sm focus:ring-2 focus:ring-secondary outline-none"
-                />
-                <p className="text-[10px] text-text-muted italic">
-                  Leave empty to keep the current file, or choose a new file to
-                  replace it.
-                </p>
-              </>
-            ) : (
-              <>
-                <textarea
-                  name="text_input"
-                  value={formData.text_input ?? ""}
-                  onChange={handleChange}
-                  className="text-white code-block w-full min-h-[120px] focus:ring-2 focus:ring-secondary outline-none resize-y"
-                  placeholder="e.g. 5\n10"
-                  required
-                />
-                <p className="text-[10px] text-text-muted italic">
-                  The input provided to the student&rsquo;s program via stdin.
-                </p>
-              </>
-            )}
+            <textarea
+              name="text_input"
+              value={formData.text_input ?? ""}
+              onChange={handleChange}
+              className="text-white code-block w-full min-h-[120px] focus:ring-2 focus:ring-secondary outline-none resize-y"
+              placeholder="e.g. 5\n10"
+              required
+            />
+            <p className="text-[10px] text-text-muted italic">
+              The input provided to the student&rsquo;s program via stdin.
+            </p>
           </div>
 
           {/* Expected Output */}
