@@ -44,7 +44,6 @@ export default function EditAssignmentPage() {
     is_grouped: false,
     language: "python",
     is_file_input: false,
-    is_weighted: true, // Added from latest schema
     starter_code: null,
   });
 
@@ -131,16 +130,6 @@ export default function EditAssignmentPage() {
         <div className="h-2 bg-gradient-to-r from-secondary to-primary w-full" />
 
         <div className="p-8 md:p-12 space-y-10">
-          {/* Header Area */}
-          <div className="flex flex-col gap-1 border-b border-border pb-6">
-            <h1 className="text-3xl font-black text-accent uppercase tracking-tighter">
-              Edit Assignment
-            </h1>
-            <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">
-              Refine requirements and technical logic
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
             {/* Title - Large Scale */}
             <div className="flex flex-col gap-2 md:col-span-4">
@@ -229,35 +218,6 @@ export default function EditAssignmentPage() {
                   Leave empty to retain existing file
                 </p>
               </div>
-            </div>
-
-            {/* Logic Toggles - GLANCEABLE SECTION */}
-            <div className="md:col-span-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-slate-50/50 border border-border/60 rounded-2xl">
-              <ToggleSwitch
-                icon={<Users size={16} />}
-                label="Group Mode"
-                sub="Team projects"
-                name="is_grouped"
-                checked={formData.is_grouped}
-                onChange={handleChange}
-              />
-              <ToggleSwitch
-                icon={<Settings2 size={16} />}
-                label="File Input"
-                sub="Local disk tests"
-                name="is_file_input"
-                checked={formData.is_file_input}
-                onChange={handleChange}
-              />
-              <ToggleSwitch
-                icon={<Scale size={16} />}
-                label="Weighted"
-                sub="Use rubric weights"
-                name="is_weighted"
-                checked={formData.is_weighted}
-                onChange={handleChange}
-                primary
-              />
             </div>
 
             {/* Description */}

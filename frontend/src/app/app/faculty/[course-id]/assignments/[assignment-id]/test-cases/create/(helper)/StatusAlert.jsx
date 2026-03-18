@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import React from "react";
 
 export default function StatusAlert({ type, message }) {
   return (
@@ -14,7 +15,14 @@ export default function StatusAlert({ type, message }) {
       ) : (
         <CheckCircle2 size={20} />
       )}
-      <p className="text-xs font-bold leading-relaxed">{message}</p>
+      <p className="whitespace-pre-line text-xs font-bold leading-relaxed">
+        {message.split(/\r?\n/).map((line, i) => (
+          <React.Fragment key={i}>
+            {line}
+            <br />
+          </React.Fragment>
+        ))}
+      </p>
     </div>
   );
 }

@@ -95,7 +95,7 @@ export default function GradingModal({
 
           const payload = {
             submission: submission.id,
-            rubric_criteria_id: cid,
+            rubric_criteria: cid,
             points: parseInt(data.points),
             optional_feedback: data.optional_feedback,
           };
@@ -113,6 +113,7 @@ export default function GradingModal({
       onClose();
       window.location.href = `./grades`;
     } catch (err) {
+      console.log(err?.response?.data);
       alert("Failed to save. Check your connection or field constraints.");
     } finally {
       setSaving(false);

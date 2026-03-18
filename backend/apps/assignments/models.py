@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from apps.core.models import BaseModel
 from apps.courses.models import Course, Roster
+from django.core.exceptions import ValidationError
 
 
 class Assignment(BaseModel):
@@ -44,7 +45,7 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
     name = models.CharField(max_length=100)
 
     # Diagram shows weight as DECIMAL(5,2)
-    weight = models.DecimalField(max_digits=5, decimal_places=2)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     # Detailed descriptions for each point in the 1-5 scale
     desc_one = models.TextField(
@@ -72,44 +73,47 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
         return f"{self.name} (Weight: {self.weight}%)"
 
 
-class TestCaseInput(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
-    class Meta:
-        # This is where you define the table name or ordering
-        db_table = "test_case_inputs"
-        verbose_name = "Test Case Input"
-
-
-class FileInputType(TestCaseInput):
-    file_url = models.FileField(upload_to="test_inputs/")
-
-    class Meta:
-        db_table = "file_input_types"
-        # No need to set abstract=False, it's the default for inheritance!
-
-
-class TextInputType(TestCaseInput):
-    input_text = models.TextField()
-
-    class Meta:
-        db_table = "text_input_types"
-
-
 class TestCase(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     assignment = models.ForeignKey(
         "Assignment", on_delete=models.CASCADE, related_name="test_cases"
     )
 
-    # Point to the Base Identity
-    test_case_input = models.OneToOneField(
-        TestCaseInput, on_delete=models.CASCADE, related_name="test_case"
-    )
+    text_input = models.TextField(blank=True, null=True)
+    file_input = models.FileField(upload_to="test_cases/inputs/", blank=True, null=True)
 
-    expected_output = models.TextField()
     time_limit = models.IntegerField(default=1000)
     is_hidden = models.BooleanField(default=False)
+    expected_output = models.TextField()
+
+    def clean(self):
+        super().clean()
+        if self.assignment.is_file_input:
+            if not self.file_input:
+                raise ValidationError(
+                    {"file_input": "This assignment requires a file input."}
+                )
+            if self.text_input:
+                raise ValidationError(
+                    {
+                        "text_input": "Text input must be null when is_file_input is True."
+                    }
+                )
+        else:
+            if not self.text_input:
+                raise ValidationError(
+                    {"text_input": "This assignment requires text input."}
+                )
+            if self.file_input:
+                raise ValidationError(
+                    {
+                        "file_input": "File input must be null when is_file_input is False."
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Force validation before saving
+        return super().save(*args, **kwargs)
 
     class Meta:
         db_table = "test_cases"

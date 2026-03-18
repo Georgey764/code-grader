@@ -10,8 +10,12 @@ import {
   Terminal,
   CalendarDays,
   AlertCircle,
+  Trash2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import { useState } from "react";
 
 function getRole(role) {
   if (role.toLowerCase() == "st") {
@@ -25,7 +29,9 @@ export default function AssignmentList({ asgn }) {
   const router = useRouter();
   const params = useParams();
   const courseId = params["course-id"];
-  const { user } = useMetadata();
+  const { user, api } = useMetadata();
+  const isFaculty = user?.role === "FA";
+  const [showModal, setShowModal] = useState(false);
 
   // Calculate urgency
   const dueDate = new Date(asgn.deadline);
@@ -34,15 +40,67 @@ export default function AssignmentList({ asgn }) {
   // Dynamic Language Tag based on schema
   const languageLabel = asgn.language === "python" ? "Python 3" : "Java 17";
 
+  const handleDelete = async () => {
+    try {
+      await api.delete(`assignments/${asgn.id}/`);
+      window.location.reload();
+      setShowModal(false);
+    } catch (error) {
+      console.error("Failed to delete assignment", error);
+    }
+  };
   return (
-    <div
-      onClick={() =>
-        router.push(
-          `/app/${getRole(user.role)}/${courseId}/assignments/${asgn.id}`,
-        )
-      }
-      className="group cursor-pointer bg-surface border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/40 hover:shadow-md transition-all animate-in fade-in"
-    >
+    <div className="group bg-surface border border-border rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-primary/40 hover:shadow-md transition-all animate-in fade-in">
+      {/* Modal for delete confirmation */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-accent/40 backdrop-blur-sm">
+          <div className="bg-surface w-full max-w-md rounded-xl shadow-2xl border border-border overflow-hidden">
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="p-2 bg-error/10 text-error rounded-lg">
+                  <AlertTriangle size={24} />
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 text-text-muted"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-accent uppercase tracking-tight">
+                  Remove Assignment?
+                </h3>
+                <p className="text-sm text-text-muted">
+                  Remove the assignment{" "}
+                  <span className="font-bold">{asgn.name}</span> from the
+                  course?
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-background flex gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="flex-1 py-2 text-xs font-bold uppercase text-text-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleDelete();
+                  setShowModal(false);
+                }}
+                className="flex-1 py-2 bg-error text-white text-xs font-black uppercase rounded"
+              >
+                Confirm Removal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-5 flex-1 min-w-0">
         {/* 1. Status Icon - Uses Maroon primary for active work */}
         <div
@@ -97,7 +155,25 @@ export default function AssignmentList({ asgn }) {
           )}
         </div>
 
-        <div className="p-2 text-border group-hover:text-primary group-hover:translate-x-1 transition-all">
+        {isFaculty && (
+          <button
+            onClick={(e) => {
+              setShowModal(true);
+            }}
+            className="cursor-pointer p-2 text-error hover:bg-error/10 rounded-lg transition-colors"
+          >
+            <Trash2 size={18} />
+          </button>
+        )}
+
+        <div
+          onClick={() =>
+            router.push(
+              `/app/${getRole(user.role)}/${courseId}/assignments/${asgn.id}`,
+            )
+          }
+          className="cursor-pointer p-2 text-border group-hover:text-primary group-hover:translate-x-1 transition-all"
+        >
           <ChevronRight size={20} strokeWidth={3} />
         </div>
       </div>

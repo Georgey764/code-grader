@@ -1,12 +1,10 @@
 from rest_framework import serializers
 from apps.assignments.models import (
     Assignment,
-    FileInputType,
     RubricCriteria,
     TestCase,
     Group,
     GroupsMembership,
-    TextInputType,
 )
 from apps.core.serializers import BaseSerializers
 from rest_framework.validators import UniqueTogetherValidator
@@ -38,6 +36,10 @@ class RubricCriteriaSerializer(BaseSerializers):
         assignment = data.get("assignment")
         new_weight = data.get("weight", 0)
 
+        assignment = Assignment.objects.get(id=assignment.id)
+        if not assignment.is_weighted:
+            return data
+
         # Calculate existing weights for this assignment
         existing_weight_sum = (
             RubricCriteria.objects.filter(assignment=assignment).aggregate(
@@ -50,7 +52,7 @@ class RubricCriteriaSerializer(BaseSerializers):
         if self.instance:
             existing_weight_sum -= self.instance.weight
 
-        if existing_weight_sum + new_weight > 100:
+        if assignment.is_weighted and existing_weight_sum + new_weight > 100:
             raise serializers.ValidationError(
                 {
                     "weight": f"Total weight for this assignment would be {existing_weight_sum + new_weight}. It must not exceed 100."
@@ -85,62 +87,54 @@ class AssignmentSerializer(BaseSerializers):
 
 
 class TestCaseSerializer(serializers.ModelSerializer):
-    input_data = serializers.SerializerMethodField()
-
     class Meta:
         model = TestCase
         fields = [
             "id",
             "assignment",
-            "test_case_input",
-            "expected_output",
+            "text_input",
+            "file_input",
             "time_limit",
             "is_hidden",
-            "input_data",
+            "expected_output",
         ]
 
     def validate(self, data):
-        assignment = data["assignment"]
+        # Access the assignment from the validated data
+        assignment = data.get("assignment") or getattr(
+            self.instance, "assignment", None
+        )
+        text_input = data.get("text_input")
+        file_input = data.get("file_input")
 
-        # Logical check: Assignment Type vs. Provided Data
-        if assignment.is_file_input and "input_file" not in data:
-            raise serializers.ValidationError("Assignment requires a file upload.")
+        if not assignment.is_file_input:
+            return data
 
-        if not assignment.is_file_input and "input_content" not in data:
-            raise serializers.ValidationError("Assignment requires text input.")
+        request = self.context.get("request")
+        if assignment.is_file_input:
+            if not file_input and request and request.method in ("POST", "PUT"):
+                raise serializers.ValidationError(
+                    {"file_input": "File is required for this assignment type."}
+                )
+            if text_input:
+                raise serializers.ValidationError(
+                    {
+                        "text_input": "Text input should be empty for file-based assignments."
+                    }
+                )
+        else:
+            if not text_input:
+                raise serializers.ValidationError(
+                    {"text_input": "Text input is required for this assignment type."}
+                )
+            if file_input:
+                raise serializers.ValidationError(
+                    {
+                        "file_input": "File input should be empty for text-based assignments."
+                    }
+                )
 
         return data
-
-    def create(self, validated_data):
-        input_content = validated_data.pop("input_content", None)
-        input_file = validated_data.pop("input_file", None)
-        assignment = validated_data["assignment"]
-
-        # 1. Create the specific child input first
-        # (This automatically creates the parent TestCaseInput row)
-        if assignment.is_file_input:
-            input_obj = FileInputType.objects.create(file_url=input_file)
-        else:
-            input_obj = TextInputType.objects.create(input_text=input_content)
-
-        # 2. Create the TestCase and link it to the input_obj
-        # Note: input_obj 'is' a TestCaseInput because of inheritance
-        test_case = TestCase.objects.create(test_case_input=input_obj, **validated_data)
-        return test_case
-
-    def get_input_data(self, obj):
-        # Accessing the "Base" record
-        base_input = obj.test_case_input
-
-        # Check if it has a file child
-        if hasattr(base_input, "fileinputtype"):
-            return {"type": "file", "url": base_input.fileinputtype.file_url.url}
-
-        # Check if it has a text child
-        if hasattr(base_input, "textinputtype"):
-            return {"type": "text", "content": base_input.textinputtype.input_text}
-
-        return None
 
 
 class GroupsMembershipSerializer(serializers.ModelSerializer):

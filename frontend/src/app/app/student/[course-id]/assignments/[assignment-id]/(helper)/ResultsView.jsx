@@ -11,6 +11,7 @@ import {
   Code2,
   Database,
   Eye,
+  Timer,
 } from "lucide-react";
 
 export default function ResultsView({
@@ -38,6 +39,7 @@ export default function ResultsView({
             <div
               className={`w-2 h-2 rounded-full ${passedCount === totalCount ? "bg-green-500" : "bg-amber-500"}`}
             />
+
             <p className="text-xl font-black text-accent uppercase tracking-tighter">
               {passedCount} of {totalCount} Test Cases Passed
             </p>
@@ -128,11 +130,19 @@ export default function ResultsView({
               {isOpen && (
                 <div className="px-4 pb-5 space-y-4 animate-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DataBox
-                      label="Input Provided"
-                      content={test.test_case?.input_text}
-                      icon={<Database size={12} />}
-                    />
+                    {test.test_case?.text_input ? (
+                      <DataBox
+                        label="Input Provided"
+                        content={test.test_case?.text_input}
+                        icon={<Database size={12} />}
+                      />
+                    ) : (
+                      <DataBox
+                        label="Input Provided"
+                        content={test.test_case?.file_input}
+                        icon={<Database size={12} />}
+                      />
+                    )}
                     <DataBox
                       label="Expected Output"
                       content={test.test_case?.expected_output}
@@ -144,11 +154,28 @@ export default function ResultsView({
                     <p className="text-[9px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
                       <Code2 size={12} /> Console Output (Stdout/Stderr)
                     </p>
-                    <pre className="p-3 bg-slate-900 text-slate-300 rounded-lg text-[11px] font-mono overflow-x-auto border border-white/5 leading-relaxed">
-                      {test.stdout ||
+                    <pre className="whitespace-pre-wrap p-3 bg-slate-900 text-slate-300 rounded-lg text-[11px] font-mono overflow-x-auto border border-white/5 leading-relaxed">
+                      {(
+                        test.stdout ||
                         test.stderr ||
-                        "No program output detected."}
+                        "No program output detected."
+                      )
+                        .split("\n")
+                        .map((line, index) => (
+                          <React.Fragment key={index}>
+                            {line}
+                            <br />
+                          </React.Fragment>
+                        ))}
                     </pre>
+                    <p className="mt-4 text-[9px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                      <Code2 size={12} /> Exit Code{" "}
+                      <span className="">{test.exit_code}</span>
+                    </p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                      <Timer size={12} /> Duration:{" "}
+                      {Math.round(test.duration * 1000) / 1000} seconds
+                    </p>
                   </div>
                 </div>
               )}

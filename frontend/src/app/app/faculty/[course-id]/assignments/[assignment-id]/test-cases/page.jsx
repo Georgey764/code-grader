@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 
 export default function TestCasesListPage() {
@@ -54,11 +55,12 @@ export default function TestCasesListPage() {
   };
 
   const filteredCases = testCases.filter((tc) => {
-    const inputContent =
-      tc?.input_data?.type === "text" ? tc.input_data.content : "";
+    const inputContent = tc?.text_input ?? "";
     return (
       inputContent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tc?.expected_output?.toLowerCase().includes(searchTerm.toLowerCase())
+      (tc?.expected_output ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
     );
   });
 
@@ -117,13 +119,24 @@ export default function TestCasesListPage() {
                 <span className="text-[10px] uppercase font-bold text-text-muted tracking-widest">
                   Input Snippet
                 </span>
-                <code className="block bg-background p-2 rounded text-xs font-mono mt-1 border border-border/50 truncate">
-                  {tc.input_data?.type === "text"
-                    ? tc.input_data.content
-                    : tc.input_data?.type === "file"
-                      ? "[File input]"
+
+                {tc.file_input ? (
+                  <a
+                    href={tc.file_input}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm cursor-pointer text-blue-500 hover:underline"
+                  >
+                    <FileText size={16} />
+                    <span className="text-sm cursor-pointer ">View Input</span>
+                  </a>
+                ) : (
+                  <code className="block bg-background p-2 rounded text-xs font-mono mt-1 border border-border/50 truncate">
+                    {tc.text_input != null && tc.text_input !== ""
+                      ? tc.text_input
                       : "Empty"}
-                </code>
+                  </code>
+                )}
               </div>
               <div className="flex justify-end items-center bg-slate-50 p-2 rounded border border-dashed border-border">
                 <div className="flex items-center text-xs text-text-muted">
@@ -168,18 +181,29 @@ export default function TestCasesListPage() {
                     <td className="p-4">
                       <VisibilityBadge isHidden={tc.is_hidden} />
                     </td>
+
                     <td className="p-4 overflow-hidden">
-                      <code className="text-[11px] bg-background p-1.5 rounded block truncate font-mono text-code-string border border-border/50">
-                        {tc.input_data?.type === "text" ? (
-                          tc.input_data.content
-                        ) : tc.input_data?.type === "file" ? (
-                          <span className="italic opacity-70">
-                            [File input]
+                      {tc.file_input ? (
+                        <a
+                          href={tc.file_input}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm cursor-pointer text-blue-500 hover:underline"
+                        >
+                          <FileText size={16} />
+                          <span className="text-sm cursor-pointer ">
+                            View Input
                           </span>
-                        ) : (
-                          <span className="italic opacity-50">Empty</span>
-                        )}
-                      </code>
+                        </a>
+                      ) : (
+                        <code className="text-[11px] bg-background p-1.5 rounded block truncate font-mono text-code-string border border-border/50">
+                          {tc.text_input != null && tc.text_input !== "" ? (
+                            tc.text_input
+                          ) : (
+                            <span className="italic opacity-50">Empty</span>
+                          )}
+                        </code>
+                      )}
                     </td>
                     <td className="p-4 overflow-hidden">
                       <code className="text-[11px] bg-background p-1.5 rounded block truncate font-mono text-primary font-bold border border-border/50">

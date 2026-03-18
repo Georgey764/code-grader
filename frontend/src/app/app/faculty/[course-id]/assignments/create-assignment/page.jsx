@@ -27,7 +27,6 @@ export default function CreateAssignmentPage() {
     name: "",
     description: "",
     deadline: "",
-    max_points_allowed: 100, // Kept for UI, though not in schema
     is_grouped: false,
     starter_code: null,
     language: "python",
@@ -139,21 +138,6 @@ export default function CreateAssignmentPage() {
                 value={formData.deadline}
                 onChange={handleChange}
                 className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
-              />
-            </div>
-
-            {/* Max Points */}
-            <div className="flex flex-col gap-2 md:col-span-3">
-              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Trophy size={16} className="text-primary" /> Point Value
-              </label>
-              <input
-                required
-                type="number"
-                name="max_points_allowed"
-                value={formData.max_points_allowed}
-                onChange={handleChange}
-                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-base font-black"
               />
             </div>
 

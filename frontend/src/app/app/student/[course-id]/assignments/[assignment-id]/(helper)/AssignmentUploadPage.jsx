@@ -42,7 +42,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
             ),
           ]);
         setRoster(rosterResponse?.data?.at(0));
-        setSubmissions(submissionResponse?.data);
+        setSubmissions(submissionResponse?.data.reverse());
         setAssignmentData(assignmentResponse?.data);
       } catch (err) {
         console.error("Data fetch error:", err);
@@ -61,7 +61,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
         `assessments/submissions/${submission?.id}/`,
       );
 
-      if (response.data.status === "COMPLETE") {
+      if (response.data.status.toUpperCase() === "PROCESSED") {
         setResults(response?.data?.test_results || []);
         setRubricResults(response?.data?.rubric_results || []);
         setStatus("completed");
@@ -75,8 +75,9 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
         setTimeout(() => pollStudentSubmission(submission, nextAttempt), 2000);
       }
     } catch (e) {
-      setStatus("list");
+      console.log(e);
       alert(`Error during evaluation: ${e.message}`);
+      window.location.reload();
     }
   };
 
@@ -108,8 +109,8 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       runTests(response.data);
     } catch (e) {
       console.log(e);
-      console.log(e.response);
-      console.log(e.response.data);
+      console.log(e?.response);
+      console.log(e?.response?.data);
       setStatus("upload");
       alert("Upload failed. Ensure your file meets requirements.");
     }
