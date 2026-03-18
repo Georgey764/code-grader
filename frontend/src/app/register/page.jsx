@@ -60,17 +60,23 @@ export default function RegisterPage() {
         body: JSON.stringify(bodyToSend),
       });
 
+      if (!response.ok) {
+        const data = await response.json();
+        console.log(data);
+        alert(
+          `Error Registering Account ${data?.email?.[0] || data?.cwid?.[0] || "Server Error"}`,
+        );
+        return;
+      }
+
       const data = await response.json();
+      console.log(data);
 
       alert("Registered Succesfully!");
       router.push("/login");
     };
 
-    try {
-      fetchHandle();
-    } catch (e) {
-      console.log(e);
-    }
+    fetchHandle();
 
     // console.log("Form submitted for role:", role);
   };

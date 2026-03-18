@@ -168,7 +168,7 @@ export default function ResultsView({
             {openTest === i && (
               <div className="p-4 bg-slate-50 border-t border-border space-y-4 animate-in slide-in-from-top-1">
                 <div className="grid grid-cols-2 gap-4">
-                  <DataBit label="Input" value={test.test_case?.input_text} />
+                  <DataBit label="Input" value={test.test_case?.text_input} />
                   <DataBit
                     label="Expected"
                     value={test.test_case?.expected_output}
@@ -209,7 +209,7 @@ function DataBit({ label, value }) {
       <span className="text-[9px] font-black uppercase text-text-muted flex items-center gap-1">
         <CornerDownRight size={10} /> {label}
       </span>
-      <div className="p-2 bg-white border border-border rounded text-[10px] font-mono truncate">
+      <div className="whitespace-pre-wrap p-2 bg-white border border-border rounded text-[10px] font-mono truncate">
         {value || "None"}
       </div>
     </div>

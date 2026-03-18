@@ -191,7 +191,7 @@ export default function ResultsView({
                     <DataBox
                       label="Input"
                       icon={<CornerDownRight size={12} />}
-                      content={test.test_case?.input_text}
+                      content={test.test_case?.text_input}
                     />
                     <DataBox
                       label="Expected Output"

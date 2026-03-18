@@ -51,6 +51,15 @@ export default function GradebookPage() {
           attemptNumber="Latest"
         >
           <div className="flex items-center gap-2">
+            <button className="px-4 py-2 bg-accent text-white font-black uppercase text-[10px] tracking-widest rounded-lg shadow hover:brightness-110 flex items-center gap-2">
+              <a
+                href={`${activeRow?.submission?.submitted_file}`}
+                target="_blank"
+              >
+                View Submission
+              </a>
+            </button>
+
             <button
               onClick={() => setGradingSub(activeRow.submission)}
               className="px-4 py-2 bg-accent text-white font-black uppercase text-[10px] tracking-widest rounded-lg shadow hover:brightness-110 flex items-center gap-2"

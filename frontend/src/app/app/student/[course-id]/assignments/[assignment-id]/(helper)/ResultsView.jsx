@@ -62,7 +62,7 @@ export default function ResultsView({
               <div key={i} className="p-4 flex justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-xs font-black text-accent uppercase">
-                    {res.rubric_criteria_detail?.name || "Criterion"}
+                    {res.rubric_criteria?.name || "Criterion"}
                   </p>
                   {res.optional_feedback && (
                     <p className="text-[11px] text-text-muted italic mt-1 leading-relaxed">
@@ -71,7 +71,7 @@ export default function ResultsView({
                   )}
                 </div>
                 <span className="text-xs font-black text-accent shrink-0">
-                  {res.points_awarded} pts
+                  Level {res.points}/5
                 </span>
               </div>
             ))}
@@ -139,7 +139,16 @@ export default function ResultsView({
                     ) : (
                       <DataBox
                         label="Input Provided"
-                        content={test.test_case?.file_input}
+                        content={
+                          <a
+                            href={test.test_case?.file_input}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            View Submission
+                          </a>
+                        }
                         icon={<Database size={12} />}
                       />
                     )}
@@ -195,7 +204,7 @@ function DataBox({ label, content, icon }) {
       <p className="text-[9px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
         {icon} {label}
       </p>
-      <div className="p-3 bg-slate-50 border border-border rounded-lg text-[11px] font-mono text-accent truncate">
+      <div className="whitespace-pre-wrap p-3 bg-slate-50 border border-border rounded-lg text-[11px] font-mono text-accent truncate">
         {content || <span className="italic opacity-40">None</span>}
       </div>
     </div>

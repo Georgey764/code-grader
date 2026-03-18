@@ -7,6 +7,8 @@ from rest_framework import serializers
 
 
 class RubricResultSerializer(serializers.ModelSerializer):
+    rubric_criteria = RubricCriteriaSerializer(read_only=True)
+
     class Meta:
         model = RubricResult
         fields = ["id", "submission", "rubric_criteria", "points", "optional_feedback"]

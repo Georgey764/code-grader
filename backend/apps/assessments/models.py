@@ -25,7 +25,7 @@ class Submission(BaseModel):
     # Optional field for group-based work
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     # Reference to the metadata of the submitted file
-    submitted_file = models.FileField(upload_to="submissions/")
+    submitted_file = models.TextField(null=True, blank=True)
 
     status = models.CharField(
         max_length=50, choices=Status.choices, default=Status.PENDING

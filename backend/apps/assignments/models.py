@@ -20,7 +20,7 @@ class Assignment(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     deadline = models.DateTimeField()
-    starter_code = models.FileField(upload_to="starter-code/", null=True, blank=True)
+    starter_code = models.TextField(null=True, blank=True)
     is_grouped = models.BooleanField(default=False)
 
     # Updated fields based on your requirements
@@ -80,8 +80,6 @@ class TestCase(models.Model):
     )
 
     text_input = models.TextField(blank=True, null=True)
-    file_input = models.FileField(upload_to="test_cases/inputs/", blank=True, null=True)
-
     time_limit = models.IntegerField(default=1000)
     is_hidden = models.BooleanField(default=False)
     expected_output = models.TextField()

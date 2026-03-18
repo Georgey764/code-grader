@@ -14,7 +14,7 @@ export default function useRouteToCorrectPath() {
         router.push("/app/faculty");
       }
       if (user.role == "ST") {
-        router.push("/app/student/courses");
+        router.push("/app/student");
       }
     }
   }, [user, router]);

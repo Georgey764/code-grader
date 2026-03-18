@@ -24,8 +24,7 @@ def run_submission_tests_task(submission_id):
     for tc in test_case_objects:
         if is_file_input and tc.file_input:
             with tc.file_input.open("rb") as f:
-                content = f.read().decode("utf-8")
-                print(f"DEBUG: CONTENT {content}")  # This keeps \n as actual newlines
+                content = f.read().decode("utf-8") # This keeps \n as actual newlines
         else:
             content = tc.text_input
 
@@ -45,8 +44,7 @@ def run_submission_tests_task(submission_id):
     # 2. Open as binary for S3 compatibility
     try:
         with submission.submitted_file.open("rb") as f:
-            # Read and decode specifically to utf-8
-            student_code = f.read().decode("utf-8")
+            student_code = f.read().decode("utf-8") # This keeps \n as actual newlines
     except Exception as e:
         # Handle potential network timeouts or S3 connection issues
         student_code = f"Error reading file: {e}"

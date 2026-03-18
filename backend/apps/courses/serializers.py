@@ -91,6 +91,7 @@ class GradebookSubmissionSerializer(serializers.ModelSerializer):
     # Adding the autograder results here
     test_results = TestResultSerializer(many=True, read_only=True)
     test_summary = serializers.SerializerMethodField()
+    submitted_file = serializers.FileField(read_only=True)
 
     class Meta:
         model = Submission
@@ -102,6 +103,7 @@ class GradebookSubmissionSerializer(serializers.ModelSerializer):
             "test_results",  # Full list of test outcomes
             "test_summary",  # Quick pass/fail count
             "created_at",
+            "submitted_file",
         ]
 
     def get_test_summary(self, obj):
