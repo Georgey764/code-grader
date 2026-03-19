@@ -9,10 +9,12 @@ const path = require("path");
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN_TERMINAL;
+
 // 1. Setup Socket.io with CORS (allowing your React app to connect)
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigin,
     methods: ["GET", "POST"],
   },
 });

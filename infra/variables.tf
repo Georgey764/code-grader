@@ -75,3 +75,15 @@ variable "allowed_host" {
   type = string
   sensitive = true
 }
+
+variable "next_public_terminal_url" {
+  description = "URL for terminal to call backend"
+  type = string
+  sensitive = true
+}
+
+variable "allowed_origin_terminal" {
+  description = "allowed origin for terminal"
+  type = string
+  sensitive = true
+}
