@@ -90,6 +90,7 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
+        NEXT_PUBLIC_TERMINAL_URL: ${NEXT_PUBLIC_TERMINAL_URL}
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:3000/"]
     #   interval: 10s
