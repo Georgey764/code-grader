@@ -23,11 +23,6 @@ data "aws_ami" "amazon_linux_2023" {
   }
 }
 
-resource "aws_iam_instance_profile" "grader_engine_profile" {
-  name = "grader-engine-instance-profile"
-  role = aws_iam_role.grader_engine_role.name
-}
-
 resource "aws_instance" "grader_engine" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.medium"
@@ -37,7 +32,6 @@ resource "aws_instance" "grader_engine" {
   associate_public_ip_address = true
   user_data_replace_on_change = false
   key_name = aws_key_pair.deployer.key_name
-  iam_instance_profile = aws_iam_instance_profile.grader_engine_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
@@ -108,13 +102,6 @@ resource "aws_instance" "grader_engine" {
 
               CELERY_BROKER_URL=${var.celery_broker_url}
               CELERY_RESULT_BACKEND=${var.celery_result_backend}
-
-              AWS_ACCESS_KEY_ID=${var.aws_access_key_id}
-              AWS_SECRET_ACCESS_KEY=${var.aws_secret_access_key}
-              AWS_STORAGE_BUCKET_NAME=${aws_s3_bucket.grader_storage.bucket}
-              AWS_S3_REGION_NAME=${data.aws_region.current.id}
-              AWS_DEFAULT_REGION=${data.aws_region.current.id}
-              AWS_S3_ENDPOINT_URL=${aws_s3_bucket.grader_storage.bucket_domain_name}
 
               E2B_API_KEY=${var.e2b}
 

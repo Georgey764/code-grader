@@ -97,7 +97,7 @@ services:
   terminal:
     build:
       context: ./terminal
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     container_name: terminal
     ports:
       - "4000:4000"
