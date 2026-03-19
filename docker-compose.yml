@@ -27,6 +27,8 @@ services:
       - /app/node_modules
     networks:
       - app-network
+    environment:
+      - ALLOWED_ORIGIN_TERMINAL=${ALLOWED_ORIGIN_TERMINAL}
     restart: always
 
   redis:
@@ -127,14 +129,15 @@ services:
       # timeout: 5s
       # retries: 3
       # start_period: 30s
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./frontend:/app
+    #   - /app/node_modules
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
+      - NEXT_PUBLIC_TERMINAL_URL=${NEXT_PUBLIC_TERMINAL_URL}
 
 networks:
   app-network:
