@@ -117,6 +117,8 @@ resource "aws_instance" "grader_engine" {
               AWS_S3_ENDPOINT_URL=${aws_s3_bucket.grader_storage.bucket_domain_name}
 
               E2B_API_KEY=${var.e2b}
+
+
               ENV_FILE
 
               chmod 600 /home/ec2-user/app/.env

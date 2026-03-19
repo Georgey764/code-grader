@@ -31,7 +31,8 @@ jobs:
       AWS_S3_REGION_NAME: ${{vars.AWS_S3_REGION_NAME}}
       AWS_DEFAULT_REGION: ${{vars.AWS_DEFAULT_REGION}}
       AWS_S3_ENDPOINT_URL: ${{secrets.AWS_S3_ENDPOINT_URL}}
-      E2B_API_KEY: ${{secrets.E2B_API_KEY}} #
+      E2B_API_KEY: ${{secrets.E2B_API_KEY}}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4

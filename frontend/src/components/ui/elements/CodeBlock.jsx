@@ -1,9 +1,14 @@
 "use client";
 
-import { Check, Copy, FileCode } from "lucide-react";
+import { Check, Copy, FileCode, Loader2, Play } from "lucide-react";
 import { useState } from "react";
 
-export default function CodeBlock({ code, name = "Starter Code" }) {
+export default function CodeBlock({
+  code,
+  name = "Starter Code",
+  handleRunCode,
+  isRunningCode,
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -33,24 +38,40 @@ export default function CodeBlock({ code, name = "Starter Code" }) {
             {name}
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {handleRunCode &&
+            (!isRunningCode ? (
+              <button
+                onClick={handleRunCode}
+                className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+              >
+                <Play size={12} />
+                Run
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
+                <Loader2 size={12} className="animate-spin" /> Running...
+              </div>
+            ))}
 
-        <button
-          onClick={handleCopy}
-          // Changed text-zinc-400 to text-slate-400 and updated hover bg
-          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
-        >
-          {copied ? (
-            <>
-              <Check size={12} className="text-emerald-400" />
-              <span className="text-emerald-400">Copied</span>
-            </>
-          ) : (
-            <>
-              <Copy size={12} />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
+          <button
+            onClick={handleCopy}
+            // Changed text-zinc-400 to text-slate-400 and updated hover bg
+            className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+          >
+            {copied ? (
+              <>
+                <Check size={12} className="text-emerald-400" />
+                <span className="text-emerald-400">Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy size={12} />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Code Area */}

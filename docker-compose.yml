@@ -15,6 +15,20 @@ services:
     networks:
       - app-network
 
+  terminal:
+    build:
+      context: ./terminal
+      dockerfile: Dockerfile.dev
+    container_name: terminal
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./terminal:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    restart: always
+
   redis:
     container_name: redis
     image: "redis:alpine"

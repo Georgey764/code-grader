@@ -16,13 +16,28 @@ import {
   Pencil,
   Scale,
   ShieldCheck,
+  Terminal,
+  Trash,
   X,
 } from "lucide-react";
 import { CodeBlock } from "@/components/ui/elements";
+import dynamic from "next/dynamic";
+import { io } from "socket.io-client";
+
+// Use dynamic import with ssr: false
+// Source - https://stackoverflow.com/a/78116690
+// Posted by Bigboss01, modified by community. See post 'Timeline' for change history
+// Retrieved 2026-03-18, License - CC BY-SA 4.0
+
+const XTerminal = dynamic(() => import("@/components/ui/elements/XTerminal"), {
+  ssr: false,
+});
 
 export default function CodeReport({ results, submission }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openTest, setOpenTest] = useState(null);
+  const [runCount, setRunCount] = useState(0);
+  const [isRunningCode, setIsRunningCode] = useState(false);
 
   const levelMap = {
     1: { label: "Beginning", color: "text-red-600" },
@@ -36,13 +51,63 @@ export default function CodeReport({ results, submission }) {
   const passedCount = visibleTests.filter((t) => t.is_success).length;
   const rubricResults = submission?.rubric_results || [];
 
+  async function handleRunCode() {
+    setIsRunningCode(true);
+    setRunCount((cur) => cur + 1);
+  }
+
   return (
     <div className="space-y-6">
-      STANDARD INPUT:
-      <textarea className="w-full min-h-[80px] p-4 bg-background border border-border rounded font-mono text-sm focus:ring-1 focus:ring-secondary outline-none" />
+      {/* Standard Input */}
+      {/* <div className="flex flex-col gap-2.5 group">
+
+        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors">
+          <Terminal size={14} className="opacity-60" />
+          Standard Input
+        </label>
+
+        <textarea
+          className="w-full min-h-[40px] p-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 outline-none transition-all 
+               shadow-inner placeholder:text-slate-300 resize-none
+               focus:ring-4 focus:ring-primary/5 focus:border-primary
+               hover:border-slate-300"
+          placeholder="e.g. 5\n10"
+        />
+      </div> */}
+
       {/* Submission File Code View */}
+      <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors mt-8 mb-2">
+        <Terminal size={14} className="opacity-60" />
+        Submitted File
+      </label>
       <div className="space-y-2">
-        <CodeBlock code={submission?.submitted_file} name="Submission File" />
+        <CodeBlock
+          code={submission?.submitted_file}
+          name="main.py"
+          handleRunCode={handleRunCode}
+          isRunningCode={isRunningCode}
+        />
+      </div>
+      {/* Terminal */}
+      <div className=" w-full flex items-center justify-between gap-2 mb-2">
+        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors ">
+          <Terminal size={14} className="opacity-60" />
+          Console
+        </label>
+
+        <button
+          onClick={() => setRunCount(0)}
+          className="cursor-pointer text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md flex items-center gap-1.5"
+        >
+          <Trash size={12} /> Clear Console
+        </button>
+      </div>
+      <div className="min-h-[200px] w-full relative">
+        <XTerminal
+          code={submission?.submitted_file}
+          runCount={runCount}
+          setIsRunningCode={setIsRunningCode}
+        />
       </div>
       {/* Detailed Automated Accordion */}
       <AutomatedTestResultAccordion
@@ -104,43 +169,6 @@ function AutomatedTestResultAccordion({
       {/* --- ACCORDION CONTENT --- */}
       {isExpanded && (
         <div className="p-6 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
-          {/* --- INSTRUCTOR FEEDBACK --- */}
-          {rubricResults?.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                <span className="w-8 h-[1px] bg-zinc-200" /> Criteria Review
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {rubricResults.map((res, i) => (
-                  <div
-                    key={i}
-                    className="p-4 bg-white border border-zinc-200 rounded-xl flex flex-col gap-2 shadow-sm"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase">
-                        {res.criteria_name}
-                      </span>
-                      <span
-                        className={`text-[10px] font-black uppercase ${levelMap?.[res.points]?.color}`}
-                      >
-                        {levelMap?.[res.points]?.label}
-                      </span>
-                    </div>
-                    {res.optional_feedback && (
-                      <p className="text-xs text-zinc-500 italic flex gap-2 pt-2 border-t border-zinc-50">
-                        <MessageSquare
-                          size={12}
-                          className="shrink-0 mt-0.5 text-zinc-300"
-                        />
-                        &quot;{res.optional_feedback}&quot;
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* --- TEST CASE LIST --- */}
           <div className="space-y-3">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
