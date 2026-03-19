@@ -168,7 +168,7 @@ resource "aws_instance" "grader_engine" {
               -m georgesamuel764@gmail.com \
               --redirect
 
-              (sudo crontab -l 2>/dev/null; echo "0 0,12 * * * perl -e 'sleep int(rand(3600))' && /usr/bin/certbot renew -q --post-hook 'systemctl reload nginx'") | sudo crontab -
+              (sudo crontab -l 2>/dev/null; echo "0 0,12 * * * sleep \$((RANDOM \% 3600)) && /usr/bin/certbot renew -q --post-hook 'systemctl reload nginx'") | sudo crontab -
 
               docker exec -it backend python manage.py migrate
               EOF
