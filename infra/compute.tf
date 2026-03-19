@@ -73,13 +73,16 @@ resource "aws_instance" "grader_engine" {
                       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                   }
 
-                  # Forward /terminal/ requests to localhost:4000
-                  location /terminal/ {
-                      proxy_pass http://localhost:4000/;
-                      proxy_set_header Host \$host;
-                      proxy_set_header X-Real-IP \$remote_addr;
-                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-                  }
+                  # Forward /socket.io/ requests to localhost:4000
+                  location /socket.io/ {
+                      proxy_pass http://localhost:4000;
+                      proxy_http_version 1.1;
+                      proxy_set_header Upgrade $http_upgrade;
+                      proxy_set_header Connection "upgrade";
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  } 
 
                   # Forward all other requests to localhost:3000
                   location / {
