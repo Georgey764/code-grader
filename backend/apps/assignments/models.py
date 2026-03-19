@@ -43,26 +43,10 @@ class RubricCriteria(BaseModel):  # Assuming BaseModel provides created_at/updat
         "Assignment", on_delete=models.CASCADE, related_name="rubric_criterias"
     )
     name = models.CharField(max_length=100)
+    max_points = models.DecimalField(max_digits=5, decimal_places=2, default=5)
 
     # Diagram shows weight as DECIMAL(5,2)
     weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-
-    # Detailed descriptions for each point in the 1-5 scale
-    desc_one = models.TextField(
-        help_text="Description for 1 point", null=True, blank=True
-    )
-    desc_two = models.TextField(
-        help_text="Description for 2 points", null=True, blank=True
-    )
-    desc_three = models.TextField(
-        help_text="Description for 3 points", null=True, blank=True
-    )
-    desc_four = models.TextField(
-        help_text="Description for 4 points", null=True, blank=True
-    )
-    desc_five = models.TextField(
-        help_text="Description for 5 points", null=True, blank=True
-    )
 
     class Meta:
         db_table = "rubric_criteria"

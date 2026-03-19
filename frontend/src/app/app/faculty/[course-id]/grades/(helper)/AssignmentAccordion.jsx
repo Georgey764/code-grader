@@ -113,7 +113,7 @@ export default function AssignmentAccordion({
                           {row.student_detail?.full_name || row.entity_name}
                         </span>
                         <span className="text-[10px] font-mono text-text-muted uppercase tracking-tighter">
-                          {row.student_detail?.username ||
+                          {row.student_detail?.email ||
                             `ID: ${row.entity_id.slice(0, 8)}`}
                         </span>
                       </div>
@@ -153,16 +153,18 @@ export default function AssignmentAccordion({
                             : "text-text-muted opacity-20"
                         }
                       >
-                        {isGraded ? `${sub.total_points}%` : "0.0%"}
+                        {isGraded
+                          ? `${sub.total_points} ${assignment.is_weighted ? "%" : "pts"}`
+                          : "N/A"}
                       </span>
                     </td>
                     <td className="p-4 pr-8 text-right">
                       {sub && (
                         <button
                           onClick={() => onSelect(row)}
-                          className={`px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all ${isGraded ? "bg-white border border-border text-text-muted" : "bg-accent text-white shadow-lg"}`}
+                          className={`cursor-pointer px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${isGraded ? "bg-white border border-border text-text-muted" : "bg-accent text-white shadow-lg"}`}
                         >
-                          {isGraded ? "Review" : "Grade Now"}
+                          {isGraded ? "Review" : "View Submission"}
                         </button>
                       )}
                     </td>

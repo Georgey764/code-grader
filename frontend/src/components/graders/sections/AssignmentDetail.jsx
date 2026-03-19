@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
-import { StarterCode } from "@/components/ui/elements";
+import { CodeBlock } from "@/components/ui/elements";
 import {
   FileCode,
   Copy,
@@ -127,7 +127,7 @@ export default function AssignmentDetailsPage() {
         </div>
 
         {/* 5. MINIMAL STARTER CODE LINK */}
-        <StarterCode code={assignment.starter_code} />
+        <CodeBlock code={assignment.starter_code} />
       </div>
     </div>
   );

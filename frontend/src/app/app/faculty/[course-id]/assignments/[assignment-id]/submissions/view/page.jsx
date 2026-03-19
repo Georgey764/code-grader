@@ -10,16 +10,13 @@ import {
   ChevronRight,
   CircleDashed,
   CheckCircle2,
-  Scale,
 } from "lucide-react";
-import ResultsView from "./(helper)/ResultsView";
-import GradingModal from "./(helper)/GradingModal";
+import { CodeReport } from "@/components/ui/sections";
 
 export default function SubmissionsPage() {
   const param = useParams();
   const assignmentId = param["assignment-id"];
   const { api } = useMetadata();
-  const router = useRouter();
 
   const searchParams = useSearchParams();
   const rosterId = searchParams.get("roster_id");
@@ -28,8 +25,10 @@ export default function SubmissionsPage() {
   const [submissions, setSubmissions] = useState([]);
   const [assignmentData, setAssignmentData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [viewingSub, setViewingSub] = useState(null);
-  const [gradingSub, setGradingSub] = useState(null);
+
+  const router = useRouter();
+
+  const courseId = param["course-id"];
 
   const fetchPageData = async () => {
     try {
@@ -42,7 +41,7 @@ export default function SubmissionsPage() {
         api.get(`assignments/${assignmentId}/`),
       ]);
 
-      setSubmissions([...subRes?.data].reverse());
+      setSubmissions([...subRes?.data]);
       setAssignmentData(assignRes?.data);
     } catch (err) {
       console.error("Error fetching page data:", err);
@@ -56,47 +55,6 @@ export default function SubmissionsPage() {
   }, [api, assignmentId, groupId, rosterId]);
 
   if (loading) return null;
-
-  // Render Diagnostic View (ResultsView)
-  if (viewingSub) {
-    const attemptNumber = submissions.length - submissions.indexOf(viewingSub);
-    return (
-      <div className="animate-in fade-in duration-500">
-        <ResultsView
-          results={viewingSub.test_results}
-          submission={viewingSub}
-          attemptNumber={attemptNumber}
-        >
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setGradingSub(viewingSub)}
-              className="px-4 py-2 bg-accent text-white font-black uppercase text-[10px] tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center gap-2"
-            >
-              <Scale size={14} /> Evaluate Rubric
-            </button>
-            <button
-              onClick={() => setViewingSub(null)}
-              className="px-4 py-2 border border-border text-text-muted font-black uppercase text-[10px] tracking-widest rounded hover:bg-slate-50 transition-all"
-            >
-              Back to List
-            </button>
-          </div>
-        </ResultsView>
-
-        {gradingSub && (
-          <GradingModal
-            submission={gradingSub}
-            assignmentId={assignmentId}
-            rosterId={rosterId}
-            onClose={() => {
-              setGradingSub(null);
-              fetchPageData(); // Refresh data to update "Graded" status
-            }}
-          />
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl">
@@ -134,7 +92,9 @@ export default function SubmissionsPage() {
                 return (
                   <tr
                     key={sub.id}
-                    onClick={() => setViewingSub(sub)}
+                    onClick={() =>
+                      router.push(`/app/faculty/${courseId}/grades/${sub.id}`)
+                    }
                     className="hover:bg-primary/5 cursor-pointer transition-colors group"
                   >
                     <td className="px-6 py-4">

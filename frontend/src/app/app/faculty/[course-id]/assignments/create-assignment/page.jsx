@@ -182,6 +182,7 @@ export default function CreateAssignmentPage() {
                 className="w-full rounded-2xl border-2 border-border bg-slate-50/30 p-4 font-mono text-sm transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
+
             {/* Deadline */}
             <div className="flex flex-col gap-2 md:col-span-3">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">

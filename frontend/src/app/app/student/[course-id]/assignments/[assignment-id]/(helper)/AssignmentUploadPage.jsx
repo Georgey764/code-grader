@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import FileUpload from "./FileUpload";
 import PollingView from "./PollingView";
-import ResultsView from "./ResultsView";
 import AssignmentDetails from "./AssignmentDetails";
 import SubmissionList from "./SubmissionList";
+import { CodeReport } from "@/components/ui/sections";
 
 export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const { api, user } = useMetadata();
@@ -29,6 +29,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const [roster, setRoster] = useState({});
   const [submissions, setSubmissions] = useState([]);
   const [assignmentData, setAssignmentData] = useState(null);
+  const [activeSubmission, setActiveSubmission] = useState(null);
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -62,6 +63,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       );
 
       if (response.data.status.toUpperCase() === "PROCESSED") {
+        setActiveSubmission(response?.data);
         setResults(response?.data?.test_results || []);
         setRubricResults(response?.data?.rubric_results || []);
         setStatus("completed");
@@ -204,7 +206,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
           {status === "completed" && (
             <div className="space-y-6 sm:space-y-8">
-              <ResultsView results={results} rubricResults={rubricResults} />
+              <CodeReport results={results} submission={activeSubmission} />
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-border/50">
                 <button
