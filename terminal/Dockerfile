@@ -18,6 +18,11 @@
     
     # Create a non-root user for security (CRITICAL for a terminal server)
     RUN useradd -m terminaluser
+    
+    # Copy only the compiled node_modules and code from builder
+    COPY --from=builder /app/node_modules ./node_modules
+    COPY . .
+
     # Set correct permissions BEFORE switching user
     RUN find /app -type d -exec chmod 700 {} \; \
         # Files: owner can read/write
@@ -25,10 +30,6 @@
         # Make sure terminaluser owns everything
         && chown -R terminaluser:terminaluser /app
     USER terminaluser
-
-    # Copy only the compiled node_modules and code from builder
-    COPY --from=builder /app/node_modules ./node_modules
-    COPY . .
     
     EXPOSE 4000
     
