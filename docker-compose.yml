@@ -119,6 +119,7 @@ services:
       dockerfile: Dockerfile.dev
       args:
         NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL}
+        NEXT_PUBLIC_TERMINAL_URL: ${NEXT_PUBLIC_TERMINAL_URL}
     command: npm run dev
     # healthcheck:
       # test: ["CMD", "curl", "-f", "http://localhost:3000/"]
