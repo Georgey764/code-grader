@@ -9,6 +9,7 @@ from apps.assignments.models import (
 from apps.core.serializers import BaseSerializers
 from rest_framework.validators import UniqueTogetherValidator
 from django.db.models import Sum
+from django.shortcuts import get_object_or_404
 
 
 class RubricCriteriaSerializer(BaseSerializers):
@@ -18,29 +19,34 @@ class RubricCriteriaSerializer(BaseSerializers):
             "id",
             "assignment",
             "name",
-            "weight",  # Added
-            "desc_one",  # Added
-            "desc_two",  # Added
-            "desc_three",  # Added
-            "desc_four",  # Added
-            "desc_five",  # Added
+            "weight",
+            "max_points",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    def validate_weight(self, value):
+        assignment = self.context.get("assignment")
+        if assignment and assignment.is_weighted:
+            if value <= 0:
+                raise serializers.ValidationError(
+                    "Weighted criteria must have a positive weight."
+                )
+        return value
+
     def validate(self, data):
         """
         Check that the sum of weights for the assignment does not exceed 100.
         """
-        assignment = data.get("assignment")
+        assignment = data.get("assignment") or (
+            self.instance.assignment if self.instance else None
+        )
         new_weight = data.get("weight", 0)
 
-        assignment = Assignment.objects.get(id=assignment.id)
-        if not assignment.is_weighted:
+        if not assignment or not assignment.is_weighted:
             return data
 
-        # Calculate existing weights for this assignment
         existing_weight_sum = (
             RubricCriteria.objects.filter(assignment=assignment).aggregate(
                 total=Sum("weight")
@@ -48,14 +54,16 @@ class RubricCriteriaSerializer(BaseSerializers):
             or 0
         )
 
-        # If updating an existing instance, subtract its current weight from the sum
         if self.instance:
             existing_weight_sum -= self.instance.weight
 
-        if assignment.is_weighted and existing_weight_sum + new_weight > 100:
+        if existing_weight_sum + new_weight > 100:
             raise serializers.ValidationError(
                 {
-                    "weight": f"Total weight for this assignment would be {existing_weight_sum + new_weight}. It must not exceed 100."
+                    "weight": (
+                        f"Total weight for this assignment would be "
+                        f"{existing_weight_sum + new_weight}. It must not exceed 100."
+                    )
                 }
             )
 
@@ -93,48 +101,10 @@ class TestCaseSerializer(serializers.ModelSerializer):
             "id",
             "assignment",
             "text_input",
-            "file_input",
             "time_limit",
             "is_hidden",
             "expected_output",
         ]
-
-    def validate(self, data):
-        # Access the assignment from the validated data
-        assignment = data.get("assignment") or getattr(
-            self.instance, "assignment", None
-        )
-        text_input = data.get("text_input")
-        file_input = data.get("file_input")
-
-        if not assignment.is_file_input:
-            return data
-
-        request = self.context.get("request")
-        if assignment.is_file_input:
-            if not file_input and request and request.method in ("POST", "PUT"):
-                raise serializers.ValidationError(
-                    {"file_input": "File is required for this assignment type."}
-                )
-            if text_input:
-                raise serializers.ValidationError(
-                    {
-                        "text_input": "Text input should be empty for file-based assignments."
-                    }
-                )
-        else:
-            if not text_input:
-                raise serializers.ValidationError(
-                    {"text_input": "Text input is required for this assignment type."}
-                )
-            if file_input:
-                raise serializers.ValidationError(
-                    {
-                        "file_input": "File input should be empty for text-based assignments."
-                    }
-                )
-
-        return data
 
 
 class GroupsMembershipSerializer(serializers.ModelSerializer):

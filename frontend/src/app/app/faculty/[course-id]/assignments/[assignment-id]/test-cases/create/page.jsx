@@ -8,6 +8,7 @@ import TabButton from "./(helper)/TabButton";
 import TemplateGuide from "./(helper)/TemplateGuide";
 import ManualForm from "./(helper)/ManualForm";
 import StatusAlert from "./(helper)/StatusAlert";
+import FileEntry from "./(helper)/FileEntry";
 
 export default function CreateTestCase() {
   const params = useParams();
@@ -107,11 +108,29 @@ export default function CreateTestCase() {
       return match ? parseInt(match[1]) : null;
     };
 
+    // Build a map of input files: { 1: File, 2: File, ... }
+    const inputMap = {};
+    for (const file of inputFiles) {
+      const num = getNumber(file.name);
+      if (num !== null) inputMap[num] = file;
+    }
+
     // Build a map of output files: { 1: File, 2: File, ... }
     const outputMap = {};
     for (const file of outputFiles) {
       const num = getNumber(file.name);
       if (num !== null) outputMap[num] = file;
+    }
+
+    // Explicitly skip outputs that don't have a matching input.
+    // (Previously these were implicitly ignored because we iterated inputs.)
+    for (const [numStr, outputFile] of Object.entries(outputMap)) {
+      const num = parseInt(numStr, 10);
+      if (!inputMap[num]) {
+        warnings.push(
+          `No matching input_${num}.txt found for "${outputFile.name}" — skipped.`,
+        );
+      }
     }
 
     // Process each input file sequentially
@@ -134,11 +153,12 @@ export default function CreateTestCase() {
       }
 
       // Read output file content as text
+      const textInput = await inputFile.text();
       const expectedOutput = await outputFile.text();
 
       // Build FormData — file_input as file, text fields empty, expected_output as text
       const formData = new FormData();
-      formData.append("file_input", inputFile);
+      formData.append("text_input", textInput);
       formData.append("expected_output", expectedOutput);
       formData.append("assignment", assignmentId);
       formData.append("is_hidden", false);
@@ -166,7 +186,7 @@ export default function CreateTestCase() {
     e.preventDefault();
 
     // For file-input assignments
-    if (assignment?.is_file_input) {
+    if (assignment?.is_file_input && mode === "file") {
       if (inputFiles.length === 0) {
         setStatus({
           type: "error",
@@ -219,34 +239,18 @@ export default function CreateTestCase() {
           file_input: null,
         });
       }
-    }
-
-    // For text-input assignments
-    if (!assignment?.is_file_input) {
+    } else {
       try {
         setLoading(true);
-        if (assignment?.is_file_input) {
-          const payload = new FormData();
-          if (formData.file_input) {
-            payload.append("file_input", formData.file_input);
-          }
-          payload.append("expected_output", formData.expected_output);
-          payload.append("time_limit", String(formData.time_limit));
-          payload.append("is_hidden", String(formData.is_hidden));
-          payload.append("assignment", assignment_id);
 
-          await api.post(`assignments/${assignment_id}/test-cases/`, payload, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        } else {
-          await api.post(`assignments/${assignment_id}/test-cases/`, {
-            text_input: formData.text_input,
-            expected_output: formData.expected_output,
-            time_limit: formData.time_limit,
-            is_hidden: formData.is_hidden,
-            assignment: assignment_id,
-          });
-        }
+        await api.post(`assignments/${assignment_id}/test-cases/`, {
+          text_input: formData.text_input,
+          expected_output: formData.expected_output,
+          time_limit: formData.time_limit,
+          is_hidden: formData.is_hidden,
+          assignment: assignment_id,
+        });
+
         setStatus({
           type: "success",
           message: "Manual test case registered successfully.",
@@ -273,12 +277,6 @@ export default function CreateTestCase() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (assignment?.is_file_input) {
-        throw new Error(
-          "Bulk JSON is only supported for text-input assignments.",
-        );
-      }
-
       const parsedData = JSON.parse(bulkData);
       if (!Array.isArray(parsedData))
         throw new Error("Data must be a JSON array.");
@@ -310,22 +308,25 @@ export default function CreateTestCase() {
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header Actions */}
 
-      {!assignment?.is_file_input && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-border">
-            <TabButton
-              active={mode === "manual"}
-              onClick={() => setMode("manual")}
-              label="Manual Entry"
-            />
-            <TabButton
-              active={mode === "bulk"}
-              onClick={() => setMode("bulk")}
-              label="Bulk JSON"
-            />
-          </div>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex bg-slate-100 p-1 rounded-lg border border-border">
+          <TabButton
+            active={mode === "manual"}
+            onClick={() => setMode("manual")}
+            label="Manual Entry"
+          />
+          <TabButton
+            active={mode === "bulk"}
+            onClick={() => setMode("bulk")}
+            label="Bulk JSON"
+          />
+          <TabButton
+            active={mode === "file"}
+            onClick={() => setMode("file")}
+            label="File Entry"
+          />
         </div>
-      )}
+      </div>
 
       <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden relative">
         <div className="h-1.5 bg-primary w-full" />
@@ -333,6 +334,20 @@ export default function CreateTestCase() {
         <div className="p-6 md:p-10">
           {mode === "manual" ? (
             <ManualForm
+              formData={formData}
+              loading={loading}
+              status={status}
+              onChange={handleChange}
+              onSubmit={handleIndividualSubmit}
+              onFileChange={handleFileChange}
+              onFileRemove={handleFileRemove}
+              inputFiles={inputFiles}
+              outputFiles={outputFiles}
+              onReset={() => setStatus({ type: null, message: "" })}
+              isFileInput={!!assignment?.is_file_input}
+            />
+          ) : mode === "file" ? (
+            <FileEntry
               formData={formData}
               loading={loading}
               status={status}

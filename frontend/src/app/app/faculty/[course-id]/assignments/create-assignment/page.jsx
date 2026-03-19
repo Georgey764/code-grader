@@ -38,15 +38,11 @@ export default function CreateAssignmentPage() {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const handleChange = (e) => {
-    const { name, value, type, checked, files } = e.target;
-    if (type === "file") {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: type === "checkbox" ? checked : value,
-      }));
-    }
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -125,48 +121,21 @@ export default function CreateAssignmentPage() {
               </select>
             </div>
 
-            {/* Deadline */}
-            <div className="flex flex-col gap-2 md:col-span-3">
-              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Calendar size={16} className="text-secondary" /> Due Date &
-                Time
-              </label>
-              <input
-                required
-                type="datetime-local"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
-                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
-              />
-            </div>
-
-            {/* Starter Code Upload */}
+            {/* Description */}
             <div className="flex flex-col gap-2 md:col-span-6">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <UploadCloud size={16} className="text-secondary" /> Starter
-                Templates
+                <AlignLeft size={16} className="text-primary" /> Technical
+                Instructions
               </label>
-              <div className="relative border-2 border-dashed border-border rounded-2xl p-10 hover:border-primary transition-all bg-slate-50/30 group cursor-pointer text-center">
-                <input
-                  type="file"
-                  name="starter_code"
-                  onChange={handleChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <FileText
-                  className={`mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 ${formData.starter_code ? "text-green-500" : "text-text-muted"}`}
-                  size={40}
-                />
-                <p className="text-xs font-black uppercase tracking-widest text-accent">
-                  {formData.starter_code
-                    ? formData.starter_code.name
-                    : "Drop starter files here or click to browse"}
-                </p>
-                <p className="text-[10px] text-text-muted mt-2">
-                  Accepted: .zip, .py, .java (Max 50MB)
-                </p>
-              </div>
+              <textarea
+                required
+                name="description"
+                rows={6}
+                value={formData.description}
+                onChange={handleChange}
+                placeholder="Markdown supported. Outline project requirements, constraints, and submission guidelines..."
+                className="p-5 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm leading-relaxed"
+              />
             </div>
 
             {/* Settings Toggles (The "Glancable" Section) */}
@@ -198,20 +167,35 @@ export default function CreateAssignmentPage() {
               />
             </div>
 
-            {/* Description */}
+            {/* Starter Code Upload */}
             <div className="flex flex-col gap-2 md:col-span-6">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <AlignLeft size={16} className="text-primary" /> Technical
-                Instructions
+                <UploadCloud size={16} className="text-secondary" /> Starter
+                Templates
               </label>
+
               <textarea
-                required
-                name="description"
-                rows={6}
-                value={formData.description}
+                name="starter_code"
                 onChange={handleChange}
-                placeholder="Markdown supported. Outline project requirements, constraints, and submission guidelines..."
-                className="p-5 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm leading-relaxed"
+                placeholder="Enter your code here..."
+                rows={8}
+                className="w-full rounded-2xl border-2 border-border bg-slate-50/30 p-4 font-mono text-sm transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            {/* Deadline */}
+            <div className="flex flex-col gap-2 md:col-span-3">
+              <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                <Calendar size={16} className="text-secondary" /> Due Date &
+                Time
+              </label>
+              <input
+                required
+                type="datetime-local"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
               />
             </div>
           </div>

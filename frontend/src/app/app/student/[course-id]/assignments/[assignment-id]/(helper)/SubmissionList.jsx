@@ -10,7 +10,7 @@ import {
   CircleDashed,
   Inbox,
 } from "lucide-react";
-import ResultsView from "./ResultsView";
+import { CodeReport } from "@/components/ui/sections";
 
 /**
  * Simplified List View
@@ -170,9 +170,9 @@ function ViewTestResult({ viewingSubmission, setViewingSubmission }) {
           Close Report
         </button>
       </div>
-      <ResultsView
+      <CodeReport
+        submission={viewingSubmission}
         results={viewingSubmission?.test_results || []}
-        rubricResults={viewingSubmission?.rubric_results || []}
       />
     </div>
   );

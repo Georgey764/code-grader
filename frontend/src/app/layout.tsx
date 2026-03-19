@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/context";
+import "xterm/css/xterm.css";
 
 const inter = Inter({
   variable: "--font-family-sans",

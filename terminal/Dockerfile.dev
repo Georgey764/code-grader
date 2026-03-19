@@ -1,0 +1,26 @@
+# Use a full node image because we need build tools for node-pty
+FROM node:20-bookworm
+
+# Install build essentials and python (required for node-pty)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Install nodemon globally for hot-reloading
+RUN npm install -g nodemon
+
+# Copy the rest of the code
+COPY . .
+
+EXPOSE 4000
+
+# Run with nodemon to watch for changes
+CMD ["nodemon", "server.js"]

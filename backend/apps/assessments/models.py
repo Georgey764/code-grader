@@ -25,7 +25,7 @@ class Submission(BaseModel):
     # Optional field for group-based work
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
     # Reference to the metadata of the submitted file
-    submitted_file = models.FileField(upload_to="submissions/")
+    submitted_file = models.TextField(null=True, blank=True)
 
     status = models.CharField(
         max_length=50, choices=Status.choices, default=Status.PENDING
@@ -49,14 +49,6 @@ class Submission(BaseModel):
 
 
 class RubricResult(BaseModel):
-    # Using IntegerChoices to represent the enum(1,2,3,4,5)
-    class PointScale(models.IntegerChoices):
-        ONE = 1, "1"
-        TWO = 2, "2"
-        THREE = 3, "3"
-        FOUR = 4, "4"
-        FIVE = 5, "5"
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     submission = models.ForeignKey(
         Submission, on_delete=models.CASCADE, related_name="rubric_results"
@@ -66,7 +58,7 @@ class RubricResult(BaseModel):
     )
 
     # Updated to IntegerField with choices to match enum(1,2,3,4,5)
-    points = models.IntegerField(choices=PointScale.choices)
+    points = models.DecimalField(max_digits=5, decimal_places=2)
 
     optional_feedback = models.TextField(null=True, blank=True)
 

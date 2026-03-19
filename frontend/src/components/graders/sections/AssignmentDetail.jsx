@@ -4,13 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
+import { CodeBlock } from "@/components/ui/elements";
 import {
+  FileCode,
+  Copy,
+  Check,
   Award,
   Send,
   ShieldCheck,
   Users,
   Calendar,
-  FileCode,
   Trophy,
   Download,
   Terminal,
@@ -116,7 +119,7 @@ export default function AssignmentDetailsPage() {
       <div className="space-y-6">
         <div className="space-y-2">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
-            <FileCode size={14} /> Technical Prompt
+            <FileCode size={14} /> Assignment Description
           </p>
           <div className="text-sm md:text-base leading-relaxed text-text-main font-medium whitespace-pre-wrap opacity-90">
             {assignment.description || "No description provided."}
@@ -124,16 +127,7 @@ export default function AssignmentDetailsPage() {
         </div>
 
         {/* 5. MINIMAL STARTER CODE LINK */}
-        {assignment.starter_code && (
-          <div className="pt-4">
-            <a
-              href={assignment.starter_code}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 border border-border text-accent text-[10px] font-black uppercase tracking-widest rounded hover:bg-primary hover:text-white transition-all shadow-sm"
-            >
-              <Download size={14} /> Download Starter Package
-            </a>
-          </div>
-        )}
+        <CodeBlock code={assignment.starter_code} />
       </div>
     </div>
   );

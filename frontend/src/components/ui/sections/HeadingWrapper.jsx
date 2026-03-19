@@ -111,6 +111,11 @@ const linker = {
     name: "Gradebook",
     message: "Weighted Points & Diagnostic Summary",
   },
+  // Faculty: Grade View Page
+  "/app/faculty/id/grades/id": {
+    name: "Grade Detail",
+    message: "View the Details for the Selected Grade",
+  },
   // Student: Courses List
   "/app/student": {
     name: "Courses",

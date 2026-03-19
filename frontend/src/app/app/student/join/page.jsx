@@ -109,7 +109,7 @@ const CreateRosterPage = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    router.push(`/app/student/courses/${courseIdInput.trim()}`)
+                    router.push(`/app/student/${courseIdInput.trim()}`)
                   }
                   className="cursor-pointer w-full py-4 bg-accent text-white font-black rounded shadow-subtle hover:brightness-110 transition-all uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 group"
                 >

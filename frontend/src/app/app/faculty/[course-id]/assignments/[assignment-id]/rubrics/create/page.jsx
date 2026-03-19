@@ -3,250 +3,276 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
+import { LoadingPage } from "@/components/ui/sections";
 import {
   CheckCircle2,
   AlertCircle,
   Type,
   PlusCircle,
   ArrowLeft,
-  Layers,
   Scale,
+  Trophy,
+  Loader2,
+  Trash2,
+  GripVertical,
 } from "lucide-react";
 
-const CreateRubricPage = () => {
+export default function CreateRubricPage() {
   const params = useParams();
   const router = useRouter();
-  const assignment_id = params["assignment-id"];
-  const course_id = params["course-id"];
-
+  const assignmentId = params["assignment-id"];
+  const courseId = params["course-id"];
   const { api } = useMetadata();
 
   const [assignment, setAssignment] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingContext, setLoadingContext] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState({ type: null, message: "" });
 
-  const [formData, setFormData] = useState({
-    name: "",
-    weight: 20.0,
-    desc_one: "",
-    desc_two: "",
-    desc_three: "",
-    desc_four: "",
-    desc_five: "",
-  });
+  // --- Multi-Form State ---
+  const [criteriaList, setCriteriaList] = useState([
+    { name: "", max_points: 20.0, weight: 20.0 },
+  ]);
 
   useEffect(() => {
     const fetchAssignment = async () => {
       try {
-        const res = await api.get(`assignments/${assignment_id}/`);
+        const res = await api.get(`assignments/${assignmentId}/`);
         setAssignment(res.data);
       } catch (err) {
-        console.error("Failed to load assignment for rubric", err);
+        console.error("Failed to load context", err);
+      } finally {
+        setLoadingContext(false);
       }
     };
-
     fetchAssignment();
-  }, [api, assignment_id]);
+  }, [api, assignmentId]);
 
-  const handleChange = (e) => {
-    if (status.type) setStatus({ type: null, message: "" });
-    const { name, value } = e.target;
+  // --- Handlers ---
+  const addCriterion = () => {
+    setCriteriaList([
+      ...criteriaList,
+      { name: "", max_points: 20.0, weight: 20.0 },
+    ]);
+  };
 
-    // When assignment is not weighted, ignore changes to the weight field
-    if (name === "weight" && assignment && !assignment.is_weighted) {
-      return;
-    }
+  const removeCriterion = (index) => {
+    if (criteriaList.length === 1) return;
+    const newList = [...criteriaList];
+    newList.splice(index, 1);
+    setCriteriaList(newList);
+  };
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "weight" ? parseFloat(value) || 0 : value,
-    }));
+  const updateCriterion = (index, field, value) => {
+    const newList = [...criteriaList];
+    newList[index][field] = field === "name" ? value : parseFloat(value) || 0;
+    setCriteriaList(newList);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsSubmitting(true);
     setStatus({ type: null, message: "" });
 
+    let successCount = 0;
+
     try {
-      const payload = {
-        ...formData,
-        assignment: assignment_id,
-      };
+      // Process one by one as requested
+      for (const criterion of criteriaList) {
+        const payload = {
+          ...criterion,
+          assignment: assignmentId,
+        };
+        // Force weight to 0 if model is unweighted
+        if (assignment && !assignment.is_weighted) payload.weight = 0;
 
-      // If assignment is not weighted, force weight to null
-      if (assignment && !assignment.is_weighted) {
-        payload.weight = null;
+        await api.post(`assignments/${assignmentId}/rubric-criteria/`, payload);
+        successCount++;
       }
-
-      await api.post(`assignments/${assignment_id}/rubric-criteria/`, payload);
 
       setStatus({
         type: "success",
-        message: "Criterion added successfully!",
+        message: `Successfully registered ${successCount} criteria to the assignment.`,
       });
-
-      setFormData({
-        name: "",
-        weight: 20.0,
-        desc_one: "",
-        desc_two: "",
-        desc_three: "",
-        desc_four: "",
-        desc_five: "",
-      });
+      // Reset to one empty form
+      setCriteriaList([{ name: "", max_points: 20.0, weight: 20.0 }]);
     } catch (err) {
       setStatus({
         type: "error",
         message:
           err.response?.data?.detail ||
-          "Failed to create criterion. Sum of weights cannot exceed 100%",
+          "Batch synchronization failed. Check your weights.",
       });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const levelLabels = [
-    { id: "desc_one", title: "Level 1", sub: "Beginning" },
-    { id: "desc_two", title: "Level 2", sub: "Developing" },
-    { id: "desc_three", title: "Level 3", sub: "Proficient" },
-    { id: "desc_four", title: "Level 4", sub: "Accomplished" },
-    { id: "desc_five", title: "Level 5", sub: "Exceptional" },
-  ];
+  if (loadingContext) return <LoadingPage />;
+
+  const totalWeight = criteriaList.reduce(
+    (acc, curr) => acc + (curr.weight || 0),
+    0,
+  );
 
   return (
-    <div className="max-w-6xl mx-auto py-4 md:py-8 px-4">
-      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
-        {/* --- Header & Weight Card --- */}
-        <div className="bg-surface p-5 md:p-8 rounded-xl border border-border shadow-subtle flex flex-col md:flex-row gap-6">
-          <div className="flex-1 space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center">
-              <Type size={14} className="mr-2 text-secondary" />
-              Criterion Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              maxLength={100}
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full p-3 md:p-4 bg-background border border-border rounded-lg text-base md:text-lg font-bold text-accent outline-none focus:ring-2 focus:ring-secondary/20 transition-all"
-              placeholder="e.g., Logical Flow"
-              required
-            />
-          </div>
-
-          <div className="w-full md:w-56 space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center">
-              <Scale size={14} className="mr-2 text-primary" />
-              Weight (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.01"
-                name="weight"
-                value={
-                  assignment && !assignment.is_weighted ? "" : formData.weight
-                }
-                onChange={handleChange}
-                className="w-full p-3 md:p-4 bg-background border border-border rounded-lg text-base md:text-lg font-black text-primary outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                min="0"
-                max="100"
-                required={!!(assignment && assignment.is_weighted)}
-                disabled={assignment && !assignment.is_weighted}
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted font-bold text-sm">
-                %
-              </span>
-            </div>
-            {assignment && !assignment.is_weighted && (
-              <p className="text-[10px] text-text-muted mt-1">
-                This assignment is <span className="font-bold">unweighted</span>;
-                weights are ignored and stored as <span className="font-mono">null</span>.
-              </p>
-            )}
-          </div>
+    <div className="max-w-5xl mx-auto pb-10 px-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Info */}
+      <div className="flex flex-col md:flex-row justify-between items-end border-b border-border pb-8 mb-10 gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-accent uppercase tracking-tighter leading-none">
+            Rubric Builder: {assignment?.name}
+          </h1>
+          <p className="text-xs font-bold text-text-muted uppercase tracking-widest">
+            {assignment?.is_weighted
+              ? "Weighted Distribution Mode"
+              : "Simple Points Mode"}
+          </p>
         </div>
 
-        {/* --- Performance Grid --- */}
+        {assignment?.is_weighted && (
+          <div className="text-right">
+            <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">
+              Total Weight Allocated
+            </p>
+            <p
+              className={`text-2xl font-black tabular-nums ${totalWeight > 100 ? "text-error" : "text-primary"}`}
+            >
+              {totalWeight.toFixed(1)}%
+            </p>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* --- DYNAMIC CRITERIA LIST --- */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-1">
-            <Layers size={18} className="text-secondary" />
-            <h3 className="text-sm font-black text-accent uppercase tracking-widest">
-              Performance Levels
-            </h3>
-          </div>
+          {criteriaList.map((item, index) => (
+            <div
+              key={index}
+              className="group relative bg-surface border border-border rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-all animate-in zoom-in-95 duration-300"
+            >
+              {/* Delete Button */}
+              {criteriaList.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeCriterion(index)}
+                  className="absolute top-4 right-4 p-2 text-text-muted hover:text-error transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
 
-          {/* Responsive Grid: 1 col on mobile, 5 on desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            {levelLabels.map((level) => (
-              <div
-                key={level.id}
-                className="bg-surface border border-border rounded-xl p-4 md:p-5 shadow-sm space-y-3 md:space-y-4 flex flex-col"
-              >
-                <div className="border-b border-border pb-2 flex justify-between lg:block">
-                  <p className="text-[10px] font-black text-accent uppercase">
-                    {level.title}
-                  </p>
-                  <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest">
-                    {level.sub}
-                  </p>
+              <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 items-end">
+                {/* Name */}
+                <div className="lg:col-span-3 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                    <Type size={14} className="text-secondary" /> Criterion{" "}
+                    {index + 1} Title
+                  </label>
+                  <input
+                    required
+                    value={item.name}
+                    onChange={(e) =>
+                      updateCriterion(index, "name", e.target.value)
+                    }
+                    placeholder="e.g., Algorithm Efficiency"
+                    className="w-full p-3 bg-background border border-border rounded-xl font-bold text-accent outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
                 </div>
-                <textarea
-                  name={level.id}
-                  value={formData[level.id]}
-                  onChange={handleChange}
-                  className="w-full flex-1 min-h-[120px] md:min-h-[160px] bg-transparent text-xs leading-relaxed outline-none resize-none text-text-main placeholder:text-text-muted/30"
-                  placeholder={`Requirements for ${level.sub}...`}
-                  required
-                />
+
+                {/* Max Grade */}
+                <div className="lg:col-span-1 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                    <Trophy size={14} className="text-primary" /> Max Points
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    value={item.max_points}
+                    onChange={(e) =>
+                      updateCriterion(index, "max_points", e.target.value)
+                    }
+                    className="w-full p-3 bg-background border border-border rounded-xl font-black text-accent outline-none"
+                  />
+                </div>
+
+                {/* Weight */}
+                <div className="lg:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                    <Scale size={14} className="text-secondary" /> Weight (%)
+                  </label>
+                  <div className="relative">
+                    <input
+                      required={assignment?.is_weighted}
+                      disabled={!assignment?.is_weighted}
+                      type="number"
+                      step="0.01"
+                      value={assignment?.is_weighted ? item.weight : ""}
+                      onChange={(e) =>
+                        updateCriterion(index, "weight", e.target.value)
+                      }
+                      className={`w-full p-3 bg-background border border-border rounded-xl font-black outline-none transition-all ${
+                        !assignment?.is_weighted
+                          ? "bg-slate-50 opacity-30 cursor-not-allowed"
+                          : "text-primary"
+                      }`}
+                    />
+                    {assignment?.is_weighted && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-muted">
+                        %
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
-        {/* --- Footer & Submission --- */}
-        <div className="space-y-6">
+        {/* --- ADD ANOTHER BUTTON --- */}
+        <button
+          type="button"
+          onClick={addCriterion}
+          className="w-full py-4 border-2 border-dashed border-border rounded-2xl text-text-muted hover:text-primary hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group"
+        >
+          <PlusCircle
+            size={20}
+            className="group-hover:scale-110 transition-transform"
+          />
+          <span className="text-xs font-black uppercase tracking-widest">
+            Add Another Criterion
+          </span>
+        </button>
+
+        {/* --- SUBMISSION & STATUS --- */}
+        <div className="pt-10 space-y-6">
           {status.message && (
             <div
-              className={`p-4 rounded-lg flex items-start space-x-3 border animate-in fade-in slide-in-from-bottom-2 ${
+              className={`p-5 rounded-2xl flex items-start gap-4 border animate-in slide-in-from-top-2 ${
                 status.type === "error"
-                  ? "bg-red-50 border-red-200 text-error"
-                  : "bg-green-50 border-green-200 text-green-800"
+                  ? "bg-red-50 border-red-100 text-error"
+                  : "bg-green-50 border-green-100 text-green-700"
               }`}
             >
               {status.type === "error" ? (
-                <AlertCircle size={18} />
+                <AlertCircle size={20} />
               ) : (
-                <CheckCircle2 size={18} />
+                <CheckCircle2 size={20} />
               )}
               <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wider">
+                <p className="text-sm font-black uppercase tracking-widest">
                   {status.message}
                 </p>
                 {status.type === "success" && (
-                  <div className="mt-4 flex flex-wrap gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setStatus({ type: null, message: "" })}
-                      className="text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:underline"
-                    >
-                      <PlusCircle size={14} className="mr-1" /> Add Next
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        router.push(
-                          `/app/faculty/${course_id}/assignments/${assignment_id}/rubrics`,
-                        )
-                      }
-                      className="text-[10px] font-black uppercase tracking-widest flex items-center text-accent hover:underline"
-                    >
-                      <ArrowLeft size={14} className="mr-1" /> Done
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`./`)}
+                    className="mt-3 text-xs font-black uppercase underline underline-offset-4 flex items-center gap-2"
+                  >
+                    <ArrowLeft size={14} /> Return to Rubric List
+                  </button>
                 )}
               </div>
             </div>
@@ -254,15 +280,20 @@ const CreateRubricPage = () => {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-4 md:py-5 bg-primary text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-[0.3em] text-xs disabled:opacity-50"
+            disabled={isSubmitting}
+            className="w-full py-5 bg-accent text-white font-black rounded-2xl shadow-2xl hover:brightness-110 active:scale-[0.98] transition-all uppercase tracking-[0.3em] text-sm flex items-center justify-center gap-4 disabled:opacity-50"
           >
-            {loading ? "Saving..." : "Add to Rubric"}
+            {isSubmitting ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <CheckCircle2 size={20} />
+            )}
+            {isSubmitting
+              ? "Processing Batch..."
+              : `Register Rubric (${criteriaList.length} Items)`}
           </button>
         </div>
       </form>
     </div>
   );
-};
-
-export default CreateRubricPage;
+}

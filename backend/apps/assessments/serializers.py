@@ -15,9 +15,12 @@ class RubricResultSerializer(serializers.ModelSerializer):
         """
         Validate that points are within the enum range (1-5).
         """
-        if value not in [1, 2, 3, 4, 5]:
+        rubric_criteria = self.context.get("rubric_criteria") or (
+            self.instance.rubric_criteria if self.instance else None
+        )
+        if rubric_criteria and value > rubric_criteria.max_points:
             raise serializers.ValidationError(
-                "Points must be an integer between 1 and 5."
+                "Points must be less than or equal to the maximum points."
             )
         return value
 

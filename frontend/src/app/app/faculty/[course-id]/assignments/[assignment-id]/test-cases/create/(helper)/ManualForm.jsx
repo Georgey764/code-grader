@@ -26,27 +26,18 @@ export default function ManualForm({
       <div className="grid grid-cols-1 gap-6">
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-            <CornerDownRight size={14} className="text-secondary" />{" "}
-            {isFileInput ? "Upload Input File" : "Standard Input"}
+            <CornerDownRight size={14} className="text-secondary" /> Standard
+            Input
           </label>
-          {isFileInput ? (
-            <FileUploadBox
-              onFileChange={onFileChange}
-              type="input"
-              inputFiles={inputFiles}
-              outputFiles={outputFiles}
-              onFileRemove={onFileRemove}
-            />
-          ) : (
-            <textarea
-              name="text_input"
-              value={formData.text_input}
-              onChange={onChange}
-              className="w-full min-h-[120px] p-4 bg-background border border-border rounded font-mono text-sm focus:ring-1 focus:ring-secondary outline-none"
-              placeholder="e.g. 5\n10"
-              required
-            />
-          )}
+
+          <textarea
+            name="text_input"
+            value={formData.text_input}
+            onChange={onChange}
+            className="w-full min-h-[120px] p-4 bg-background border border-border rounded font-mono text-sm focus:ring-1 focus:ring-secondary outline-none"
+            placeholder="e.g. 5\n10"
+            required
+          />
         </div>
 
         <div className="space-y-2">
@@ -54,26 +45,15 @@ export default function ManualForm({
             <CornerDownRight size={14} className="text-secondary" /> Expected
             Output
           </label>
-          {!isFileInput ? (
-            <>
-              <textarea
-                name="expected_output"
-                value={formData.expected_output}
-                onChange={onChange}
-                className="w-full min-h-[120px] p-4 bg-background border border-border rounded font-mono text-sm focus:ring-1 focus:ring-primary outline-none"
-                placeholder="e.g. 15"
-                required
-              />
-            </>
-          ) : (
-            <FileUploadBox
-              onFileChange={onFileChange}
-              onFileRemove={onFileRemove}
-              type="output"
-              inputFiles={inputFiles}
-              outputFiles={outputFiles}
-            />
-          )}
+
+          <textarea
+            name="expected_output"
+            value={formData.expected_output}
+            onChange={onChange}
+            className="w-full min-h-[120px] p-4 bg-background border border-border rounded font-mono text-sm focus:ring-1 focus:ring-primary outline-none"
+            placeholder="e.g. 15"
+            required
+          />
         </div>
       </div>
 
@@ -139,106 +119,6 @@ function ConfigInput({ icon, label, name, value, onChange }) {
         className="w-full p-2.5 bg-background border border-border rounded text-sm font-bold focus:ring-1 focus:ring-secondary outline-none"
         min="0"
       />
-    </div>
-  );
-}
-
-function FileInputWarning() {
-  return (
-    <div className="mt-4 p-3 border border-yellow-300 bg-yellow-50 rounded-md text-xs text-gray-700">
-      <p className="font-semibold mb-2">⚠️ File Naming Rules</p>
-
-      <ul className="list-disc ml-4 space-y-1">
-        <li>
-          Input files must follow:{" "}
-          <span className="font-mono bg-gray-100 px-1 rounded">
-            input_[number].txt
-          </span>
-        </li>
-        <li>
-          Output files must follow:{" "}
-          <span className="font-mono bg-gray-100 px-1 rounded">
-            output_[same_number].txt
-          </span>
-        </li>
-        <li>
-          Each input file must have a corresponding output file with the same
-          number.
-        </li>
-      </ul>
-
-      <p className="mt-2">
-        Example:{" "}
-        <span className="font-mono bg-gray-100 px-1 rounded">input_1.txt</span>
-        {" → "}
-        <span className="font-mono bg-gray-100 px-1 rounded">output_1.txt</span>
-      </p>
-    </div>
-  );
-}
-
-function FileUploadBox({
-  onFileChange,
-  onFileRemove,
-  type,
-  inputFiles,
-  outputFiles,
-}) {
-  const files = type === "input" ? inputFiles : outputFiles;
-  const inputRef = useRef(null);
-
-  const handleChange = (e) => {
-    const incoming = Array.from(e.target.files);
-    const merged = [
-      ...files,
-      ...incoming.filter(
-        (f) => !files.some((existing) => existing.name === f.name),
-      ),
-    ];
-    onFileChange(merged, type);
-    e.target.value = ""; // reset so same file can be re-added after removal
-  };
-
-  return (
-    <div className="space-y-2">
-      {/* Uploaded file chips */}
-      {files?.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {files.map((file, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/5 border border-primary/20 text-primary rounded-lg text-xs font-semibold max-w-[180px]"
-            >
-              <span className="truncate">{file.name}</span>
-              <button
-                type="button"
-                onClick={() => onFileRemove(file, type)}
-                className="hover:text-error transition-colors"
-              >
-                <X size={11} strokeWidth={3} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Hidden input, triggered by button */}
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        onChange={handleChange}
-        className="hidden"
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 transition-colors"
-      >
-        <Upload size={13} /> Add {type} files
-      </button>
-
-      <FileInputWarning />
     </div>
   );
 }

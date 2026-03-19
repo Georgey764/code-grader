@@ -122,7 +122,7 @@ export default function EditAssignmentPage() {
   if (loading) return <LoadingPage />;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700 py-10">
+    <div className="max-w-5xl mx-auto px-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <form
         onSubmit={handleSubmit}
         className="bg-surface rounded-2xl border border-border shadow-xl overflow-hidden"
@@ -161,19 +161,19 @@ export default function EditAssignmentPage() {
               </select>
             </div>
 
-            {/* Schedule */}
-            <div className="flex flex-col gap-2 md:col-span-3">
+            {/* Description */}
+            <div className="flex flex-col gap-2 md:col-span-6">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <Calendar size={16} className="text-secondary" /> Submission
-                Deadline
+                <AlignLeft size={16} className="text-secondary" /> Description &
+                Prompt
               </label>
-              <input
+              <textarea
                 required
-                type="datetime-local"
-                name="deadline"
-                value={formData.deadline}
+                name="description"
+                rows={6}
+                value={formData.description}
                 onChange={handleChange}
-                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
+                className="p-5 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm leading-relaxed"
               />
             </div>
 
@@ -192,47 +192,35 @@ export default function EditAssignmentPage() {
               />
             </div>
 
-            {/* File Dropzone */}
+            {/* Starter Code Upload */}
             <div className="flex flex-col gap-2 md:col-span-6">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <UploadCloud size={16} className="text-secondary" /> Update
-                Starter File
+                <UploadCloud size={16} className="text-secondary" /> Starter
+                Templates
               </label>
-              <div className="relative border-2 border-dashed border-border rounded-2xl p-10 hover:border-primary transition-all bg-slate-50/30 group text-center cursor-pointer">
-                <input
-                  type="file"
-                  name="starter_code"
-                  onChange={handleChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <FileText
-                  className={`mx-auto mb-4 transition-transform duration-300 group-hover:scale-110 ${formData.starter_code ? "text-green-500" : "text-text-muted"}`}
-                  size={40}
-                />
-                <p className="text-xs font-black uppercase tracking-widest text-accent">
-                  {formData.starter_code
-                    ? formData.starter_code.name
-                    : "Select new template source"}
-                </p>
-                <p className="text-[10px] text-text-muted mt-2 italic">
-                  Leave empty to retain existing file
-                </p>
-              </div>
+
+              <textarea
+                name="starter_code"
+                onChange={handleChange}
+                placeholder="Enter your code here..."
+                rows={8}
+                className="w-full rounded-2xl border-2 border-border bg-slate-50/30 p-4 font-mono text-sm transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
 
-            {/* Description */}
-            <div className="flex flex-col gap-2 md:col-span-6">
+            {/* Schedule */}
+            <div className="flex flex-col gap-2 md:col-span-3">
               <label className="text-xs font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                <AlignLeft size={16} className="text-secondary" /> Description &
-                Prompt
+                <Calendar size={16} className="text-secondary" /> Submission
+                Deadline
               </label>
-              <textarea
+              <input
                 required
-                name="description"
-                rows={6}
-                value={formData.description}
+                type="datetime-local"
+                name="deadline"
+                value={formData.deadline}
                 onChange={handleChange}
-                className="p-5 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-primary outline-none transition-all text-sm leading-relaxed"
+                className="p-4 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary outline-none text-sm font-bold"
               />
             </div>
           </div>

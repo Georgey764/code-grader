@@ -18,38 +18,18 @@ def run_submission_tests_task(submission_id):
     language = assignment.language
     is_file_input = assignment.is_file_input
     test_case_objects = TestCase.objects.filter(assignment__pk=assignment.pk)
+    student_code = submission.submitted_file
 
     test_cases = []
 
     for tc in test_case_objects:
-        if is_file_input and tc.file_input:
-            with tc.file_input.open("rb") as f:
-                content = f.read().decode("utf-8")
-                print(f"DEBUG: CONTENT {content}")  # This keeps \n as actual newlines
-        else:
-            content = tc.text_input
-
         test_cases.append(
             {
                 "id": tc.id,
-                "input": content,
+                "input": tc.text_input,
                 "expected_output": tc.expected_output,
             }
         )
-
-    # 1. Safety check: Don't open if the file is massive (e.g., > 1MB)
-    MAX_SIZE = 1024 * 14024  # 1 Megabyte
-    if submission.submitted_file.size > MAX_SIZE:
-        raise ValidationError("File too large to read into memory.")
-
-    # 2. Open as binary for S3 compatibility
-    try:
-        with submission.submitted_file.open("rb") as f:
-            # Read and decode specifically to utf-8
-            student_code = f.read().decode("utf-8")
-    except Exception as e:
-        # Handle potential network timeouts or S3 connection issues
-        student_code = f"Error reading file: {e}"
 
     # Execution
     submission.update_test_status(status=Submission.Status.PROCESSING)
