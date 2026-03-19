@@ -33,6 +33,12 @@ resource "aws_instance" "grader_engine" {
   user_data_replace_on_change = false
   key_name = aws_key_pair.deployer.key_name
 
+  root_block_device {
+    volume_size = 60
+    volume_type = "gp3"
+    delete_on_termination = true
+  }
+
   user_data = <<-EOF
               #!/bin/bash
               # 1. System Setup & Nginx Installation
@@ -61,7 +67,15 @@ resource "aws_instance" "grader_engine" {
 
                   # Forward /api/ requests to localhost:8000
                   location /api/ {
-                      proxy_pass http://localhost:8000/;
+                      proxy_pass http://localhost:8000;
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                  }
+
+                  # Forward /terminal/ requests to localhost:4000
+                  location /terminal/ {
+                      proxy_pass http://localhost:4000/;
                       proxy_set_header Host \$host;
                       proxy_set_header X-Real-IP \$remote_addr;
                       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -99,6 +113,8 @@ resource "aws_instance" "grader_engine" {
               SECRET_KEY=${var.secret_key}
 
               NEXT_PUBLIC_URL=${var.next_public_url}
+              NEXT_PUBLIC_TERMINAL_URL=${var.next_public_terminal_url}
+              ALLOWED_ORIGIN_TERMINAL=${var.allowed_origin_terminal}
 
               CELERY_BROKER_URL=${var.celery_broker_url}
               CELERY_RESULT_BACKEND=${var.celery_result_backend}
@@ -128,8 +144,12 @@ resource "aws_instance" "grader_engine" {
               sleep 5
               docker compose -f docker-compose.prod.yml up -d --wait
 
+
               # 1. Install system dependencies
               sudo dnf install -y python3.12 python3.12-pip augeas-libs
+              sudo dnf install -y cronie
+              sudo systemctl enable crond
+              sudo systemctl start crond
 
               # 2. Set up the virtual environment
               sudo python3 -m venv /opt/certbot/
@@ -148,7 +168,9 @@ resource "aws_instance" "grader_engine" {
               -m georgesamuel764@gmail.com \
               --redirect
 
-              (sudo crontab -l 2>/dev/null; echo "0 0,12 * * * perl -e 'sleep int(rand(3600))' && /usr/bin/certbot renew -q --post-hook 'systemctl reload nginx'") | sudo crontab -
+              (sudo crontab -l 2>/dev/null; echo "0 0,12 * * * sleep \$((RANDOM \% 3600)) && /usr/bin/certbot renew -q --post-hook 'systemctl reload nginx'") | sudo crontab -
+
+              docker exec -it backend python manage.py migrate
               EOF
 
   tags = {

@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "middleware.js", "next.config.mjs"  ],
+, "middleware.js", "next.config.mjs", "src/components/ui/elements/XTerminal.jsx"  ],
   "exclude": ["node_modules"]
 }

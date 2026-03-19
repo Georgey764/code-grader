@@ -11,7 +11,6 @@ x-backend-env: &backend-env
   E2B_API_KEY: ${E2B_API_KEY}
   CELERY_BROKER_URL: ${CELERY_BROKER_URL}
   CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-  
 
 services:
 
@@ -28,6 +27,11 @@ services:
       - app-network
     ports:
       - "6379:6379"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
     container_name: backend
@@ -48,6 +52,11 @@ services:
     #   start_period: 20s
     environment:
       <<: *backend-env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   worker:
     build:
@@ -65,6 +74,11 @@ services:
         condition: service_healthy
       backend:
         condition: service_started
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     container_name: frontend
@@ -86,7 +100,12 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL}
-
+      - NEXT_PUBLIC_TERMINAL_URL=${NEXT_PUBLIC_TERMINAL_URL}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   terminal:
     build:
@@ -98,6 +117,8 @@ services:
     networks:
       - app-network
     restart: unless-stopped
+    environment:
+      - ALLOWED_ORIGIN_TERMINAL=${ALLOWED_ORIGIN_TERMINAL}
     logging:
       driver: "json-file"
       options:

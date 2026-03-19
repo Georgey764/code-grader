@@ -3,6 +3,8 @@ import React, { useRef, useEffect } from "react";
 import { io } from "socket.io-client";
 import "xterm/css/xterm.css";
 
+const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
+
 const XTerminal = ({ code, runCount, setIsRunningCode }) => {
   const terminalRef = useRef(null);
   const socketRef = useRef(null);
@@ -21,7 +23,7 @@ const XTerminal = ({ code, runCount, setIsRunningCode }) => {
       let handleResize = null;
 
       // 1. Connect to our backend server
-      const socket = io("http://localhost:4000");
+      const socket = io(terminalUrl);
       socketRef.current = socket;
 
       const term = new Terminal({
