@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from apps.assessments.models import Submission, RubricResult, TestResult
 from apps.assignments.serializers import TestCaseSerializer, RubricCriteriaSerializer
@@ -49,3 +50,13 @@ class SubmissionSerializer(BaseSerializers):
             "status",
             "rubric_results",
         ]
+
+    def validate(self, attrs):
+        """
+        Validate that the submitted file is a valid file.
+        """
+        assignment = attrs.get("assignment")
+        deadline = assignment.deadline
+        if deadline < timezone.now():
+            raise serializers.ValidationError("Deadline has passed")
+        return attrs
