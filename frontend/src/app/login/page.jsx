@@ -72,11 +72,11 @@ export default function LoginPage() {
                 localStorage.setItem("refresh_token", refresh_token);
 
                 if (role == "FA") {
-                  router.push("/app/faculty");
+                  router.push("/dashboard/faculty");
                 } else if (role == "ST") {
-                  router.push("/app/student/");
+                  router.push("/dashboard/student/");
                 } else if (role == "GA") {
-                  router.push("app/faculty");
+                  router.push("/dashboard/faculty");
                 }
               }
             } catch (e) {

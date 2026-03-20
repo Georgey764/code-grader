@@ -43,9 +43,12 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const [openTest, setOpenTest] = useState(null);
   const [runCount, setRunCount] = useState(0);
   const [isRunningCode, setIsRunningCode] = useState(false);
+  const [isRunningTestCases, setIsRunningTestCases] = useState(false);
   const [inputFile, setInputFile] = useState(null);
   const { api } = useMetadata();
   const [assignment, setAssignment] = useState(null);
+  const [testCases, setTestCases] = useState(null);
+
   const language = assignment?.language;
   const isPython = language?.toLowerCase() === "python";
   const isFileInput = assignment?.is_file_input;
@@ -62,16 +65,30 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const passedCount = visibleTests.filter((t) => t.is_success).length;
   const rubricResults = submission?.rubric_results || [];
 
-  async function handleRunCode() {
+  function handleRunCode() {
+    if (isRunningTestCases || isRunningCode) {
+      return;
+    }
     setIsRunningCode(true);
     setRunCount((cur) => cur + 1);
+    setTimeout(() => setIsRunningCode(false), 10000);
+  }
+
+  function handleRunTestCases() {
+    if (isRunningCode || isRunningTestCases) {
+      return;
+    }
+    setIsRunningTestCases(true);
   }
 
   useEffect(() => {
     const fetchAssignment = async () => {
-      const response = await api.get(`assignments/${assignmentId}`);
-      setAssignment(response.data);
-      console.log(response.data);
+      const [assignmentResponse, testCasesResponse] = await Promise.all([
+        api.get(`assignments/${assignmentId}`),
+        api.get(`assignments/${assignmentId}/test-cases`),
+      ]);
+      setAssignment(assignmentResponse.data);
+      setTestCases(testCasesResponse.data);
     };
     fetchAssignment();
   }, [assignmentId, api]);
@@ -80,21 +97,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
   return (
     <div className="space-y-6">
-      {/* Detailed Automated Accordion */}
-      <AutomatedTestResultAccordion
-        assignmentId={assignmentId}
-        passedCount={passedCount}
-        visibleTests={visibleTests}
-        submission={submission}
-        rubricResults={rubricResults}
-        levelMap={levelMap}
-        results={results}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-        openTest={openTest}
-        setOpenTest={setOpenTest}
-      />
-
       {/* Submission File Code View */}
       <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors mt-8 mb-2">
         <Terminal size={14} className="opacity-60" />
@@ -103,12 +105,16 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
       <div className="space-y-2">
         <CodeBlock
+          assignmentId={assignmentId}
           setInputFile={setInputFile}
           code={submission?.submitted_file}
           name={isPython ? "main.py" : "Main.java"}
           handleRunCode={handleRunCode}
           isRunningCode={isRunningCode}
+          handleRunTestCases={handleRunTestCases}
+          isRunningTestCases={isRunningTestCases}
           isFileInput={isFileInput}
+          submissionId={submission?.id}
         />
       </div>
       {/* Terminal */}
@@ -131,9 +137,28 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
           code={submission?.submitted_file}
           runCount={runCount}
           setIsRunningCode={setIsRunningCode}
+          isRunningTestCases={isRunningTestCases}
+          setIsRunningTestCases={setIsRunningTestCases}
           inputFile={inputFile}
+          testCases={testCases}
+          isFileInput={isFileInput}
         />
       </div>
+
+      {/* Detailed Automated Accordion */}
+      <AutomatedTestResultAccordion
+        assignmentId={assignmentId}
+        passedCount={passedCount}
+        visibleTests={visibleTests}
+        submission={submission}
+        rubricResults={rubricResults}
+        levelMap={levelMap}
+        results={results}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+        openTest={openTest}
+        setOpenTest={setOpenTest}
+      />
 
       <RubricResultAccordion
         submission={submission}
@@ -177,7 +202,7 @@ function AutomatedTestResultAccordion({
           </div>
           <div className="text-left">
             <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
-              Automated Test Cases Run Results
+              Initial Automated Results
             </h3>
             <div className="flex items-center gap-2 mt-1">
               {/* Status Dot for Glanceability */}

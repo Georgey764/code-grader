@@ -9,8 +9,12 @@ const XTerminal = ({
   code,
   runCount,
   setIsRunningCode,
+  isRunningTestCases,
+  setIsRunningTestCases,
   inputFile,
   language,
+  isFileInput,
+  testCases,
 }) => {
   const terminalRef = useRef(null);
   const socketRef = useRef(null);
@@ -32,11 +36,6 @@ const XTerminal = ({
       const socket = io(terminalUrl);
       socketRef.current = socket;
 
-      socket.emit("upload_submission_file", {
-        code: code,
-        language: language,
-      });
-
       const term = new Terminal({
         cursorBlink: true,
         theme: {
@@ -51,6 +50,7 @@ const XTerminal = ({
         fontSize: 14,
         letterSpacing: 1.1,
       });
+
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
 
@@ -91,8 +91,21 @@ const XTerminal = ({
           }
         });
 
-        socket.on("code_compiled_completed", () => {
-          term.write("Main.java compile step completed\r\n");
+        socket.on("error", (data) => {
+          setIsRunningCode(false);
+          console.log("Error: ", data);
+        });
+
+        socket.on("test_cases_stdout", (data) => {
+          term.write(data);
+        });
+
+        socket.on("test_cases_completed", (passedCount) => {
+          setIsRunningTestCases(false);
+          term.write(`Test Cases Completed \r\n`);
+          term.write(
+            `Passed ${passedCount} out of ${testCases.length} test cases\r\n`,
+          );
           term.write(`\r\nuser@code-grader % `);
         });
 
@@ -117,11 +130,29 @@ const XTerminal = ({
     initTerminal();
   }, []);
 
+  // Run the test cases when the isRunningTestCases is true
+  useEffect(() => {
+    if (isRunningTestCases && socketRef.current) {
+      termObjectRef.current.write(
+        `Running Test Cases... \r\n\n----------------------------------------\r\n`,
+      );
+      socketRef.current.emit("run_test_cases", {
+        code: code,
+        language: language,
+        testCases: testCases,
+        isFileInput: isFileInput,
+      });
+    }
+  }, [isRunningTestCases, language, testCases, isFileInput]);
+
   // Run the code when the run count is greater than 0
   useEffect(() => {
     const runCode = async () => {
       countHolder.current = runCount;
-      socketRef.current.emit("run_code", language);
+      socketRef.current.emit("run_code", {
+        language: language,
+        code: code,
+      });
     };
 
     if (runCount > 0 && runCount > countHolder.current && socketRef.current) {

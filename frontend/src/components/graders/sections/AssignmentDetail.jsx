@@ -53,7 +53,9 @@ export default function AssignmentDetailsPage() {
     );
 
   const nav = (path) =>
-    router.push(`/app/faculty/${courseId}/assignments/${assignmentId}/${path}`);
+    router.push(
+      `/dashboard/faculty/${courseId}/assignments/${assignmentId}/${path}`,
+    );
 
   return (
     <div className="max-w-5xl animate-in fade-in duration-500 pb-10">
