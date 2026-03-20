@@ -1,16 +1,19 @@
 "use client";
 
-import { Check, Copy, FileCode, Loader2, Play } from "lucide-react";
+import { Check, Copy, Eye, FileCode, Loader2, Play } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import FileUpload from "./(helper)/FileUpload";
 
 export default function CodeBlock({
   code,
   name = "Starter Code",
   handleRunCode,
   isRunningCode,
+  isFileInput = false,
+  setInputFile,
 }) {
   const [copied, setCopied] = useState(false);
-
   const handleCopy = async () => {
     if (code) {
       await navigator.clipboard.writeText(code);
@@ -38,7 +41,11 @@ export default function CodeBlock({
             {name}
           </div>
         </div>
+
         <div className="flex items-center gap-2">
+          {setInputFile && isFileInput && (
+            <FileUpload setInputFile={setInputFile} />
+          )}
           {handleRunCode &&
             (!isRunningCode ? (
               <button

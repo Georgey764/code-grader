@@ -20,6 +20,7 @@ function ViewList({
   submissions = [],
   rubricCriteriaCount = 0,
   children = null,
+  assignmentId = null,
 }) {
   const [displayLimit, setDisplayLimit] = useState(5);
 
@@ -156,7 +157,11 @@ const EmptyState = () => (
 /**
  * Report Viewer (Unchanged logic, cleaned UI)
  */
-function ViewTestResult({ viewingSubmission, setViewingSubmission }) {
+function ViewTestResult({
+  viewingSubmission,
+  setViewingSubmission,
+  assignmentId,
+}) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="flex justify-between items-center pb-4 border-b border-border">
@@ -172,6 +177,7 @@ function ViewTestResult({ viewingSubmission, setViewingSubmission }) {
       </div>
       <CodeReport
         submission={viewingSubmission}
+        assignmentId={assignmentId}
         results={viewingSubmission?.test_results || []}
       />
     </div>
@@ -179,6 +185,7 @@ function ViewTestResult({ viewingSubmission, setViewingSubmission }) {
 }
 
 const SubmissionsList = ({
+  assignmentId = null,
   submissions = [],
   rubricCriteriaCount = 0,
   children = null,
@@ -188,11 +195,13 @@ const SubmissionsList = ({
     <div className="w-full">
       {viewingSubmission ? (
         <ViewTestResult
+          assignmentId={assignmentId}
           viewingSubmission={viewingSubmission}
           setViewingSubmission={setViewingSubmission}
         />
       ) : (
         <ViewList
+          assignmentId={assignmentId}
           setViewingSubmission={setViewingSubmission}
           submissions={submissions}
           rubricCriteriaCount={rubricCriteriaCount}

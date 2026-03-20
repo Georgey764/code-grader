@@ -36,7 +36,7 @@ export default function Layout({ children }) {
       href: `/app/faculty/${courseId}/roster`,
     },
     {
-      label: "Grades",
+      label: "Grader",
       icon: <GraduationCap size={16} />,
       href: `/app/faculty/${courseId}/grades`,
     },

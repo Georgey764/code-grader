@@ -5,15 +5,21 @@ import "xterm/css/xterm.css";
 
 const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
 
-const XTerminal = ({ code, runCount, setIsRunningCode }) => {
+const XTerminal = ({
+  code,
+  runCount,
+  setIsRunningCode,
+  inputFile,
+  language,
+}) => {
   const terminalRef = useRef(null);
   const socketRef = useRef(null);
   const isInitialized = useRef(false);
+  const countHolder = useRef(0);
+  const oldInputFile = useRef(null);
+  const termObjectRef = useRef(null);
 
   useEffect(() => {
-    if (runCount > 0 && socketRef.current) {
-      socketRef.current.emit("run_code", { code: code, runCount: runCount });
-    }
     if (isInitialized.current) return;
     isInitialized.current = true;
 
@@ -25,6 +31,11 @@ const XTerminal = ({ code, runCount, setIsRunningCode }) => {
       // 1. Connect to our backend server
       const socket = io(terminalUrl);
       socketRef.current = socket;
+
+      socket.emit("upload_submission_file", {
+        code: code,
+        language: language,
+      });
 
       const term = new Terminal({
         cursorBlink: true,
@@ -43,7 +54,7 @@ const XTerminal = ({ code, runCount, setIsRunningCode }) => {
       const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
 
-      if (terminalRef.current) {
+      if (terminalRef.current && runCount == 0) {
         term.open(terminalRef.current);
         fitAddon.fit();
 
@@ -74,13 +85,26 @@ const XTerminal = ({ code, runCount, setIsRunningCode }) => {
           term.write(`\r\nuser@code-grader % `);
         });
 
+        socket.on("code_compiled_stdout", (data) => {
+          if (data.toString().trim() !== "") {
+            term.write(data);
+          }
+        });
+
+        socket.on("code_compiled_completed", () => {
+          term.write("Main.java compile step completed\r\n");
+          term.write(`\r\nuser@code-grader % `);
+        });
+
         // 4. Handle Window Resize
         handleResize = () => {
           fitAddon.fit();
-          socket.emit("resize", { cols: term.cols, rows: term.rows });
+          // socket.emit("resize", { cols: term.cols, rows: term.rows });
         };
         window.addEventListener("resize", handleResize);
       }
+
+      termObjectRef.current = term;
 
       return () => {
         socket.disconnect();
@@ -91,7 +115,67 @@ const XTerminal = ({ code, runCount, setIsRunningCode }) => {
     };
 
     initTerminal();
-  }, [runCount, code]);
+  }, []);
+
+  // Run the code when the run count is greater than 0
+  useEffect(() => {
+    const runCode = async () => {
+      countHolder.current = runCount;
+      socketRef.current.emit("run_code", language);
+    };
+
+    if (runCount > 0 && runCount > countHolder.current && socketRef.current) {
+      runCode();
+    }
+  }, [runCount, code, language]);
+
+  // Clear the terminal when the run count is 0
+  useEffect(() => {
+    if (runCount == 0 && termObjectRef.current && isInitialized.current) {
+      countHolder.current = runCount;
+      termObjectRef.current.clear();
+    }
+  }, [runCount]);
+
+  // Handle the input file change
+  useEffect(() => {
+    async function handleInputFileChange(inputFile) {
+      // Removing the input file
+      if (inputFile == null && oldInputFile.current != null) {
+        socketRef.current.emit("delete_input_file", {
+          inputFileDetails: {
+            name: oldInputFile.current.name,
+          },
+        });
+        oldInputFile.current = null;
+      }
+      // Adding the input file when it is not already present
+      else if (inputFile != null && oldInputFile.current == null) {
+        socketRef.current.emit("upload_input_file", {
+          inputFileDetails: {
+            name: inputFile.name,
+            file: await inputFile.text(),
+          },
+        });
+        oldInputFile.current = inputFile;
+      }
+      // No change in the input file
+      else if (inputFile == null && oldInputFile.current == null) {
+        return;
+      }
+      // Updating the input file
+      else if (inputFile != null && oldInputFile.current != null) {
+        socketRef.current.emit("upload_input_file", {
+          inputFileDetails: {
+            name: inputFile.name,
+            file: await inputFile.text(),
+          },
+        });
+        oldInputFile.current = inputFile;
+      }
+    }
+    handleInputFileChange(inputFile);
+  }, [inputFile]);
 
   return <div ref={terminalRef} style={{ height: "200px", width: "100%" }} />;
 };

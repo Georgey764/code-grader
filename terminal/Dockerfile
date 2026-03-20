@@ -1,46 +1,54 @@
 # --- STAGE 1: Builder ---
 FROM node:20-bookworm AS builder
 
-RUN apt-get update && apt-get install -y python3 make g++
+# node-pty needs build-essential (make, g++, gcc) and python
+RUN apt-get update && apt-get install -y \
+build-essential \
+python3 \
+&& rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY package*.json ./
-# Install only production dependencies
-RUN npm install --omit=dev
+
+# Build native modules (like node-pty) for the specific architecture
+RUN npm install
+
+
 
 # --- STAGE 2: Runner ---
 FROM node:20-bookworm-slim
 
-    # Install bash, Python3, and Java (OpenJDK)
-RUN apt-get update && apt-get install -y \
-bash \
-python3 \
-default-jdk \
-&& rm -rf /var/lib/apt/lists/*
+# 1. Install Java & Python
+# We add 'procps' which helps node-pty manage processes
+RUN mkdir -p /usr/share/man/man1 && \
+    apt-get update && apt-get install -y \
+    bash \
+    python3 \
+    openjdk-17-jdk-headless \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
 
-# Optional: symlink python -> python3 to match dev behavior
+# 2. THE FIX: Let the system link Java automatically
+# This ensures /usr/bin/javac and /usr/bin/java always exist
+RUN update-alternatives --get-selections | grep -E '^(java|javac)'
+
+# 3. Symlink python
 RUN ln -s /usr/bin/python3 /usr/bin/python
-    
-# We still need a shell to run inside the PTY!
-RUN apt-get update && apt-get install -y bash && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Create a non-root user for security (CRITICAL for a terminal server)
-RUN useradd -m terminaluser
+# 4. Create user
+RUN useradd -m -u 1001 coder
 
-# Copy only the compiled node_modules and code from builder
+# 5. Copy your files
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
 
-# Set correct permissions BEFORE switching user
-RUN find /app -type d -exec chmod 700 {} \; \
-    # Files: owner can read/write
-    && find /app -type f -exec chmod 600 {} \; \
-    # Make sure terminaluser owns everything
-    && chown -R terminaluser:terminaluser /app
-USER terminaluser
+# 6. Permissions (700 on /app allows 'coder' to write/execute/delete)
+RUN chown -R coder:coder /app && \
+    chmod -R 700 /app
+
+USER coder
 
 EXPOSE 4000
-
 CMD ["node", "server.js"]

@@ -30,16 +30,16 @@ export default function Layout({ children }) {
       icon: <FileCode size={16} />,
       href: `/app/student/${courseId}/assignments`,
     },
-    {
-      label: "Roster",
-      icon: <Users size={16} />,
-      href: `/app/student/${courseId}/roster`,
-    },
-    {
-      label: "Grades",
-      icon: <GraduationCap size={16} />,
-      href: `/app/student/${courseId}/grades`,
-    },
+    // {
+    //   label: "Roster",
+    //   icon: <Users size={16} />,
+    //   href: `/app/student/${courseId}/roster`,
+    // },
+    // {
+    //   label: "Grades",
+    //   icon: <GraduationCap size={16} />,
+    //   href: `/app/student/${courseId}/grades`,
+    // },
   ];
 
   const handleNav = (href) => {

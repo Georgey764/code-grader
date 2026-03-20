@@ -22,9 +22,9 @@ services:
     container_name: terminal
     ports:
       - "4000:4000"
-    volumes:
-      - ./terminal:/app
-      - /app/node_modules
+    # volumes:
+    #   - ./terminal:/app
+    #   - /app/node_modules
     networks:
       - app-network
     environment:
@@ -129,9 +129,9 @@ services:
       # timeout: 5s
       # retries: 3
       # start_period: 30s
-    # volumes:
-    #   - ./frontend:/app
-    #   - /app/node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
