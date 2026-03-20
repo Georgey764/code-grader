@@ -11,11 +11,22 @@ export default function EditableCodeBlock({
   onFileNameChange,
   handleRunCode,
   isRunningCode,
-  setLoadedInputFile,
   setFileSystemInputFile,
   className = "",
 }) {
-  const loadedInputFileInputRef = useRef(null);
+  const loadedInputFileRef = useRef(null);
+
+  const DEFAULT_CODE = {
+    py: "",
+    java: "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}",
+  };
+
+  const isPython = name.endsWith(".py");
+  const setLanguage = (lang) => {
+    const baseName = name.replace(/\.(py|java)$/, "") || "main";
+    onFileNameChange?.(`${baseName}.${lang}`);
+    onCodeChange(DEFAULT_CODE[lang]);
+  };
 
   const handleLoadedInputFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -34,18 +45,6 @@ export default function EditableCodeBlock({
     e.target.value = "";
   };
 
-  const handleFileSystemInputFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const valid = file.name.endsWith(".txt");
-    if (!valid) {
-      alert("Please upload a .txt file.");
-      return;
-    }
-    setFileSystemInputFile(file);
-    e.target.value = "";
-  };
-
   return (
     <div
       className={`group border border-accent bg-code-bg overflow-hidden font-mono text-[13px] flex flex-col min-h-0 ${className}`}
@@ -61,17 +60,44 @@ export default function EditableCodeBlock({
             <FileCode size={12} className="opacity-70" />
             {name}
           </div>
+          {/* Language switcher */}
+          {onFileNameChange && (
+            <div className="flex rounded-md overflow-hidden border border-accent">
+              <button
+                type="button"
+                onClick={() => setLanguage("py")}
+                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  isPython
+                    ? "bg-accent text-code-text"
+                    : "bg-accent/50 text-code-muted hover:text-code-text"
+                }`}
+              >
+                Python
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("java")}
+                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                  !isPython
+                    ? "bg-accent text-code-text"
+                    : "bg-accent/50 text-code-muted hover:text-code-text"
+                }`}
+              >
+                Java
+              </button>
+            </div>
+          )}
           {/* Loaded Input File Upload Button */}
           <div className="flex items-center gap-2">
             <input
-              ref={loadedInputFileInputRef}
+              ref={loadedInputFileRef}
               type="file"
               accept=".py,.java"
               className="hidden"
               onChange={handleLoadedInputFileUpload}
             />
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => loadedInputFileRef.current?.click()}
               className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-code-muted hover:text-code-text transition-all bg-accent/80 hover:bg-accent px-2.5 py-1.5 rounded-md"
             >
               <Upload size={12} />
@@ -108,7 +134,7 @@ export default function EditableCodeBlock({
           spellCheck={false}
           className="w-full h-full min-h-0 py-5 px-4 bg-transparent text-code-text font-mono text-[13px] leading-6 focus:outline-none focus:ring-0 border-0 block overflow-y-auto placeholder:text-code-comment"
           style={{ tabSize: 4 }}
-          placeholder="# Enter your code here..."
+          placeholder={isPython ? "# Enter your code here..." : "// Enter your code here..."}
         />
       </div>
 

@@ -97,21 +97,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
   return (
     <div className="space-y-6">
-      {/* Detailed Automated Accordion */}
-      <AutomatedTestResultAccordion
-        assignmentId={assignmentId}
-        passedCount={passedCount}
-        visibleTests={visibleTests}
-        submission={submission}
-        rubricResults={rubricResults}
-        levelMap={levelMap}
-        results={results}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-        openTest={openTest}
-        setOpenTest={setOpenTest}
-      />
-
       {/* Submission File Code View */}
       <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors mt-8 mb-2">
         <Terminal size={14} className="opacity-60" />
@@ -159,6 +144,21 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
           isFileInput={isFileInput}
         />
       </div>
+
+      {/* Detailed Automated Accordion */}
+      <AutomatedTestResultAccordion
+        assignmentId={assignmentId}
+        passedCount={passedCount}
+        visibleTests={visibleTests}
+        submission={submission}
+        rubricResults={rubricResults}
+        levelMap={levelMap}
+        results={results}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+        openTest={openTest}
+        setOpenTest={setOpenTest}
+      />
 
       <RubricResultAccordion
         submission={submission}
