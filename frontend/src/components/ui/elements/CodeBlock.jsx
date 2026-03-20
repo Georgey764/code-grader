@@ -20,6 +20,8 @@ export default function CodeBlock({
   name = "Starter Code",
   handleRunCode,
   isRunningCode,
+  handleRunTestCases,
+  isRunningTestCases,
   isFileInput = false,
   setInputFile,
   submissionId,
@@ -85,6 +87,22 @@ export default function CodeBlock({
               </>
             )}
           </button>
+
+          {handleRunTestCases &&
+            (!isRunningTestCases ? (
+              <button
+                onClick={handleRunTestCases}
+                className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+              >
+                <Play size={12} />
+                Test Cases
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
+                <Loader2 size={12} className="animate-spin" /> Running Test
+                Cases...
+              </div>
+            ))}
 
           {handleRunCode &&
             (!isRunningCode ? (

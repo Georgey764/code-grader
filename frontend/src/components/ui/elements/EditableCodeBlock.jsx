@@ -14,6 +14,7 @@ export default function EditableCodeBlock({
   isFileInput = false,
   setInputFile,
   className = "",
+  setFileSystemInputFile,
 }) {
   const fileInputRef = useRef(null);
 
@@ -72,6 +73,9 @@ export default function EditableCodeBlock({
         </div>
 
         <div className="flex items-center gap-2">
+          {setFileSystemInputFile && (
+            <FileUpload setInputFile={setFileSystemInputFile} />
+          )}
           {handleRunCode &&
             (!isRunningCode ? (
               <button

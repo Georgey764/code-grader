@@ -43,9 +43,12 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const [openTest, setOpenTest] = useState(null);
   const [runCount, setRunCount] = useState(0);
   const [isRunningCode, setIsRunningCode] = useState(false);
+  const [isRunningTestCases, setIsRunningTestCases] = useState(false);
   const [inputFile, setInputFile] = useState(null);
   const { api } = useMetadata();
   const [assignment, setAssignment] = useState(null);
+  const [testCases, setTestCases] = useState(null);
+
   const language = assignment?.language;
   const isPython = language?.toLowerCase() === "python";
   const isFileInput = assignment?.is_file_input;
@@ -62,16 +65,30 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const passedCount = visibleTests.filter((t) => t.is_success).length;
   const rubricResults = submission?.rubric_results || [];
 
-  async function handleRunCode() {
+  function handleRunCode() {
+    if (isRunningTestCases || isRunningCode) {
+      return;
+    }
     setIsRunningCode(true);
     setRunCount((cur) => cur + 1);
+    setTimeout(() => setIsRunningCode(false), 10000);
+  }
+
+  function handleRunTestCases() {
+    if (isRunningCode || isRunningTestCases) {
+      return;
+    }
+    setIsRunningTestCases(true);
   }
 
   useEffect(() => {
     const fetchAssignment = async () => {
-      const response = await api.get(`assignments/${assignmentId}`);
-      setAssignment(response.data);
-      console.log(response.data);
+      const [assignmentResponse, testCasesResponse] = await Promise.all([
+        api.get(`assignments/${assignmentId}`),
+        api.get(`assignments/${assignmentId}/test-cases`),
+      ]);
+      setAssignment(assignmentResponse.data);
+      setTestCases(testCasesResponse.data);
     };
     fetchAssignment();
   }, [assignmentId, api]);
@@ -108,6 +125,8 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
           name={isPython ? "main.py" : "Main.java"}
           handleRunCode={handleRunCode}
           isRunningCode={isRunningCode}
+          handleRunTestCases={handleRunTestCases}
+          isRunningTestCases={isRunningTestCases}
           isFileInput={isFileInput}
           submissionId={submission?.id}
         />
@@ -132,7 +151,11 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
           code={submission?.submitted_file}
           runCount={runCount}
           setIsRunningCode={setIsRunningCode}
+          isRunningTestCases={isRunningTestCases}
+          setIsRunningTestCases={setIsRunningTestCases}
           inputFile={inputFile}
+          testCases={testCases}
+          isFileInput={isFileInput}
         />
       </div>
 
