@@ -4,6 +4,7 @@ import {
   Check,
   Copy,
   Eye,
+  EyeClosed,
   FileCode,
   Loader2,
   Maximize,
@@ -25,6 +26,7 @@ export default function CodeBlock({
   isFileInput = false,
   setInputFile,
   submissionId,
+  assignmentId,
 }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -88,21 +90,37 @@ export default function CodeBlock({
             )}
           </button>
 
-          {handleRunTestCases &&
-            (!isRunningTestCases ? (
-              <button
-                onClick={handleRunTestCases}
-                className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
-              >
-                <Play size={12} />
-                Test Cases
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
-                <Loader2 size={12} className="animate-spin" /> Running Test
-                Cases...
+          {handleRunTestCases && (
+            <>
+              {assignmentId && (
+                <button
+                  onClick={() =>
+                    router.push(`../assignments/${assignmentId}/test-cases`)
+                  }
+                  className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+                >
+                  <Eye size={12} />
+                  Test Cases
+                </button>
+              )}
+              <div>
+                {!isRunningTestCases ? (
+                  <button
+                    onClick={handleRunTestCases}
+                    className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+                  >
+                    <Play size={12} />
+                    Test Cases
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
+                    <Loader2 size={12} className="animate-spin" /> Running Test
+                    Cases...
+                  </div>
+                )}
               </div>
-            ))}
+            </>
+          )}
 
           {handleRunCode &&
             (!isRunningCode ? (

@@ -11,14 +11,13 @@ export default function EditableCodeBlock({
   onFileNameChange,
   handleRunCode,
   isRunningCode,
-  isFileInput = false,
-  setInputFile,
-  className = "",
+  setLoadedInputFile,
   setFileSystemInputFile,
+  className = "",
 }) {
-  const fileInputRef = useRef(null);
+  const loadedInputFileInputRef = useRef(null);
 
-  const handleUploadFile = (e) => {
+  const handleLoadedInputFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const valid = file.name.endsWith(".py") || file.name.endsWith(".java");
@@ -32,6 +31,18 @@ export default function EditableCodeBlock({
       onFileNameChange?.(file.name);
     };
     reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleFileSystemInputFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const valid = file.name.endsWith(".txt");
+    if (!valid) {
+      alert("Please upload a .txt file.");
+      return;
+    }
+    setFileSystemInputFile(file);
     e.target.value = "";
   };
 
@@ -50,14 +61,14 @@ export default function EditableCodeBlock({
             <FileCode size={12} className="opacity-70" />
             {name}
           </div>
-          {/* Load button */}
-          <div>
+          {/* Loaded Input File Upload Button */}
+          <div className="flex items-center gap-2">
             <input
-              ref={fileInputRef}
+              ref={loadedInputFileInputRef}
               type="file"
               accept=".py,.java"
               className="hidden"
-              onChange={handleUploadFile}
+              onChange={handleLoadedInputFileUpload}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -66,9 +77,6 @@ export default function EditableCodeBlock({
               <Upload size={12} />
               Load Playground File
             </button>
-            {setInputFile && isFileInput && (
-              <FileUpload setInputFile={setInputFile} />
-            )}
           </div>
         </div>
 

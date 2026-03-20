@@ -120,6 +120,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
       <div className="space-y-2">
         <CodeBlock
+          assignmentId={assignmentId}
           setInputFile={setInputFile}
           code={submission?.submitted_file}
           name={isPython ? "main.py" : "Main.java"}

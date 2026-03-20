@@ -83,6 +83,7 @@ function runCode(command, filePath, userDir, session, socket, language) {
     session.running = false;
     session.process = null;
     ptyProcess.kill();
+    fs.unlinkSync(filePath);
   });
 }
 
@@ -95,6 +96,7 @@ function runTestCases(
   language,
   testCase,
   isFileInput,
+  inputFilePath,
 ) {
   const ptyProcess = pty.spawn(command, [filePath], {
     name: "xterm-color",
@@ -118,15 +120,29 @@ function runTestCases(
   }
 
   ptyProcess.onData((data) => {
-    const output = `Expected Output: ${testCase.expected_output}\r\nActual Output: ${data}\r\nStatus: ${data === testCase.expected_output ? "Passed" : "Failed"}\r\n----------------------------------------\r\n`;
+    const expectedOutput = testCase.expected_output.trim();
+    const actualOutput = data.toString().trim();
+    const isPassed = expectedOutput === actualOutput;
+    const statusText = isPassed ? "Passed" : "Failed";
+
+    if (!session.testCasesPassed) {
+      session.testCasesPassed = 0;
+    }
+    if (isPassed) {
+      session.testCasesPassed++;
+    }
+
+    const output = `Expected Output: ${expectedOutput}\r\nActual Output: ${actualOutput}\r\nStatus: ${statusText}\r\n----------------------------------------\r\n`;
     socket.emit("test_cases_stdout", output);
   });
 
   ptyProcess.onExit(() => {
-    socket.emit("test_cases_completed");
+    socket.emit("test_cases_completed", session.testCasesPassed);
     session.running = false;
     session.process = null;
     ptyProcess.kill();
+    fs.unlinkSync(inputFilePath);
+    fs.unlinkSync(filePath);
   });
 
   return ptyProcess;
@@ -168,7 +184,6 @@ io.on("connection", (socket) => {
       compileJava(filePath, socket, session, userDir);
     }
     runCode(command, filePath, userDir, session, socket, language);
-    fs.unlinkSync(filePath);
   });
 
   // Upload the input file
@@ -203,7 +218,8 @@ io.on("connection", (socket) => {
 
     if (isFileInput) {
       testCases.forEach((testCase) => {
-        const inputFilePath = path.join(userDir, `input.txt`);
+        const inputFilePath = path.join(userDir, `test_input_${socket.id}.txt`);
+        fs.writeFileSync(filePath, data.code);
         fs.writeFileSync(inputFilePath, testCase.text_input);
         runTestCases(
           command,
@@ -214,10 +230,11 @@ io.on("connection", (socket) => {
           language,
           testCase,
           isFileInput,
+          inputFilePath,
         );
-        fs.unlinkSync(inputFilePath);
       });
     } else {
+      fs.writeFileSync(filePath, data.code);
       testCases.forEach((testCase) => {
         runTestCases(
           command,
@@ -228,6 +245,7 @@ io.on("connection", (socket) => {
           language,
           testCase,
           isFileInput,
+          null,
         );
       });
     }

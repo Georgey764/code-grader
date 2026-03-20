@@ -24,7 +24,8 @@ export default function PlaygroundPage() {
   const [code, setCode] = useState(DEFAULT_CODE);
   const [runCount, setRunCount] = useState(0);
   const [isRunningCode, setIsRunningCode] = useState(false);
-  const [inputFile, setInputFile] = useState(null);
+  const [loadedInputFile, setLoadedInputFile] = useState(null);
+  const [fileSystemInputFile, setFileSystemInputFile] = useState(null);
   const [loading, setLoading] = useState(!!submissionId);
   const [language, setLanguage] = useState("python");
   const [fileName, setFileName] = useState("main.py");
@@ -82,7 +83,8 @@ export default function PlaygroundPage() {
           }}
           handleRunCode={handleRunCode}
           isRunningCode={isRunningCode}
-          setInputFile={setInputFile}
+          setLoadedInputFile={setLoadedInputFile}
+          setFileSystemInputFile={setFileSystemInputFile}
           className="flex-1 min-h-0"
         />
       </div>
@@ -123,7 +125,7 @@ export default function PlaygroundPage() {
               code={code}
               runCount={runCount}
               setIsRunningCode={setIsRunningCode}
-              inputFile={inputFile}
+              inputFile={fileSystemInputFile}
             />
           </div>
         )}

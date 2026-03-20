@@ -100,9 +100,12 @@ const XTerminal = ({
           term.write(data);
         });
 
-        socket.on("test_cases_completed", () => {
+        socket.on("test_cases_completed", (passedCount) => {
           setIsRunningTestCases(false);
           term.write(`Test Cases Completed \r\n`);
+          term.write(
+            `Passed ${passedCount} out of ${testCases.length} test cases\r\n`,
+          );
           term.write(`\r\nuser@code-grader % `);
         });
 
@@ -134,6 +137,7 @@ const XTerminal = ({
         `Running Test Cases... \r\n\n----------------------------------------\r\n`,
       );
       socketRef.current.emit("run_test_cases", {
+        code: code,
         language: language,
         testCases: testCases,
         isFileInput: isFileInput,
