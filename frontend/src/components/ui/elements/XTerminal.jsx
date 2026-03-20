@@ -91,9 +91,14 @@ const XTerminal = ({
           }
         });
 
-        socket.on("code_compiled_completed", () => {
-          term.write("Main.java compile step completed\r\n");
+        socket.on("code_compiled_completed", (data) => {
+          term.write(`Main.java Compile ${data}\r\n`);
           term.write(`\r\nuser@code-grader % `);
+        });
+
+        socket.on("error", (data) => {
+          setIsRunningCode(false);
+          console.log("Error: ", data);
         });
 
         // 4. Handle Window Resize
@@ -128,6 +133,15 @@ const XTerminal = ({
       runCode();
     }
   }, [runCount, code, language]);
+
+  useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.emit("upload_submission_file", {
+        code: code,
+        language: language,
+      });
+    }
+  }, [code, language]);
 
   // Clear the terminal when the run count is 0
   useEffect(() => {

@@ -11,9 +11,9 @@ const CourseCard = ({ course }) => {
 
   const navigateToCourse = () => {
     if (role === "st" || role === "ga") {
-      router.push(`/app/student/${course.id}`);
+      router.push(`/dashboard/student/${course.id}`);
     } else {
-      router.push(`/app/faculty/${course.id}`);
+      router.push(`/dashboard/faculty/${course.id}`);
     }
   };
 

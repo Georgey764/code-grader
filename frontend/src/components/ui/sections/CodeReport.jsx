@@ -109,6 +109,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
           handleRunCode={handleRunCode}
           isRunningCode={isRunningCode}
           isFileInput={isFileInput}
+          submissionId={submission?.id}
         />
       </div>
       {/* Terminal */}
@@ -177,7 +178,7 @@ function AutomatedTestResultAccordion({
           </div>
           <div className="text-left">
             <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
-              Automated Test Cases Run Results
+              Initial Automated Results
             </h3>
             <div className="flex items-center gap-2 mt-1">
               {/* Status Dot for Glanceability */}

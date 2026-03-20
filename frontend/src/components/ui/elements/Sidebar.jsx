@@ -1,25 +1,38 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { BookOpen, Settings, Menu, X, LogOut } from "lucide-react";
+import {
+  BookOpen,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  Terminal,
+  TerminalIcon,
+  SquareTerminal,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
 const navConfig = {
-  student: [
+  st: [
     {
       icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student",
+      route: "/dashboard/student",
     },
   ],
-  faculty: [
-    { icon: <BookOpen size={20} />, label: "Courses", route: "/app/faculty" },
+  fa: [
+    {
+      icon: <BookOpen size={20} />,
+      label: "Courses",
+      route: "/dashboard/faculty",
+    },
   ],
   ga: [
     {
       icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student",
+      route: "/dashboard/student",
     },
   ],
 };
@@ -28,19 +41,24 @@ export default function Sidebar() {
   const { name, logout } = useMetadata(); // Pull logout from context
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
+  const { user } = useMetadata();
+  const role = user?.role?.toLowerCase();
 
   const navItems = useMemo(() => {
-    const role = pathname.split("/")[2]?.toLowerCase();
     return [
       ...(navConfig[role] || []),
       {
+        icon: <SquareTerminal size={20} />,
+        label: "Playground",
+        route: "/dashboard/playground",
+      },
+      {
         icon: <Settings size={20} />,
         label: "Settings",
-        route: `/app/${role}/settings`,
+        route: `/dashboard/${role}/settings`,
       },
     ];
-  }, [pathname]);
+  }, [role]);
 
   const handleLogout = () => {
     logout();

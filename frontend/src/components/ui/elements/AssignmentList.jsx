@@ -169,7 +169,7 @@ export default function AssignmentList({ asgn }) {
         <div
           onClick={() =>
             router.push(
-              `/app/${getRole(user.role)}/${courseId}/assignments/${asgn.id}`,
+              `/dashboard/${getRole(user.role)}/${courseId}/assignments/${asgn.id}`,
             )
           }
           className="cursor-pointer p-2 text-border group-hover:text-primary group-hover:translate-x-1 transition-all"
