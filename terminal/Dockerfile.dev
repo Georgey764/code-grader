@@ -2,10 +2,12 @@
 FROM node:20-bookworm
 
 # Install build essentials and python (required for node-pty)
-RUN apt-get update && apt-get install -y \
+RUN mkdir -p /usr/share/man/man1 && \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
+    default-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

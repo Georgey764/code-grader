@@ -10,6 +10,7 @@ import {
   ChevronUp,
   CornerDownRight,
   ExternalLink,
+  Eye,
   FileSearch,
   Layout,
   MessageSquare,
@@ -23,6 +24,9 @@ import {
 import { CodeBlock } from "@/components/ui/elements";
 import dynamic from "next/dynamic";
 import { io } from "socket.io-client";
+import { useRouter } from "next/navigation";
+import { useMetadata } from "@/context";
+import { LoadingPage } from "@/components/ui/sections";
 
 // Use dynamic import with ssr: false
 // Source - https://stackoverflow.com/a/78116690
@@ -33,11 +37,18 @@ const XTerminal = dynamic(() => import("@/components/ui/elements/XTerminal"), {
   ssr: false,
 });
 
-export default function CodeReport({ results, submission }) {
+export default function CodeReport({ results = [], submission, assignmentId }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRubricExpanded, setIsRubricExpanded] = useState(false);
   const [openTest, setOpenTest] = useState(null);
   const [runCount, setRunCount] = useState(0);
   const [isRunningCode, setIsRunningCode] = useState(false);
+  const [inputFile, setInputFile] = useState(null);
+  const { api } = useMetadata();
+  const [assignment, setAssignment] = useState(null);
+  const language = assignment?.language;
+  const isPython = language?.toLowerCase() === "python";
+  const isFileInput = assignment?.is_file_input;
 
   const levelMap = {
     1: { label: "Beginning", color: "text-red-600" },
@@ -56,36 +67,48 @@ export default function CodeReport({ results, submission }) {
     setRunCount((cur) => cur + 1);
   }
 
+  useEffect(() => {
+    const fetchAssignment = async () => {
+      const response = await api.get(`assignments/${assignmentId}`);
+      setAssignment(response.data);
+      console.log(response.data);
+    };
+    fetchAssignment();
+  }, [assignmentId, api]);
+
+  if (!assignment) return <LoadingPage />;
+
   return (
     <div className="space-y-6">
-      {/* Standard Input */}
-      {/* <div className="flex flex-col gap-2.5 group">
-
-        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors">
-          <Terminal size={14} className="opacity-60" />
-          Standard Input
-        </label>
-
-        <textarea
-          className="w-full min-h-[40px] p-5 bg-slate-50/50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-900 outline-none transition-all 
-               shadow-inner placeholder:text-slate-300 resize-none
-               focus:ring-4 focus:ring-primary/5 focus:border-primary
-               hover:border-slate-300"
-          placeholder="e.g. 5\n10"
-        />
-      </div> */}
+      {/* Detailed Automated Accordion */}
+      <AutomatedTestResultAccordion
+        assignmentId={assignmentId}
+        passedCount={passedCount}
+        visibleTests={visibleTests}
+        submission={submission}
+        rubricResults={rubricResults}
+        levelMap={levelMap}
+        results={results}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+        openTest={openTest}
+        setOpenTest={setOpenTest}
+      />
 
       {/* Submission File Code View */}
       <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors mt-8 mb-2">
         <Terminal size={14} className="opacity-60" />
         Submitted File
       </label>
+
       <div className="space-y-2">
         <CodeBlock
+          setInputFile={setInputFile}
           code={submission?.submitted_file}
-          name="main.py"
+          name={isPython ? "main.py" : "Main.java"}
           handleRunCode={handleRunCode}
           isRunningCode={isRunningCode}
+          isFileInput={isFileInput}
         />
       </div>
       {/* Terminal */}
@@ -104,23 +127,20 @@ export default function CodeReport({ results, submission }) {
       </div>
       <div className="min-h-[200px] w-full relative">
         <XTerminal
+          language={language}
           code={submission?.submitted_file}
           runCount={runCount}
           setIsRunningCode={setIsRunningCode}
+          inputFile={inputFile}
         />
       </div>
-      {/* Detailed Automated Accordion */}
-      <AutomatedTestResultAccordion
-        passedCount={passedCount}
-        visibleTests={visibleTests}
+
+      <RubricResultAccordion
         submission={submission}
         rubricResults={rubricResults}
-        levelMap={levelMap}
-        results={results}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-        openTest={openTest}
-        setOpenTest={setOpenTest}
+        isExpanded={isRubricExpanded}
+        setIsExpanded={setIsRubricExpanded}
+        assignmentId={assignmentId}
       />
     </div>
   );
@@ -135,36 +155,65 @@ function AutomatedTestResultAccordion({
   rubricResults,
   levelMap,
   results,
+  assignmentId,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [openTest, setOpenTest] = useState(null);
+  const router = useRouter();
 
   return (
     <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 overflow-hidden ">
       {/* --- MASTER TOGGLE HEADER --- */}
-      <button
+      <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-5 bg-white border-b border-zinc-200 hover:bg-zinc-50 transition-colors"
+        className="w-full flex items-center justify-between p-5 bg-white border-b border-slate-200/60 hover:bg-slate-50/50 transition-all cursor-pointer group select-none"
       >
-        <div className="flex items-center gap-4 text-left">
-          <div className="p-2 bg-zinc-100 rounded-lg text-zinc-500">
+        {/* --- LEFT: Diagnostic Identity --- */}
+        <div className="flex items-center gap-4">
+          <div
+            className={`p-3 rounded-xl transition-colors ${passedCount === visibleTests.length ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-500"}`}
+          >
             <Layout size={20} />
           </div>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-800">
-              Automated Test Run Report
+          <div className="text-left">
+            <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
+              Automated Test Cases Run Results
             </h3>
-            <p className="text-[12px] font-bold text-zinc-400 uppercase tracking-tighter">
-              {passedCount}/{visibleTests?.length || 0} Tests Passed
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              {/* Status Dot for Glanceability */}
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${passedCount === visibleTests.length ? "bg-green-500" : "bg-amber-500 animate-pulse"}`}
+              />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
+                {passedCount} / {visibleTests?.length || 0} Test Cases Passed
+              </p>
+            </div>
           </div>
         </div>
-        <div
-          className={`transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-        >
-          <ChevronDown size={20} className="text-zinc-400" />
+
+        {/* --- RIGHT: Actions & Navigation --- */}
+        <div className="flex items-center gap-6">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents the accordion from toggling when clicking the button
+              router.push(`../assignments/${assignmentId}/test-cases`);
+            }}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-md active:scale-95"
+          >
+            <Eye size={14} />
+            Test Cases
+          </button>
+
+          <div
+            className={`transition-transform duration-500 ${isExpanded ? "rotate-180" : ""}`}
+          >
+            <ChevronDown
+              size={20}
+              className={`${isExpanded ? "text-primary" : "text-slate-300"}`}
+            />
+          </div>
         </div>
-      </button>
+      </div>
 
       {/* --- ACCORDION CONTENT --- */}
       {isExpanded && (
@@ -172,7 +221,7 @@ function AutomatedTestResultAccordion({
           {/* --- TEST CASE LIST --- */}
           <div className="space-y-3">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-              <span className="w-8 h-[1px] bg-zinc-200" /> Test Diagnostics
+              <span className="w-8 h-[1px] bg-zinc-200" /> Test Cases
             </h4>
             <div className="space-y-2">
               {results?.map((test, i) => (
@@ -227,6 +276,114 @@ function AutomatedTestResultAccordion({
               ))}
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RubricResultAccordion({
+  rubricResults,
+  isExpanded,
+  setIsExpanded,
+  submission,
+  assignmentId,
+}) {
+  const router = useRouter();
+  const totalEarned = rubricResults.reduce(
+    (acc, curr) => acc + parseFloat(curr.points || 0),
+    0,
+  );
+
+  return (
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-sm">
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-5 bg-white border-b border-slate-200/60 hover:bg-slate-50/50 transition-all cursor-pointer group select-none"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-slate-100 text-slate-500 rounded-xl group-hover:text-secondary transition-colors">
+            <Scale size={20} />
+          </div>
+          <div className="text-left">
+            <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
+              Instructor Manual Review
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-secondary" />
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
+                {totalEarned.toFixed(1)} Total Points Awarded
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents the accordion from toggling when clicking the button
+              router.push(`../assignments/${assignmentId}/rubrics`);
+            }}
+            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-md active:scale-95"
+          >
+            <Eye size={14} />
+            Rubrics
+          </button>
+          <div
+            className={`transition-transform duration-500 ${isExpanded ? "rotate-180" : ""}`}
+          >
+            <ChevronDown size={20} className="text-slate-300" />
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="p-6 space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          {rubricResults.length === 0 ? (
+            <p className="p-10 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 italic">
+              Evaluation Pending
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {rubricResults.map((res, i) => (
+                <div
+                  key={i}
+                  className="bg-white border border-slate-200 p-5 rounded-2xl space-y-4 shadow-sm"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        Criterion
+                      </p>
+                      <h4 className="text-sm font-black text-slate-800 leading-none">
+                        {res.criteria_name || "Grading Factor"}
+                      </h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-secondary tracking-tighter">
+                        {parseFloat(res.points).toFixed(1)}
+                      </p>
+                      <p className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">
+                        Points
+                      </p>
+                    </div>
+                  </div>
+
+                  {res.optional_feedback && (
+                    <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex gap-3">
+                      <MessageSquare
+                        size={14}
+                        className="text-slate-300 shrink-0 mt-0.5"
+                      />
+                      <p className="text-xs text-slate-500 italic leading-relaxed">
+                        &quot;{res.optional_feedback}&quot;
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

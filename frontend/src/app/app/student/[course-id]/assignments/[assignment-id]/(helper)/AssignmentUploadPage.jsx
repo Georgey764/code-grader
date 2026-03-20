@@ -156,6 +156,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
           {/* View Controller */}
           {status === "list" && (
             <SubmissionList
+              assignmentId={assignmentId}
               submissions={submissions}
               rubricCriteriaCount={
                 assignmentData?.rubric_criterias?.length || 0
@@ -206,7 +207,11 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
           {status === "completed" && (
             <div className="space-y-6 sm:space-y-8">
-              <CodeReport results={results} submission={activeSubmission} />
+              <CodeReport
+                results={results}
+                submission={activeSubmission}
+                assignmentId={assignmentId}
+              />
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-border/50">
                 <button
