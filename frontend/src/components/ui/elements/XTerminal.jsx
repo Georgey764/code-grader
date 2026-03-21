@@ -173,11 +173,16 @@ const XTerminal = ({
     async function handleInputFileChange(inputFile) {
       // Removing the input file
       if (inputFile == null && oldInputFile.current != null) {
-        socketRef.current.emit("delete_input_file", {
-          inputFileDetails: {
-            name: oldInputFile.current.name,
-          },
-        });
+        // Skip delete when file is input.txt and test cases are running — run_test_cases
+        // creates/overwrites input.txt; deleting here would race and remove the test input
+        const isTestInput = oldInputFile.current.name === "input.txt";
+        if (!(isTestInput && isRunningTestCases)) {
+          socketRef.current.emit("delete_input_file", {
+            inputFileDetails: {
+              name: oldInputFile.current.name,
+            },
+          });
+        }
         oldInputFile.current = null;
       }
       // Adding the input file when it is not already present
@@ -206,7 +211,7 @@ const XTerminal = ({
       }
     }
     handleInputFileChange(inputFile);
-  }, [inputFile]);
+  }, [inputFile, isRunningTestCases]);
 
   return <div ref={terminalRef} style={{ height: "200px", width: "100%" }} />;
 };

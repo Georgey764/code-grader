@@ -218,7 +218,7 @@ io.on("connection", (socket) => {
 
     if (isFileInput) {
       testCases.forEach((testCase) => {
-        const inputFilePath = path.join(userDir, `test_input_${socket.id}.txt`);
+        const inputFilePath = path.join(userDir, `input.txt`);
         fs.writeFileSync(filePath, data.code);
         fs.writeFileSync(inputFilePath, testCase.text_input);
         runTestCases(
