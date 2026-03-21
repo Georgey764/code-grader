@@ -104,15 +104,17 @@ const XTerminal = ({
         });
 
         socket.on("test_case_completed", (output) => {
-          setIsRunningTestCases(false);
           term.write(output);
         });
 
-        socket.on("test_cases_completed", (passedCount) => {
+        socket.on("test_cases_completed", (data) => {
           setIsRunningTestCases(false);
+          console.log(data);
+
           term.write(
-            `Passed ${passedCount} out of ${visibleTestCases.length} test cases\r\n----------------------------------------\r\n`,
+            `Passed ${data?.passedCount} out of ${visibleTestCases.length} test cases\r\n----------------------------------------\r\n`,
           );
+          term.write(`Error Cases: ${JSON.stringify(data?.errorCases)}\r\n`);
           term.write(`\r\nuser@code-grader % `);
         });
 
