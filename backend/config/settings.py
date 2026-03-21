@@ -79,6 +79,7 @@ THIRD_PARTY_APPS = [
     "phonenumber_field",
     "corsheaders",
     "rest_framework",
+    "djoser",
     "rest_framework_simplejwt",
     "storages",
 ]
@@ -92,6 +93,16 @@ LOCAL_APPS = [
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+# EMAIL CREDS
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 # CELERY CREDS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -123,6 +134,7 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
+    "TOKEN_OBTAIN_SERIALIZER": "apps.core.serializers.MyTokenObtainPairSerializer",
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -133,6 +145,7 @@ if DEBUG:
         "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
         "ROTATE_REFRESH_TOKENS": False,
         "BLACKLIST_AFTER_ROTATION": False,
+        "TOKEN_OBTAIN_SERIALIZER": "apps.core.serializers.MyTokenObtainPairSerializer",
     }
 
 MIDDLEWARE = [
@@ -199,7 +212,28 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+DOMAIN = (
+    f"{os.getenv('ALLOWED_HOST_2')}:3000" if DEBUG else f"{os.getenv('ALLOWED_HOST_2')}"
+)
+SITE_NAME = "Code Grader"
+SITE_URL = f"http://{DOMAIN}" if DEBUG else f"https://{DOMAIN}"
+
 AUTH_USER_MODEL = "accounts.User"
+
+DJOSER = {
+    "LOGIN_FIELD": "email",
+    "USER_CREATE_PASSWORD_RETYPE": False,
+    "SEND_ACTIVATION_EMAIL": True,
+    "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
+    "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
+    "ACTIVATION_URL": "activate/{uid}/{token}",
+    "SERIALIZERS": {
+        "user_create": "apps.accounts.serializers.RegisterSerializer",
+        "user": "apps.accounts.serializers.UserDetailSerializer",
+        "current_user": "apps.accounts.serializers.UserDetailSerializer",
+        "token_create": "apps.core.serializers.MyTokenObtainPairSerializer",
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/

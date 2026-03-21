@@ -124,6 +124,9 @@ resource "aws_instance" "grader_engine" {
 
               E2B_API_KEY=${var.e2b}
 
+              EMAIL_HOST_PASSWORD=${var.email_host_password}
+              EMAIL_HOST_USER=${var.email_host_user}
+              DEFAULT_FROM_EMAIL=${var.default_from_email}
 
               ENV_FILE
 

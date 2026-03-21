@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const { baseUrl } = useMetadata();
   const { user, isLoading } = useRouteToCorrectPath();
   const router = useRouter();
-
+  const [loading, setLoading] = useState(false);
   const hasUppercase = /[A-Z]/.test(password);
   const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
   const hasMinLength = password.length >= 5;
@@ -51,7 +51,7 @@ export default function RegisterPage() {
         bodyToSend["classification"] = form.classification.value;
       }
 
-      const response = await fetch(baseUrl + "accounts/", {
+      const response = await fetch(baseUrl + "auth/users/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,24 +62,28 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        console.log(data);
+
         alert(
           `Error Registering Account ${data?.email?.[0] || data?.cwid?.[0] || "Server Error"}`,
         );
+        setLoading(false);
         return;
       }
 
       const data = await response.json();
-      console.log(data);
 
-      alert("Registered Succesfully!");
+      alert(
+        `An activation email has been sent to your email address at ${bodyToSend.email}`,
+      );
       router.push("/login");
     };
 
     fetchHandle();
-
-    // console.log("Form submitted for role:", role);
   };
+
+  if (loading) {
+    return <LoadingPage />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
@@ -96,7 +100,13 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form
+          onSubmit={(e) => {
+            handleSubmit(e);
+            setLoading(true);
+          }}
+          className="p-8 space-y-6"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Standard Identity Fields */}
             <div className="space-y-1">
@@ -139,7 +149,7 @@ export default function RegisterPage() {
                 placeholder="warhawk@ulm.edu"
                 className="w-full p-2 border border-border rounded-sm focus:ring-2 focus:ring-secondary outline-none"
                 required
-                pattern="^[A-Za-z0-9._%+\-]+@(warhawks\.)?ulm\.edu$"
+                // pattern="^[A-Za-z0-9._%+\-]+@(warhawks\.)?ulm\.edu$"
                 title="Email must be a ULM address ending with @ulm.edu."
               />
             </div>

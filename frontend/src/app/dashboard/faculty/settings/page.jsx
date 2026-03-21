@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Fingerprint,
   Hash,
+  Lock,
 } from "lucide-react";
 
 function getProfilePath(role, cwid) {
@@ -242,6 +243,28 @@ export default function FacultySettingsPage() {
             </Button>
           </div>
         </form>
+      </Card>
+      <Card className="max-w-none">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 bg-primary/10 rounded-lg">
+            <Lock size={24} className="text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-accent uppercase tracking-tight">
+              Change Password
+            </h2>
+            <p className="text-sm text-text-muted">Change your password.</p>
+          </div>
+        </div>
+        <Link
+          href="/password-change"
+          className="text-xs font-bold text-text-muted hover:text-primary transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Lock size={14} />
+            Change Password
+          </span>
+        </Link>
       </Card>
     </div>
   );
