@@ -205,7 +205,15 @@ io.on("connection", (socket) => {
 
     fs.writeFileSync(filePath, code);
     if (data.language.toLowerCase() === "java") {
-      const result = await compileJava(filePath, socket, session, userDir);
+      const result = await compileJava(
+        filePath,
+        socket,
+        session,
+        userDir,
+      ).catch((e) => {
+        session.running = false;
+        socket.emit("error", e.message);
+      });
       if (result === "Failed") {
         socket.emit("error", "Compilation failed");
         return;
@@ -218,7 +226,10 @@ io.on("connection", (socket) => {
       session,
       socket,
       language,
-    );
+    ).catch((e) => {
+      session.running = false;
+      socket.emit("error", e.message);
+    });
     if (result === "Failed") {
       socket.emit("error", "Execution failed");
       return;
@@ -247,6 +258,7 @@ io.on("connection", (socket) => {
       socket.emit("error", "Code is already running");
       return;
     }
+    session.running = true;
 
     const { language, testCases, isFileInput, code } = data;
 
@@ -288,7 +300,11 @@ ${code}`;
           testCase,
           isFileInput,
           inputFilePath,
-        );
+        ).catch((e) => {
+          session.running = false;
+          socket.emit("error", e.message);
+          return;
+        });
       }
       if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
       if (inputFilePath && fs.existsSync(inputFilePath))
