@@ -2,6 +2,7 @@
 import React, { useRef, useEffect } from "react";
 import { io } from "socket.io-client";
 import "xterm/css/xterm.css";
+import { useMetadata } from "@/context";
 
 const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
 
@@ -22,6 +23,10 @@ const XTerminal = ({
   const countHolder = useRef(0);
   const oldInputFile = useRef(null);
   const termObjectRef = useRef(null);
+  const { user } = useMetadata();
+  const visibleTestCases = testCases.filter((t) =>
+    user.role.toLowerCase() == "st" ? !t?.is_hidden : true,
+  );
 
   useEffect(() => {
     if (isInitialized.current) return;
@@ -98,15 +103,15 @@ const XTerminal = ({
           term.write(`\r\nuser@code-grader % `);
         });
 
-        socket.on("test_cases_stdout", (data) => {
-          term.write(data);
+        socket.on("test_case_completed", (output) => {
+          setIsRunningTestCases(false);
+          term.write(output);
         });
 
         socket.on("test_cases_completed", (passedCount) => {
           setIsRunningTestCases(false);
-          term.write(`Test Cases Completed \r\n`);
           term.write(
-            `Passed ${passedCount} out of ${testCases.length} test cases\r\n`,
+            `Passed ${passedCount} out of ${visibleTestCases.length} test cases\r\n----------------------------------------\r\n`,
           );
           term.write(`\r\nuser@code-grader % `);
         });
@@ -138,10 +143,10 @@ const XTerminal = ({
       termObjectRef.current.write(
         `Running Test Cases... \r\n\n----------------------------------------\r\n`,
       );
-      socketRef.current.emit("run_test_cases", {
+      socketRef.current.emit("run_test_case", {
         code: code,
         language: language,
-        testCases: testCases,
+        testCases: visibleTestCases,
         isFileInput: isFileInput,
       });
     }
@@ -175,7 +180,7 @@ const XTerminal = ({
     async function handleInputFileChange(inputFile) {
       // Removing the input file
       if (inputFile == null && oldInputFile.current != null) {
-        // Skip delete when file is input.txt and test cases are running — run_test_cases
+        // Skip delete when file is input.txt and test cases are running — run_test_case
         // creates/overwrites input.txt; deleting here would race and remove the test input
         const isTestInput = oldInputFile.current.name === "input.txt";
         if (!(isTestInput && isRunningTestCases)) {

@@ -71,6 +71,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
     if (isRunningCode || isRunningTestCases) {
       return;
     }
+    setRunCount(-1);
     setIsRunningTestCases(true);
   }
 

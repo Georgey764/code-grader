@@ -27,67 +27,78 @@ const sessions = new Map();
 const shell = os.platform() === "win32" ? "powershell.exe" : "bash";
 
 function compileJava(filePath, socket, session, userDir) {
-  const ptyProcess = pty.spawn("javac", [filePath], {
-    name: "xterm-color",
-    cols: 80,
-    rows: 24,
-    cwd: userDir,
-    env: process.env,
-  });
-  session.process = {
-    process: ptyProcess,
-    language: "java",
-    command: "javac",
-  };
+  return new Promise((resolve, reject) => {
+    const ptyProcess = pty.spawn("javac", [filePath], {
+      name: "xterm-color",
+      cols: 80,
+      rows: 24,
+      cwd: userDir,
+      env: process.env,
+    });
+    session.process = {
+      process: ptyProcess,
+      language: "java",
+      command: "javac",
+    };
 
-  ptyProcess.onData((data) => {
-    socket.emit("code_compiled_stdout", data);
-  });
+    ptyProcess.onData((data) => {
+      socket.emit("code_compiled_stdout", data);
+    });
 
-  ptyProcess.onExit(({ exitCode }) => {
-    if (exitCode === 0) {
-      socket.emit("code_compiled_completed", "Success");
-    } else {
-      socket.emit("code_compiled_completed", "Failed");
-    }
-    ptyProcess.kill();
-    session.process = null;
+    ptyProcess.onExit(({ exitCode }) => {
+      if (exitCode === 0) {
+        socket.emit("code_compiled_completed", "Success");
+        resolve("Success");
+      } else {
+        socket.emit("code_compiled_completed", "Failed");
+        reject("Failed");
+      }
+      ptyProcess.kill();
+      session.process = null;
+    });
   });
 }
 
 function runCode(command, filePath, userDir, session, socket, language) {
-  const ptyProcess = pty.spawn(command, [filePath], {
-    name: "xterm-color",
-    cols: 80,
-    rows: 24,
-    cwd: userDir,
-    env: process.env,
-  });
+  return new Promise((resolve, reject) => {
+    const ptyProcess = pty.spawn(command, [filePath], {
+      name: "xterm-color",
+      cols: 80,
+      rows: 24,
+      cwd: userDir,
+      env: process.env,
+    });
 
-  session.process = {
-    process: ptyProcess,
-    language: language,
-    command: command,
-  };
+    session.process = {
+      process: ptyProcess,
+      language: language,
+      command: command,
+    };
 
-  socket.on("input", (data) => {
-    ptyProcess.write(data);
-  });
+    socket.on("input", (data) => {
+      ptyProcess.write(data);
+    });
 
-  ptyProcess.onData((data) => {
-    socket.emit("code_stdout", data);
-  });
+    ptyProcess.onData((data) => {
+      socket.emit("code_stdout", data);
+    });
 
-  ptyProcess.onExit(() => {
-    socket.emit("code_completed");
-    session.running = false;
-    session.process = null;
-    ptyProcess.kill();
-    fs.unlinkSync(filePath);
+    ptyProcess.onExit(({ exitCode }) => {
+      if (exitCode === 0) {
+        resolve("Success");
+      } else {
+        reject("Failed");
+      }
+      socket.emit("code_completed");
+      session.running = false;
+      session.process = null;
+      ptyProcess.kill();
+      if (filePath) fs.unlinkSync(filePath);
+    });
   });
 }
 
-function runTestCases(
+function runTestCase(
   command,
   filePath,
   userDir,
@@ -98,54 +109,67 @@ function runTestCases(
   isFileInput,
   inputFilePath,
 ) {
-  const ptyProcess = pty.spawn(command, [filePath], {
-    name: "xterm-color",
-    cols: 80,
-    rows: 24,
-    cwd: userDir,
-    env: process.env,
-  });
-
-  session.process = {
-    process: ptyProcess,
-    language: language,
-    command: command,
-  };
-
-  if (!isFileInput) {
-    const testCaseInput = testCase.text_input.split("\n");
-    testCaseInput.forEach((cur) => {
-      ptyProcess.write(cur + "\r");
+  return new Promise((resolve, reject) => {
+    const ptyProcess = pty.spawn(command, [filePath], {
+      name: "xterm-color",
+      cols: 80,
+      rows: 24,
+      cwd: userDir,
+      env: process.env,
     });
-  }
 
-  ptyProcess.onData((data) => {
-    const expectedOutput = testCase.expected_output.trim();
-    const actualOutput = data.toString().trim();
-    const isPassed = expectedOutput === actualOutput;
-    const statusText = isPassed ? "Passed" : "Failed";
+    let output = "";
+    let outputLine = 1;
+    const unwantedInitialOutputLines = isFileInput
+      ? 0
+      : testCase.text_input.split("\n").length;
 
-    if (!session.testCasesPassed) {
-      session.testCasesPassed = 0;
+    session.process = {
+      process: ptyProcess,
+      language: language,
+      command: command,
+    };
+
+    if (!isFileInput) {
+      const testCaseInput = testCase.text_input.split("\n");
+      testCaseInput.forEach((cur) => {
+        ptyProcess.write(cur + "\r");
+      });
     }
-    if (isPassed) {
-      session.testCasesPassed++;
-    }
 
-    const output = `Expected Output: ${expectedOutput}\r\nActual Output: ${actualOutput}\r\nStatus: ${statusText}\r\n----------------------------------------\r\n`;
-    socket.emit("test_cases_stdout", output);
+    ptyProcess.onData((data) => {
+      if (outputLine > unwantedInitialOutputLines) {
+        output += data;
+      }
+      outputLine++;
+    });
+
+    ptyProcess.onExit(({ exitCode }) => {
+      const expectedOutput = testCase.expected_output.trim();
+      const actualOutput = output.toString().trim();
+      const isPassed = expectedOutput === actualOutput;
+      const statusText = isPassed ? "Passed" : "Failed";
+
+      if (!session.testCasesPassed) {
+        session.testCasesPassed = 0;
+      }
+      if (isPassed) {
+        session.testCasesPassed++;
+      }
+
+      const outputInIt = `Expected Output: ${expectedOutput}\r\nActual Output: ${actualOutput}\r\nStatus: ${statusText}\r\n----------------------------------------\r\n`;
+
+      if (exitCode === 0) {
+        resolve(outputInIt);
+      } else {
+        reject(outputInIt);
+      }
+      socket.emit("test_case_completed", outputInIt);
+      session.running = false;
+      session.process = null;
+      ptyProcess.kill();
+    });
   });
-
-  ptyProcess.onExit(() => {
-    socket.emit("test_cases_completed", session.testCasesPassed);
-    session.running = false;
-    session.process = null;
-    ptyProcess.kill();
-    fs.unlinkSync(inputFilePath);
-    fs.unlinkSync(filePath);
-  });
-
-  return ptyProcess;
 }
 
 io.on("connection", (socket) => {
@@ -163,7 +187,7 @@ io.on("connection", (socket) => {
   });
 
   // Run the code
-  socket.on("run_code", (data) => {
+  socket.on("run_code", async (data) => {
     const { language, code } = data;
 
     const session = sessions.get(socket.id);
@@ -181,9 +205,24 @@ io.on("connection", (socket) => {
 
     fs.writeFileSync(filePath, code);
     if (data.language.toLowerCase() === "java") {
-      compileJava(filePath, socket, session, userDir);
+      const result = await compileJava(filePath, socket, session, userDir);
+      if (result === "Failed") {
+        socket.emit("error", "Compilation failed");
+        return;
+      }
     }
-    runCode(command, filePath, userDir, session, socket, language);
+    const result = await runCode(
+      command,
+      filePath,
+      userDir,
+      session,
+      socket,
+      language,
+    );
+    if (result === "Failed") {
+      socket.emit("error", "Execution failed");
+      return;
+    }
   });
 
   // Upload the input file
@@ -202,26 +241,44 @@ io.on("connection", (socket) => {
   });
 
   // Run the test cases
-  socket.on("run_test_cases", (data) => {
+  socket.on("run_test_case", async (data) => {
     const session = sessions.get(socket.id);
     if (session && session.running) {
       socket.emit("error", "Code is already running");
       return;
     }
 
-    const { language, testCases, isFileInput } = data;
+    const { language, testCases, isFileInput, code } = data;
 
     const command = language.toLowerCase() === "java" ? "java" : "python3";
     const fileName =
       language.toLowerCase() === "java" ? "Main.java" : "main.py";
     const filePath = path.join(userDir, fileName);
+    const inputFilePath = path.join(userDir, `input.txt`);
 
-    if (isFileInput) {
-      testCases.forEach((testCase) => {
-        const inputFilePath = path.join(userDir, `input.txt`);
-        fs.writeFileSync(filePath, data.code);
-        fs.writeFileSync(inputFilePath, testCase.text_input);
-        runTestCases(
+    const codeToWrite =
+      language.toLowerCase() === "java"
+        ? code
+        : `import builtins
+
+# Save the real input function
+_original_input = builtins.input
+
+# Redefine it to ignore the prompt argument and call the original with nothing
+def silent_input(prompt=""):
+    return _original_input()
+
+builtins.input = silent_input
+${code}`;
+
+    fs.writeFileSync(filePath, codeToWrite);
+
+    const runTestCases = async (testCase) => {
+      for (const testCase of testCases) {
+        if (isFileInput) {
+          fs.writeFileSync(inputFilePath, testCase.text_input);
+        }
+        await runTestCase(
           command,
           filePath,
           userDir,
@@ -232,23 +289,13 @@ io.on("connection", (socket) => {
           isFileInput,
           inputFilePath,
         );
-      });
-    } else {
-      fs.writeFileSync(filePath, data.code);
-      testCases.forEach((testCase) => {
-        runTestCases(
-          command,
-          filePath,
-          userDir,
-          session,
-          socket,
-          language,
-          testCase,
-          isFileInput,
-          null,
-        );
-      });
-    }
+      }
+      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      if (inputFilePath && fs.existsSync(inputFilePath))
+        fs.unlinkSync(inputFilePath);
+      socket.emit("test_cases_completed", session.testCasesPassed);
+    };
+    await runTestCases();
 
     if (testCases.length === 0) {
       socket.emit("error", "No test cases found");
@@ -265,8 +312,8 @@ io.on("connection", (socket) => {
       }
 
       // Delete directory + all files
-      if (fs.existsSync(session.dir)) {
-        fs.rmSync(session.dir, { recursive: true, force: true });
+      if (fs.existsSync(userDir)) {
+        fs.rmSync(userDir, { recursive: true, force: true });
       }
 
       sessions.delete(socket.id);
