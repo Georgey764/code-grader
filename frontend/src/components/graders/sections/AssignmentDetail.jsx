@@ -20,6 +20,7 @@ import {
   Clock,
   User,
   Hash,
+  AlignLeft,
 } from "lucide-react";
 
 export default function AssignmentDetailsPage() {
@@ -118,18 +119,18 @@ export default function AssignmentDetailsPage() {
       </div>
 
       {/* 4. CONTENT AREA */}
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted flex items-center gap-2">
-            <FileCode size={14} /> Assignment Description
+      <div className="space-y-6 w-full">
+        <div className="border rounded-lg p-4 bg-white">
+          <p className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+            <AlignLeft size={10} /> Description:
           </p>
-          <div className="text-sm md:text-base leading-relaxed text-text-main font-medium whitespace-pre-wrap opacity-90">
-            {assignment.description || "No description provided."}
-          </div>
+          <p className="p-4 text-sm leading-relaxed text-text-main font-medium whitespace-pre-wrap opacity-90 font-mono">
+            {assignment.description || "No additional instructions provided."}
+          </p>
         </div>
-
-        {/* 5. MINIMAL STARTER CODE LINK */}
-        <CodeBlock code={assignment.starter_code} />
+        {assignment.starter_code && (
+          <CodeBlock code={assignment.starter_code} isMinimizedGiven={true} />
+        )}
       </div>
     </div>
   );

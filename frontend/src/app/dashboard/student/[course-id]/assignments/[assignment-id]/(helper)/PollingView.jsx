@@ -7,7 +7,7 @@ export default function PollingView({ status, progress }) {
   const currentProgress = status === "uploading" ? 30 : progress;
 
   return (
-    <div className="py-10 max-w-2xl animate-in fade-in duration-500">
+    <div className="py-10 animate-in fade-in duration-500">
       <div className="space-y-6">
         {/* 1. Status Header */}
         <div className="flex items-center justify-between gap-4">

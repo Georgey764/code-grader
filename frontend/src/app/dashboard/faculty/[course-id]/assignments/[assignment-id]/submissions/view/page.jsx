@@ -11,7 +11,6 @@ import {
   CircleDashed,
   CheckCircle2,
 } from "lucide-react";
-import { CodeReport } from "@/components/ui/sections";
 
 export default function SubmissionsPage() {
   const param = useParams();

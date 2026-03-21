@@ -249,6 +249,11 @@ io.on("connection", (socket) => {
         );
       });
     }
+
+    if (testCases.length === 0) {
+      socket.emit("error", "No test cases found");
+      return;
+    }
   });
 
   // Cleanup: Kill the shell when the user closes the tab

@@ -27,6 +27,7 @@ export default function CodeBlock({
   setInputFile,
   submissionId,
   assignmentId,
+  isMinimizedGiven = false,
 }) {
   const [copied, setCopied] = useState(false);
   const fileUploadRef = useRef(null);
@@ -38,7 +39,7 @@ export default function CodeBlock({
     }
   };
   const router = useRouter();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(isMinimizedGiven);
   const lines = (code || "").split("\n");
 
   const handleMinimize = () => {
@@ -122,8 +123,8 @@ export default function CodeBlock({
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
-                    <Loader2 size={12} className="animate-spin" /> Running Test
-                    Cases...
+                    <Loader2 size={12} className="animate-spin" /> Running
+                    Tests...
                   </div>
                 )}
               </div>

@@ -166,10 +166,10 @@ function ViewTestResult({
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
       <div className="flex justify-between items-center pb-4 border-b border-border">
         <h3 className="text-sm font-black text-accent uppercase tracking-widest">
-          Diagnostic Report
+          View Submission
         </h3>
         <button
-          onClick={() => setViewingSubmission(null)}
+          onClick={() => window.location.reload()}
           className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline"
         >
           Close Report

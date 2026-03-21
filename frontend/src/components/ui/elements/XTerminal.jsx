@@ -77,7 +77,6 @@ const XTerminal = ({
         });
 
         socket.on("code_stdout", (data) => {
-          setIsRunningCode(false);
           term.write(data);
         });
 
@@ -94,7 +93,9 @@ const XTerminal = ({
 
         socket.on("error", (data) => {
           setIsRunningCode(false);
-          console.log("Error: ", data);
+          setIsRunningTestCases(false);
+          term.write(`Error: ${data}\r\n`);
+          term.write(`\r\nuser@code-grader % `);
         });
 
         socket.on("test_cases_stdout", (data) => {
@@ -144,7 +145,7 @@ const XTerminal = ({
         isFileInput: isFileInput,
       });
     }
-  }, [isRunningTestCases, language, testCases, isFileInput]);
+  }, [isRunningTestCases]);
 
   // Run the code when the run count is greater than 0
   useEffect(() => {
