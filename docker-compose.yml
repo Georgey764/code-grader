@@ -39,9 +39,9 @@ services:
     container_name: terminal
     ports:
       - "4000:4000"
-    # volumes:
-    #   - ./terminal:/app
-    #   - /app/node_modules
+    volumes:
+      - ./terminal:/app
+      - /app/node_modules
     networks:
       - app-network
     environment:

@@ -64,7 +64,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
     }
     setIsRunningCode(true);
     setRunCount((cur) => cur + 2);
-    setTimeout(() => setIsRunningCode(false), 10000);
   }
 
   function handleRunTestCases() {

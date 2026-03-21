@@ -140,6 +140,7 @@ const XTerminal = ({
   // Run the test cases when the isRunningTestCases is true
   useEffect(() => {
     if (isRunningTestCases && socketRef.current) {
+      countHolder.current = runCount;
       termObjectRef.current.write(
         `Running Test Cases... \r\n\n----------------------------------------\r\n`,
       );

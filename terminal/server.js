@@ -35,11 +35,7 @@ function compileJava(filePath, socket, session, userDir) {
       cwd: userDir,
       env: process.env,
     });
-    session.process = {
-      process: ptyProcess,
-      language: "java",
-      command: "javac",
-    };
+    session.process = ptyProcess;
 
     ptyProcess.onData((data) => {
       socket.emit("code_compiled_stdout", data);
@@ -59,9 +55,15 @@ function compileJava(filePath, socket, session, userDir) {
   });
 }
 
-function runCode(command, filePath, userDir, session, socket, language) {
+function runCode(command, filePath, userDir, session, socket) {
   return new Promise((resolve, reject) => {
-    const ptyProcess = pty.spawn(command, [filePath], {
+    // 1. Force clear any lingering input listeners on this socket before starting
+    socket.removeAllListeners("input");
+
+    const runArg = command === "java" ? "Main" : filePath;
+    let isFinished = false;
+
+    const ptyProcess = pty.spawn(command, [runArg], {
       name: "xterm-color",
       cols: 80,
       rows: 24,
@@ -69,32 +71,74 @@ function runCode(command, filePath, userDir, session, socket, language) {
       env: process.env,
     });
 
-    session.process = {
-      process: ptyProcess,
-      language: language,
-      command: command,
-    };
+    session.process = ptyProcess;
+    session.running = true;
 
-    socket.on("input", (data) => {
-      ptyProcess.write(data);
-    });
+    // 2. Capture the "disposable" objects from node-pty
+    const dataListener = ptyProcess.onData((data) =>
+      socket.emit("code_stdout", data),
+    );
 
-    ptyProcess.onData((data) => {
-      socket.emit("code_stdout", data);
-    });
-
-    ptyProcess.onExit(({ exitCode }) => {
-      if (exitCode === 0) {
-        resolve("Success");
-      } else {
-        reject("Failed");
+    const inputHandler = (data) => {
+      try {
+        ptyProcess.write(data);
+      } catch (e) {
+        /* Process might be closed */
       }
-      socket.emit("code_completed");
+    };
+    socket.on("input", inputHandler);
+
+    // 3. Centralized Cleanup Function
+    const cleanup = () => {
+      if (isFinished) return;
+      isFinished = true;
+
+      // Unsubscribe from Socket
+      socket.off("input", inputHandler);
+
+      // Dispose node-pty listeners
+      dataListener.dispose();
+      // Note: onExit doesn't usually need disposal if the process is dead,
+      // but it's good practice to keep track of it.
+
+      // Kill the process if it's still breathing
+      try {
+        ptyProcess.kill();
+      } catch (e) {
+        // Already dead
+      }
+
       session.running = false;
       session.process = null;
-      ptyProcess.kill();
-      if (filePath) fs.unlinkSync(filePath);
+
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {
+          console.error("File del error:", e);
+        }
+      }
+    };
+
+    // 4. The Exit Listener
+    const exitListener = ptyProcess.onExit(({ exitCode }) => {
+      cleanup();
+      exitListener.dispose(); // Clear itself
+
+      socket.emit("code_completed", { exitCode });
+      if (exitCode === 0) resolve("Success");
+      else reject(`Exit Code: ${exitCode}`);
     });
+
+    // 5. Safety Timeout (Optional but recommended)
+    // If the code runs for more than 5s, kill it.
+    setTimeout(() => {
+      if (!isFinished) {
+        socket.emit("code_stdout", "\n\r[Execution Timed Out]\n\r");
+        cleanup();
+        reject("Timeout");
+      }
+    }, 5000);
   });
 }
 
@@ -124,11 +168,7 @@ function runTestCase(
       ? 0
       : testCase.text_input.split("\n").length;
 
-    session.process = {
-      process: ptyProcess,
-      language: language,
-      command: command,
-    };
+    session.process = ptyProcess;
 
     if (!isFileInput) {
       const testCaseInput = testCase.text_input.split("\n");
@@ -212,10 +252,10 @@ io.on("connection", (socket) => {
         userDir,
       ).catch((e) => {
         session.running = false;
-        socket.emit("error", e.message);
+        socket.emit("error", e?.message || "Compilation failed");
+        return "Failed";
       });
       if (result === "Failed") {
-        socket.emit("error", "Compilation failed");
         return;
       }
     }
@@ -228,10 +268,11 @@ io.on("connection", (socket) => {
       language,
     ).catch((e) => {
       session.running = false;
-      socket.emit("error", e.message);
+      socket.emit("error", e?.message || "Execution failed");
+      return "Failed";
     });
-    if (result === "Failed") {
-      socket.emit("error", "Execution failed");
+    if (result !== "Success") {
+      socket.emit("error", `Execution: ${result}`);
       return;
     }
   });
@@ -323,8 +364,8 @@ ${code}`;
   socket.on("disconnect", () => {
     const session = sessions.get(socket.id);
     if (session) {
-      if (session.process?.process) {
-        session.process.process.kill();
+      if (session?.process) {
+        session?.process.kill();
       }
 
       // Delete directory + all files
