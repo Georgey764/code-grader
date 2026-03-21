@@ -24,7 +24,7 @@ const XTerminal = ({
   const oldInputFile = useRef(null);
   const termObjectRef = useRef(null);
   const { user } = useMetadata();
-  const visibleTestCases = testCases.filter((t) =>
+  const visibleTestCases = testCases?.filter((t) =>
     user.role.toLowerCase() == "st" ? !t?.is_hidden : true,
   );
 
