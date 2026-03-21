@@ -201,11 +201,10 @@ export default function FacultySettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               name="email"
+              readOnly
               label="Email Address"
               type="email"
               value={formData.email}
-              onChange={handleChange}
-              required
             />
             {isFaculty && (
               <Input

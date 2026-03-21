@@ -195,8 +195,7 @@ export default function StudentSettingsPage() {
             label="Email Address"
             type="email"
             value={formData.email}
-            onChange={handleChange}
-            required
+            readOnly
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

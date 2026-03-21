@@ -244,7 +244,7 @@ function AutomatedTestResultAccordion({
               <span className="w-8 h-[1px] bg-zinc-200" /> Test Cases
             </h4>
             <div className="space-y-2">
-              {results?.map((test, i) => (
+              {visibleTests?.map((test, i) => (
                 <div
                   key={i}
                   className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm"

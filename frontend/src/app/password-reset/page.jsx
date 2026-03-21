@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               onClick={() => setIsSent(false)}
               className="text-xs font-bold text-primary hover:underline decoration-2 underline-offset-4"
             >
-              Didn't get it? Try again
+              Didn&lsquo;t get it? Try again
             </button>
           </div>
         )}
