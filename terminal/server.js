@@ -37,18 +37,18 @@ function compileJava(filePath, socket, session, userDir) {
     });
     session.process = ptyProcess;
 
+    setTimeout(() => {
+      if (session.running) {
+        socket.emit("error", "[Execution Timed Out]\r\n");
+        reject("Timeout");
+      }
+    }, 5000);
+
     ptyProcess.onData((data) => {
       socket.emit("code_compiled_stdout", data);
     });
 
     ptyProcess.onExit(({ exitCode }) => {
-      if (exitCode === 0) {
-        socket.emit("code_compiled_completed", "Success");
-        resolve("Success");
-      } else {
-        socket.emit("code_compiled_completed", "Failed");
-        reject("Failed");
-      }
       ptyProcess.kill();
       session.process = null;
     });
@@ -133,9 +133,11 @@ function runCode(command, filePath, userDir, session, socket) {
     // 5. Safety Timeout (Optional but recommended)
     // If the code runs for more than 5s, kill it.
     setTimeout(() => {
-      if (!isFinished) {
-        socket.emit("code_stdout", "\n\r[Execution Timed Out]\n\r");
-        cleanup();
+      if (session.running) {
+        socket.emit("error", "[Execution Timed Out]\r\n");
+        ptyProcess.kill();
+        session.running = false;
+        session.process = null;
         reject("Timeout");
       }
     }, 5000);
@@ -154,17 +156,36 @@ function runTestCase(
   inputFilePath,
 ) {
   return new Promise((resolve, reject) => {
-    const ptyProcess = pty.spawn(command, [filePath], {
-      name: "xterm-color",
-      cols: 80,
-      rows: 24,
-      cwd: userDir,
-      env: process.env,
-    });
+    let ptyProcess;
+    if (!isFileInput) {
+      const shellCommand = `stty -echo && exec ${command} ${filePath}`;
+      ptyProcess = pty.spawn("/bin/bash", ["-c", shellCommand], {
+        name: "xterm-color",
+        cwd: userDir,
+        env: process.env,
+      });
+    } else {
+      ptyProcess = pty.spawn(command, [filePath], {
+        name: "xterm-color",
+        cols: 80,
+        rows: 24,
+        cwd: userDir,
+        env: process.env,
+      });
+    }
 
+    setTimeout(() => {
+      if (session.running) {
+        socket.emit("error", "[Execution Timed Out]\r\n");
+        ptyProcess.kill();
+        session.running = false;
+        session.process = null;
+        reject("Timeout");
+      }
+    }, 5000);
     let output = "";
     let outputLine = 1;
-    const unwantedInitialOutputLines = isFileInput
+    let unwantedInitialOutputLines = isFileInput
       ? 0
       : testCase.text_input.split("\n").length;
 
@@ -259,22 +280,7 @@ io.on("connection", (socket) => {
         return;
       }
     }
-    const result = await runCode(
-      command,
-      filePath,
-      userDir,
-      session,
-      socket,
-      language,
-    ).catch((e) => {
-      session.running = false;
-      socket.emit("error", e?.message || "Execution failed");
-      return "Failed";
-    });
-    if (result !== "Success") {
-      socket.emit("error", `Execution: ${result}`);
-      return;
-    }
+    await runCode(command, filePath, userDir, session, socket, language);
   });
 
   // Upload the input file
@@ -347,10 +353,14 @@ ${code}`;
           return;
         });
       }
+
       if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
       if (inputFilePath && fs.existsSync(inputFilePath))
         fs.unlinkSync(inputFilePath);
       socket.emit("test_cases_completed", session.testCasesPassed);
+      session.running = false;
+      session.process = null;
+      session.testCasesPassed = 0;
     };
     await runTestCases();
 
