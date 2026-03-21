@@ -138,7 +138,11 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   return (
     <div className="flex flex-col items-center justify-center max-w-5xl mx-auto px-3 sm:px-4 pb-12 sm:pb-20 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full">
       {/* 1. Responsive Header Section */}
-      <AssignmentDetails assignmentData={assignmentData} />
+      <AssignmentDetails
+        assignmentData={assignmentData}
+        courseId={courseId}
+        assignmentId={assignmentId}
+      />
 
       {/* 2. Main Workspace Card with Adaptive Padding */}
       <div className="w-full bg-surface rounded-xl border border-border shadow-subtle overflow-hidden relative">
