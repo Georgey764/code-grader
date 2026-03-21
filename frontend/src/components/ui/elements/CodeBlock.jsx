@@ -13,7 +13,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import FileUpload from "./(helper)/FileUpload";
 
 export default function CodeBlock({
@@ -27,8 +27,10 @@ export default function CodeBlock({
   setInputFile,
   submissionId,
   assignmentId,
+  isMinimizedGiven = false,
 }) {
   const [copied, setCopied] = useState(false);
+  const fileUploadRef = useRef(null);
   const handleCopy = async () => {
     if (code) {
       await navigator.clipboard.writeText(code);
@@ -37,7 +39,7 @@ export default function CodeBlock({
     }
   };
   const router = useRouter();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(isMinimizedGiven);
   const lines = (code || "").split("\n");
 
   const handleMinimize = () => {
@@ -69,7 +71,11 @@ export default function CodeBlock({
 
         <div className="flex items-center gap-2">
           {setInputFile && isFileInput && (
-            <FileUpload setInputFile={setInputFile} />
+            <FileUpload
+              ref={fileUploadRef}
+              setInputFile={setInputFile}
+              isRunningTestCases={isRunningTestCases}
+            />
           )}
 
           <button
@@ -106,7 +112,10 @@ export default function CodeBlock({
               <div>
                 {!isRunningTestCases ? (
                   <button
-                    onClick={handleRunTestCases}
+                    onClick={() => {
+                      fileUploadRef.current?.clearFile();
+                      handleRunTestCases();
+                    }}
                     className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
                   >
                     <Play size={12} />
@@ -114,8 +123,8 @@ export default function CodeBlock({
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
-                    <Loader2 size={12} className="animate-spin" /> Running Test
-                    Cases...
+                    <Loader2 size={12} className="animate-spin" /> Running
+                    Tests...
                   </div>
                 )}
               </div>

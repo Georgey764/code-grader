@@ -13,6 +13,13 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
+function getFullRole(role) {
+  if (role === "st") return "student";
+  if (role === "fa") return "faculty";
+  if (role === "ga") return "ga";
+  return role;
+}
+
 const navConfig = {
   st: [
     {
@@ -42,7 +49,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const { user } = useMetadata();
-  const role = user?.role?.toLowerCase();
+  const role = user?.role.toLowerCase();
 
   const navItems = useMemo(() => {
     return [
@@ -55,7 +62,7 @@ export default function Sidebar() {
       {
         icon: <Settings size={20} />,
         label: "Settings",
-        route: `/dashboard/${role}/settings`,
+        route: `/dashboard/${getFullRole(role)}/settings`,
       },
     ];
   }, [role]);
@@ -108,7 +115,7 @@ export default function Sidebar() {
                   router.push(item.route);
                   setIsOpen(false);
                 }}
-                className="relative flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 hover:text-secondary transition-all group"
+                className="cursor-pointer relative flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 hover:text-secondary transition-all group"
               >
                 <div className="mx-auto">{item.icon}</div>
                 <span className="font-bold text-xs md:hidden uppercase tracking-widest">
@@ -124,7 +131,7 @@ export default function Sidebar() {
           {/* Logout Action Button */}
           <button
             onClick={handleLogout}
-            className="mt-auto p-3 text-white/40 hover:text-white transition-colors relative group"
+            className="cursor-pointer mt-auto p-3 text-white/40 hover:text-white transition-colors relative group"
             title="Logout"
           >
             <LogOut size={20} />

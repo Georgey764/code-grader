@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Upload, File, X, AlertCircle } from "lucide-react";
 
-const FileUpload = ({ setInputFile }) => {
+const FileUpload = forwardRef(({ setInputFile }, ref) => {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
@@ -45,6 +45,10 @@ const FileUpload = ({ setInputFile }) => {
     setError("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  useImperativeHandle(ref, () => ({
+    clearFile: removeFile,
+  }));
 
   return (
     <div className="flex flex-col gap-2">
@@ -95,6 +99,8 @@ const FileUpload = ({ setInputFile }) => {
       )}
     </div>
   );
-};
+});
+
+FileUpload.displayName = "FileUpload";
 
 export default FileUpload;

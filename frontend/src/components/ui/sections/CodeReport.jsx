@@ -3,27 +3,20 @@
 import { useEffect, useState } from "react";
 
 import {
-  Award,
-  Beaker,
   Check,
   ChevronDown,
   ChevronUp,
   CornerDownRight,
-  ExternalLink,
   Eye,
-  FileSearch,
   Layout,
   MessageSquare,
-  Pencil,
   Scale,
-  ShieldCheck,
   Terminal,
   Trash,
   X,
 } from "lucide-react";
 import { CodeBlock } from "@/components/ui/elements";
 import dynamic from "next/dynamic";
-import { io } from "socket.io-client";
 import { useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
@@ -70,7 +63,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
       return;
     }
     setIsRunningCode(true);
-    setRunCount((cur) => cur + 1);
+    setRunCount((cur) => cur + 2);
     setTimeout(() => setIsRunningCode(false), 10000);
   }
 
@@ -78,6 +71,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
     if (isRunningCode || isRunningTestCases) {
       return;
     }
+    setRunCount(-1);
     setIsRunningTestCases(true);
   }
 
@@ -105,6 +99,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
       <div className="space-y-2">
         <CodeBlock
+          inputFile={inputFile}
           assignmentId={assignmentId}
           setInputFile={setInputFile}
           code={submission?.submitted_file}

@@ -17,6 +17,7 @@ import PollingView from "./PollingView";
 import AssignmentDetails from "./AssignmentDetails";
 import SubmissionList from "./SubmissionList";
 import { CodeReport } from "@/components/ui/sections";
+import { LoadingPage } from "@/components/ui/sections";
 
 export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const { api, user } = useMetadata();
@@ -30,6 +31,8 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const [submissions, setSubmissions] = useState([]);
   const [assignmentData, setAssignmentData] = useState(null);
   const [activeSubmission, setActiveSubmission] = useState(null);
+
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -47,11 +50,17 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
         setAssignmentData(assignmentResponse?.data);
       } catch (err) {
         console.error("Data fetch error:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchPageData();
   }, [api, assignmentId, courseId, user]);
+
+  if (isLoading) {
+    return <LoadingPage />;
+  }
 
   const pollStudentSubmission = async (submission, attempt = 0) => {
     setStatus("polling");
@@ -127,12 +136,12 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-12 sm:pb-20 space-y-6 sm:space-y-8 animate-in fade-in duration-500">
+    <div className="flex flex-col items-center justify-center max-w-5xl mx-auto px-3 sm:px-4 pb-12 sm:pb-20 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full">
       {/* 1. Responsive Header Section */}
       <AssignmentDetails assignmentData={assignmentData} />
 
       {/* 2. Main Workspace Card with Adaptive Padding */}
-      <div className="bg-surface rounded-xl border border-border shadow-subtle overflow-hidden relative">
+      <div className="w-full bg-surface rounded-xl border border-border shadow-subtle overflow-hidden relative">
         {/* Step Indicator Bar - Simplified for Mobile */}
         <div className="flex border-b border-border bg-background/50">
           <StepTab

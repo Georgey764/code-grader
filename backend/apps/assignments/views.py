@@ -161,12 +161,16 @@ class TestCaseViewSet(viewsets.ModelViewSet):
         filter_paths = {
             Roles.GRADING_ASSISTANT: "assignment__course__grading_assistant_profile__user",
             Roles.FACULTY: "assignment__course__faculty_profile__user",
+            Roles.STUDENT: "assignment__course__rosters__student_profile__user",
         }
         filter_path = filter_paths.get(user.role)
         if filter_path:
             queryset = queryset.filter(**{filter_path: user})
         else:
             return queryset.none()
+
+        if user.role == Roles.STUDENT:
+            queryset = queryset.filter(is_hidden=False)
 
         assignment_id = self.kwargs.get("assignment_id")
         if not assignment_id:
