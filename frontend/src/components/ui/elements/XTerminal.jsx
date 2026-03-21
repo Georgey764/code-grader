@@ -77,11 +77,12 @@ const XTerminal = ({
         });
 
         socket.on("code_stdout", (data) => {
-          term.write(data);
           setIsRunningCode(false);
+          term.write(data);
         });
 
         socket.on("code_completed", () => {
+          setIsRunningCode(false);
           term.write(`\r\nuser@code-grader % `);
         });
 
