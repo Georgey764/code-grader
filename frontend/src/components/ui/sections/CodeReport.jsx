@@ -38,7 +38,7 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const [isRunningCode, setIsRunningCode] = useState(false);
   const [isRunningTestCases, setIsRunningTestCases] = useState(false);
   const [inputFile, setInputFile] = useState(null);
-  const { api } = useMetadata();
+  const { api, user } = useMetadata();
   const [assignment, setAssignment] = useState(null);
   const [testCases, setTestCases] = useState(null);
 
@@ -54,7 +54,9 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
     5: { label: "Exceptional", color: "text-green-600" },
   };
 
-  const visibleTests = results.filter((t) => !t?.test_case?.is_hidden);
+  const visibleTests = results?.filter((t) =>
+    user.role.toLowerCase() == "st" ? !t?.test_case?.is_hidden : true,
+  );
   const passedCount = visibleTests.filter((t) => t.is_success).length;
   const rubricResults = submission?.rubric_results || [];
 
@@ -170,10 +172,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 function AutomatedTestResultAccordion({
   passedCount,
   visibleTests,
-  submission,
-  rubricResults,
-  levelMap,
-  results,
   assignmentId,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
