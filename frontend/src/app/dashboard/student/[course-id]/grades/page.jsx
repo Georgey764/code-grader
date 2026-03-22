@@ -17,7 +17,7 @@ import {
   buildReportCsv,
   buildReportTxt,
   downloadBlob,
-} from "@/lib/courseGradeReport";
+} from "@/utils/courseGradeReport";
 
 export default function StudentCourseGradesPage() {
   const { api } = useMetadata();
@@ -45,12 +45,10 @@ export default function StudentCourseGradesPage() {
         ]);
         if (cancelled) return;
         setGradeData(Array.isArray(myRes.data) ? myRes.data : []);
-        setCourseName(
-          courseRes.data?.short_name || courseRes.data?.name || "",
-        );
+        setCourseName(courseRes.data?.short_name || courseRes.data?.name || "");
         const rList = Array.isArray(rosterRes.data)
           ? rosterRes.data
-          : rosterRes.data?.results ?? [];
+          : (rosterRes.data?.results ?? []);
         setRoster(rList[0] ?? null);
       } catch (e) {
         if (!cancelled) {

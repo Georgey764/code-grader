@@ -21,7 +21,7 @@ import {
   buildReportCsv,
   buildReportTxt,
   downloadBlob,
-} from "@/lib/courseGradeReport";
+} from "@/utils/courseGradeReport";
 
 export default function CourseGradeReportPage() {
   const { api } = useMetadata();
@@ -57,7 +57,7 @@ export default function CourseGradeReportPage() {
 
         const rList = Array.isArray(rosterRes.data)
           ? rosterRes.data
-          : rosterRes.data?.results ?? [];
+          : (rosterRes.data?.results ?? []);
         setRosters(rList);
 
         const maps = await fetchRosterToGroupMaps(api, g);
@@ -258,7 +258,9 @@ export default function CourseGradeReportPage() {
                               </span>
                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-slate-100 text-text-muted flex items-center gap-1">
                                 <Scale size={10} />
-                                {ar.isWeighted ? "Weighted rubric" : "Unweighted rubric"}
+                                {ar.isWeighted
+                                  ? "Weighted rubric"
+                                  : "Unweighted rubric"}
                               </span>
                               {ar.isGrouped && ar.groupOrEntityLabel && (
                                 <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-secondary/10 text-secondary">
@@ -313,8 +315,7 @@ export default function CourseGradeReportPage() {
                                 }
                                 className="inline-flex items-center gap-1 text-primary font-black uppercase tracking-widest hover:underline"
                               >
-                                Open in gradebook{" "}
-                                <ExternalLink size={12} />
+                                Open in gradebook <ExternalLink size={12} />
                               </button>
                             </div>
 
