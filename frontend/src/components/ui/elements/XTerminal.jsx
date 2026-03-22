@@ -160,7 +160,7 @@ const XTerminal = ({
     const runCode = async () => {
       countHolder.current = runCount;
       termObjectRef.current.write(
-        `Running ${language.toUpperCase()} Code... \r\n\n----------------------------------------\r\n`,
+        `Running ${language.toUpperCase()} Code... \r\n`,
       );
       socketRef.current.emit("run_code", {
         language: language,
