@@ -85,7 +85,7 @@ const XTerminal = ({
           term.write(data);
         });
 
-        socket.on("code_completed", () => {
+        socket.on("code_completed", (output) => {
           setIsRunningCode(false);
           term.write(`\r\nuser@code-grader % `);
         });
@@ -104,15 +104,17 @@ const XTerminal = ({
         });
 
         socket.on("test_case_completed", (output) => {
-          setIsRunningTestCases(false);
           term.write(output);
         });
 
-        socket.on("test_cases_completed", (passedCount) => {
+        socket.on("test_cases_completed", (data) => {
           setIsRunningTestCases(false);
+          console.log(data);
+
           term.write(
-            `Passed ${passedCount} out of ${visibleTestCases.length} test cases\r\n----------------------------------------\r\n`,
+            `Passed ${data?.passedCount} out of ${visibleTestCases.length} test cases\r\n----------------------------------------\r\n`,
           );
+          term.write(`Error Cases: ${JSON.stringify(data?.errorCases)}\r\n`);
           term.write(`\r\nuser@code-grader % `);
         });
 
@@ -140,6 +142,7 @@ const XTerminal = ({
   // Run the test cases when the isRunningTestCases is true
   useEffect(() => {
     if (isRunningTestCases && socketRef.current) {
+      countHolder.current = runCount;
       termObjectRef.current.write(
         `Running Test Cases... \r\n\n----------------------------------------\r\n`,
       );

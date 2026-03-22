@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { CreateButton } from "@/components/ui/elements";
-import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import DisplayBody from "./(helper)/HeadingWrapperDisplayBody";
@@ -36,15 +34,25 @@ const linker = {
     buttonIn: <CreateButton message="Edit Course" childLink="edit" />,
   },
   // Faculty: Course Detail Edit
-  "/dashboard/faculty/edit": {
+  "/dashboard/faculty/id/edit": {
     name: "Edit Course Detail",
     message: "Edit the Details for the Selected Course",
   },
-  //Faculty: Course Roster List
+  // Faculty: Course Roster List
   "/dashboard/faculty/id/roster": {
     name: "Rosters",
     message: "View the Roster for Selected Course",
     buttonIn: <CreateButton message="Add Students" childLink="add" />,
+  },
+  // Faculty: Add Students to Roster
+  "/dashboard/faculty/id/roster/add": {
+    name: "Add Students",
+    message: "Enroll Students in the Selected Course",
+  },
+  // Faculty: Student Results (Roster Detail)
+  "/dashboard/faculty/id/roster/id": {
+    name: "Student Results",
+    message: "View Performance for the Selected Student",
   },
   // Faculty: Assignment List
   "/dashboard/faculty/id/assignments": {
@@ -91,6 +99,11 @@ const linker = {
     name: "Create Test Case",
     message: "Create a Test Case for your Selected Assignment",
   },
+  // Faculty: Test Case Edit
+  "/dashboard/faculty/id/assignments/id/test-cases/edit": {
+    name: "Edit Test Case",
+    message: "Edit the Test Case for your Selected Assignment",
+  },
   // Faculty: Rubric Criteria List
   "/dashboard/faculty/id/assignments/id/rubrics": {
     name: "Rubric Criteria",
@@ -104,7 +117,12 @@ const linker = {
     name: "Create Rubric Criterion",
     message: "Create a Rubric Criterion for your Selected Assignment",
   },
-  // Faculty: Rubric Criterion Create
+  // Faculty: Rubric Criterion Edit
+  "/dashboard/faculty/id/assignments/id/rubrics/edit": {
+    name: "Edit Rubric Criterion",
+    message: "Edit the Rubric Criterion for your Selected Assignment",
+  },
+  // Faculty: View Submissions by Roster
   "/dashboard/faculty/id/assignments/id/submissions/view": {
     name: "View Submissions",
     message: "View all submissions for your Selected Assignment's Roster",
@@ -125,7 +143,12 @@ const linker = {
     message: "View your Courses",
     buttonIn: <CreateButton message="Join New Course" childLink="join" />,
   },
-  // Course Detail
+  // Student: Join Course
+  "/dashboard/student/join": {
+    name: "Join Course",
+    message: "Enroll in a Course using the Course ID",
+  },
+  // Student: Course Detail
   "/dashboard/student/id": {
     name: "Course Detail",
     message: "View your Course Detail for Selected Course",
@@ -135,15 +158,35 @@ const linker = {
     name: "Assignments",
     message: "View all Assignments for your Selected Course",
   },
-  // Student: Assignments Detail
+  // Student: Assignment Detail
   "/dashboard/student/id/assignments/id": {
     name: "Assignment Detail",
     message: "View Assignment Detail for your Selected Assignment",
+  },
+  // Student: Test Cases (Read-only)
+  "/dashboard/student/id/assignments/id/test-cases": {
+    name: "Test Cases",
+    message: "View Test Cases for your Selected Assignment",
+  },
+  // Student: Rubric Criteria (Read-only)
+  "/dashboard/student/id/assignments/id/rubrics": {
+    name: "Rubric Criteria",
+    message: "View Rubric Criteria for your Selected Assignment",
+  },
+  // Student: To Do
+  "/dashboard/student/to-do": {
+    name: "To Do",
+    message: "Your Tasks and Course Overview",
   },
   // Student: Settings
   "/dashboard/student/settings": {
     name: "Settings",
     message: "View your Profile Settings",
+  },
+  // Playground
+  "/dashboard/playground": {
+    name: "Playground",
+    message: "Code Editor & Terminal Sandbox",
   },
 };
 

@@ -87,3 +87,21 @@ variable "allowed_origin_terminal" {
   type = string
   sensitive = true
 }
+
+variable "email_host_password" {
+  description = "email host password for django"
+  type = string
+  sensitive = true
+}
+
+variable "email_host_user" {
+  description = "email host user for django"
+  type = string
+  sensitive = true
+}
+
+variable "default_from_email" {
+  description = "default from email for django"
+  type = string
+  sensitive = true
+}

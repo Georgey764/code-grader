@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import time
+import re
 
 
 def run_untrusted_python(student_code, test_cases, is_file_input):
@@ -24,7 +25,13 @@ builtins.input = silent_input
 {student_code}
 """
             sandbox.files.write("/tmp/student.py", student_code_to_write)
-            input_data = test_case.get("input", "")
+            print(f"STUDENT CODE TO WRITE: {student_code_to_write}")
+            input_data = (
+                test_case.get("input", "").strip() + "\n"
+                if test_case.get("input", "")
+                else ""
+            )
+            print(f"INPUT DATA: {input_data}")
 
             if is_file_input:
                 sandbox.files.write("/tmp/input.txt", input_data)
@@ -37,14 +44,17 @@ builtins.input = silent_input
 
             try:
                 if not is_file_input:
-                    sandbox.files.write("/tmp/in.txt", input_data + "\n")
-                    execution = sandbox.commands.run(
-                        "python3 /tmp/student.py < /tmp/in.txt", timeout=time_limit
+                    cmd = sandbox.commands.run(
+                        "python3 /tmp/student.py", background=True, stdin=True
                     )
+                    sandbox.commands.send_stdin(cmd.pid, input_data)
+                    execution = cmd.wait()
+                    print(f"EXECUTION: {str(execution)}")
                 else:
                     execution = sandbox.commands.run(
                         "python3 /tmp/student.py",
                         timeout=time_limit,
+                        cwd="/tmp",
                     )
                 end_time = time.time()
 
@@ -90,88 +100,104 @@ builtins.input = silent_input
                     "is_success": is_success,
                 }
             )
-
+            print(f"RESULTSSSSSS: {results}")
+            print(f"EXIT CODE: {exit_code}")
+            print(f"IS SUCCESS: {is_success}")
+            print(f"STDERR: {stderr}")
+            print(f"STDOUT: {stdout}")
     return results
 
 
 def run_untrusted_java(student_code, test_cases, is_file_input):
     results = []
+    cleaned_code = re.sub(
+        r"^\s*package\s+[\w\.]+;\s*", "", student_code, flags=re.MULTILINE
+    )
+    class_match = re.search(r"public\s+class\s+(\w+)", cleaned_code)
+    if not class_match:
+        class_match = re.search(r"class\s+(\w+)", cleaned_code)
+
+    class_name = class_match.group(1) if class_match else "Main"
+    file_path = f"/tmp/{class_name}.java"
 
     # Note: Ensure your E2B sandbox env has Java installed (the 'base' env usually does)
     with Sandbox.create() as sandbox:
+        sandbox.files.write(file_path, cleaned_code)
+        compile_exec = sandbox.commands.run(f"javac {file_path}", timeout=15)
+        if compile_exec.exit_code != 0:
+            # If compilation fails, return the error for all test cases
+            return [
+                {
+                    "test_case_id": tc.get("id"),
+                    "stdout": "",
+                    "stderr": f"Compilation Error:\n{compile_exec.stderr}",
+                    "duration": 0,
+                    "exit_code": compile_exec.exit_code,
+                    "is_success": False,
+                }
+                for tc in test_cases
+            ]
         for index, test_case in enumerate(test_cases):
             # 1. Write the Java code to a file named Main.java
             # We assume the user provided a class named 'Main'
-            sandbox.files.write("/tmp/Main.java", student_code)
 
             input_data = test_case.get("input", "")
             time_limit = test_case.get("time_limit", 10)
+            expected_output = str(test_case.get("expected_output", "")).strip()
 
             print(f"\n--------TEST-{index + 1} (Limit: {time_limit}s)---------")
             start_time = time.time()
 
             try:
-                # 2. COMPILATION STEP
-                compile_exec = sandbox.commands.run("javac /tmp/Main.java", timeout=10)
-
-                if compile_exec.exit_code != 0:
-                    # Compilation Failed
-                    duration = time.time() - start_time
-                    stdout = ""
-                    stderr = f"Compile Error:\n{compile_exec.stderr}"
-                    exit_code = compile_exec.exit_code
-                    is_success = False
+                if is_file_input:
+                    sandbox.files.write("/tmp/input.txt", input_data)
+                    # Use the detected class_name
+                    execution = sandbox.commands.run(
+                        f"java -cp /tmp {class_name}", timeout=time_limit, cwd="/tmp"
+                    )
                 else:
-                    # 3. EXECUTION STEP (If compilation succeeded)
-                    if is_file_input:
-                        sandbox.files.write("/tmp/input.txt", input_data)
-                        execution = sandbox.commands.run(
-                            "java -cp /tmp Main", timeout=time_limit
-                        )
-                    else:
-                        # Standard Input Redirection
-                        sandbox.files.write("/tmp/in.txt", input_data + "\n")
-                        execution = sandbox.commands.run(
-                            "java -cp /tmp Main < /tmp/in.txt", timeout=time_limit
-                        )
+                    # Standard Input Redirection
+                    sandbox.files.write("/tmp/in.txt", input_data + "\n")
+                    execution = sandbox.commands.run(
+                        "java -cp /tmp Main < /tmp/in.txt", timeout=15
+                    )
 
-                    duration = time.time() - start_time
-                    stdout = execution.stdout
-                    stderr = execution.stderr
-                    exit_code = execution.exit_code
-
-                    # Logic Validation
-                    expected_str = str(test_case.get("expected_output", "")).strip()
-                    actual_str = str(stdout).strip()
-                    is_success = exit_code == 0 and expected_str == actual_str
-
-            except TimeoutException:
                 duration = time.time() - start_time
-                stdout = ""
-                stderr = "Error: Execution timed out."
-                exit_code = 124
-                is_success = False
+                actual_output = execution.stdout.strip()
+
+                # Validation
+                is_success = (
+                    execution.exit_code == 0 and actual_output == expected_output
+                )
+
+                results.append(
+                    {
+                        "test_case_id": test_case.get("id"),
+                        "stdout": execution.stdout,
+                        "stderr": execution.stderr,
+                        "duration": duration,
+                        "exit_code": execution.exit_code,
+                        "is_success": is_success,
+                    }
+                )
 
             except Exception as e:
-                duration = time.time() - start_time
-                stdout = ""
-                stderr = f"System/Execution Error: {str(e)}"
-                exit_code = 1
-                is_success = False
-
-            print(f"Duration: {duration:.4f}s")
-            print(f"Is Success: {is_success}")
-
-            results.append(
-                {
-                    "test_case_id": test_case.get("id"),
-                    "stdout": stdout.strip(),
-                    "stderr": stderr.strip(),
-                    "duration": duration,
-                    "exit_code": exit_code,
-                    "is_success": is_success,
-                }
-            )
+                # This catches both E2B Timeout and general errors
+                error_msg = (
+                    "Error: Execution timed out."
+                    if "timeout" in str(e).lower()
+                    else f"System Error: {str(e)}"
+                )
+                results.append(
+                    {
+                        "test_case_id": test_case.get("id"),
+                        "stdout": "",
+                        "stderr": error_msg,
+                        "duration": time.time() - start_time,
+                        "exit_code": 124 if "timeout" in str(e).lower() else 1,
+                        "is_success": False,
+                    }
+                )
 
     return results
 

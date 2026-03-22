@@ -132,9 +132,13 @@ export default function EditableCodeBlock({
           value={code ?? ""}
           onChange={(e) => onCodeChange(e.target.value)}
           spellCheck={false}
-          className="w-full h-full min-h-0 py-5 px-4 bg-transparent text-code-text font-mono text-[13px] leading-6 focus:outline-none focus:ring-0 border-0 block overflow-y-auto placeholder:text-code-comment"
+          className="w-full h-full min-h-[400px] py-5 px-4 bg-transparent text-code-text font-mono text-[13px] leading-6 focus:outline-none focus:ring-0 border-0 block overflow-y-auto placeholder:text-code-comment"
           style={{ tabSize: 4 }}
-          placeholder={isPython ? "# Enter your code here..." : "// Enter your code here..."}
+          placeholder={
+            isPython
+              ? "# Enter your code here..."
+              : "// Enter your code here..."
+          }
         />
       </div>
 

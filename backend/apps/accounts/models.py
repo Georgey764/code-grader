@@ -22,11 +22,22 @@ class UserManager(BaseUserManager):
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        extra_fields.setdefault("is_active", False)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        # 1. Force these to True for superusers
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
         return self.create_user(email, password, **extra_fields)
 
 
@@ -38,9 +49,10 @@ class User(AbstractUser, BaseModel):
     last_name = models.CharField(max_length=50, unique=False, null=False, blank=False)
     role = models.CharField(max_length=2, choices=Roles.choices, default=Roles.STUDENT)
     cwid = models.CharField(max_length=10, unique=True, null=False, blank=False)
+    is_active = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name"]
+    REQUIRED_FIELDS = ["first_name", "last_name", "cwid"]
     objects = UserManager()
 
     class Meta:

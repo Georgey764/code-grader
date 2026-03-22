@@ -1,3 +1,20 @@
+x-backend-env: &backend-env
+  DEBUG: ${DEBUG}
+  ALLOWED_HOST: ${ALLOWED_HOST}
+  ALLOWED_HOST_2: ${ALLOWED_HOST_2}
+  ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
+  POSTGRES_NAME: ${POSTGRES_NAME}
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: ${POSTGRES_HOST}
+  SECRET_KEY: ${SECRET_KEY}
+  E2B_API_KEY: ${E2B_API_KEY}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+  EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+  EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+
 services:
   db:
     image: postgres:15-alpine
@@ -22,9 +39,9 @@ services:
     container_name: terminal
     ports:
       - "4000:4000"
-    # volumes:
-    #   - ./terminal:/app
-    #   - /app/node_modules
+    volumes:
+      - ./terminal:/app
+      - /app/node_modules
     networks:
       - app-network
     environment:
@@ -64,22 +81,11 @@ services:
     #   timeout: 5s
     #   retries: 5
     #   start_period: 20s
-    environment:
-      - PYTHONUNBUFFERED=1
-      - DJANGO_SETTINGS_MODULE=config.settings
-      - WATCHFILES_FORCE_POLLING=true
-      - DEBUG=${DEBUG}
-      - ALLOWED_HOST=${ALLOWED_HOST}
-      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
-      - POSTGRES_NAME=${POSTGRES_NAME}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - SECRET_KEY=${SECRET_KEY}
-      - E2B_API_KEY=${E2B_API_KEY}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+    environment: 
+      PYTHONUNBUFFERED: 1
+      DJANGO_SETTINGS_MODULE: config.settings
+      WATCHFILES_FORCE_POLLING: true
+      <<: *backend-env
 
   worker:
     build:
@@ -92,18 +98,7 @@ services:
     networks:
       - app-network
     environment:
-      - DEBUG=${DEBUG}
-      - ALLOWED_HOST=${ALLOWED_HOST}
-      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN}
-      - POSTGRES_NAME=${POSTGRES_NAME}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - SECRET_KEY=${SECRET_KEY}
-      - E2B_API_KEY=${E2B_API_KEY}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      <<: *backend-env
     depends_on:
       db:
         condition: service_healthy

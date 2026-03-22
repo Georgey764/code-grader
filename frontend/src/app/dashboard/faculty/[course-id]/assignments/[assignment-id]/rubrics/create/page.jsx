@@ -101,7 +101,7 @@ export default function CreateRubricPage() {
         type: "error",
         message:
           err.response?.data?.detail ||
-          "Batch synchronization failed. Check your weights.",
+          "Batch synchronization failed. Check your weights. Sum of new weights and existing weights must not exceed 100.",
       });
     } finally {
       setIsSubmitting(false);

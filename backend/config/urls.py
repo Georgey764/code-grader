@@ -22,9 +22,9 @@ from apps.core.views import MyTokenObtainPairView
 
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("api/token/", MyTokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/admin/", admin.site.urls),
+    path("api/auth/", include("djoser.urls")),
+    path("api/auth/", include("djoser.urls.jwt")),
     path("api/accounts/", include("apps.accounts.urls")),
     path("api/courses/", include("apps.courses.urls")),
     path("api/assignments/", include("apps.assignments.urls")),
