@@ -86,7 +86,7 @@ class Group(models.Model):
     max_members = models.SmallIntegerField(default=4)
 
     def __str__(self):
-        return f"{self.name} - {self.course.short_name}"
+        return f"{self.name} — {self.assignment.course.short_name}"
 
     class Meta:
         db_table = "group"
@@ -103,6 +103,10 @@ class GroupsMembership(models.Model):
         Roster, on_delete=models.CASCADE, related_name="group_memberships"
     )
     is_leader = models.BooleanField(default=False)
+
+    @property
+    def assignment(self):
+        return self.group.assignment
 
     def __str__(self):
         return f"{self.roster} in {self.group.name}"

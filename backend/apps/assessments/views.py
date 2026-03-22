@@ -119,16 +119,28 @@ class SubmissionViewSet(
         if roster_id:
             queryset = queryset.filter(roster_id=roster_id)
 
-        filter_path = {
-            Roles.STUDENT: "roster__student_profile__user",
-            Roles.FACULTY: "assignment__course__faculty_profile__user",
-            Roles.GRADING_ASSISTANT: "assignment__course__grading_assistant_profile__user",
-        }
-        actual_filter = filter_path.get(user.role)
-        if not actual_filter:
-            return queryset.none()
+        if user.role == Roles.STUDENT:
+            if assignment.is_grouped:
+                membership = GroupsMembership.objects.filter(
+                    roster__student_profile__user=user,
+                    group__assignment_id=assignment_id,
+                ).first()
+                if not membership:
+                    return queryset.none()
+                return queryset.filter(group_id=membership.group_id)
+            return queryset.filter(roster__student_profile__user=user)
 
-        return queryset.filter(**{actual_filter: user})
+        if user.role == Roles.FACULTY:
+            return queryset.filter(
+                assignment__course__faculty_profile__user=user
+            )
+
+        if user.role == Roles.GRADING_ASSISTANT:
+            return queryset.filter(
+                assignment__course__grading_assistant_profile__user=user
+            )
+
+        return queryset.none()
 
     @action(detail=True, methods=["post"], url_path="run-tests", url_name="run-tests")
     def run_tests(self, request, id=None):

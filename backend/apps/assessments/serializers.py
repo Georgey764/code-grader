@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 from apps.assessments.models import Submission, RubricResult, TestResult
+from apps.assignments.models import GroupsMembership
 from apps.assignments.serializers import TestCaseSerializer, RubricCriteriaSerializer
 from apps.core.serializers import BaseSerializers
 
@@ -59,4 +60,32 @@ class SubmissionSerializer(BaseSerializers):
         deadline = assignment.deadline
         if deadline < timezone.now():
             raise serializers.ValidationError("Deadline has passed")
+
+        roster = attrs.get("roster")
+        group = attrs.get("group")
+
+        if assignment.is_grouped:
+            if not group:
+                raise serializers.ValidationError(
+                    {"group": "Group is required for this assignment."}
+                )
+            if group.assignment_id != assignment.id:
+                raise serializers.ValidationError(
+                    {"group": "This group does not belong to this assignment."}
+                )
+            try:
+                membership = GroupsMembership.objects.get(group=group, roster=roster)
+            except GroupsMembership.DoesNotExist:
+                raise serializers.ValidationError(
+                    "You are not a member of the selected group."
+                )
+            if not membership.is_leader:
+                raise serializers.ValidationError(
+                    "Only the group leader can submit for this assignment."
+                )
+        elif group is not None:
+            raise serializers.ValidationError(
+                {"group": "This assignment is not configured for group submissions."}
+            )
+
         return attrs

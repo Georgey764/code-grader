@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
-import { Search } from "lucide-react";
+import { FileBarChart } from "lucide-react";
 
 import AssignmentAccordion from "./(helper)/AssignmentAccordion";
 
@@ -41,18 +42,21 @@ export default function GradebookPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-20">
-      <header className="flex flex-col md:flex-row justify-between items-center gap-4 pb-5">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-          size={14}
-        />
+      <header className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5 sm:justify-between">
         <input
           type="text"
           placeholder="Filter by name or ID..."
-          className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
+          className="w-full sm:flex-1 pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <Link
+          href={`/dashboard/faculty/${courseId}/grade-report`}
+          className="inline-flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary hover:text-accent border border-primary/30 hover:border-primary px-3 py-2.5 rounded-lg transition-colors shrink-0"
+        >
+          <FileBarChart size={14} />
+          Student grade report
+        </Link>
       </header>
 
       <div className="space-y-4">

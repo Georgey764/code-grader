@@ -7,7 +7,7 @@ export default function TemplateGuide() {
       <pre className="text-[11px] font-mono text-accent leading-relaxed bg-white p-4 rounded border border-border overflow-x-auto">
         {`[
   {
-    "input_content": "5\\n10",
+    "text_input": "5\\n10",
     "expected_output": "15",
     "time_limit": 1000,
     "is_hidden": false

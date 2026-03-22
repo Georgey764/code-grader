@@ -1,5 +1,6 @@
 from rest_framework import viewsets, mixins
 from apps.assessments.models import Submission
+from apps.assignments.models import GroupsMembership
 from apps.courses.models import Course, Roster
 from apps.courses.serializers import (
     CourseSerializer,
@@ -37,6 +38,8 @@ class CourseModelViewset(viewsets.ModelViewSet):
             return [IsAuthenticated()]
         elif self.action == "grades":
             return [IsCourseOwner()]
+        elif self.action == "my_grades":
+            return [IsAuthenticated()]
         else:
             return [DenyAll()]
 
@@ -70,11 +73,8 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["get"], url_path="grades")
-    def grades(self, request, *args, **kwargs):
-        course = self.get_object()
-        # We prefetch rubric_criterias so the count() call in the serializer
-        # doesn't hit the DB repeatedly
+    @staticmethod
+    def _build_course_gradebook(course):
         assignments = course.assignments.prefetch_related("rubric_criterias").all()
         grade_data = []
 
@@ -87,9 +87,8 @@ class CourseModelViewset(viewsets.ModelViewSet):
                 "data": [],
             }
 
-            # Determine entities (Groups vs Rosters)
             if assignment.is_grouped:
-                entities = assignment.course.groups.all()
+                entities = assignment.groups.all()
             else:
                 entities = assignment.course.rosters.select_related(
                     "student_profile__user"
@@ -110,7 +109,6 @@ class CourseModelViewset(viewsets.ModelViewSet):
                         "email": profile.user.email,
                     }
 
-                # Fetch latest submission
                 latest_sub = (
                     Submission.objects.filter(**filter_kwargs)
                     .prefetch_related("rubric_results__rubric_criteria", "test_results")
@@ -131,7 +129,68 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
             grade_data.append(assignment_info)
 
-        return Response(grade_data, status=status.HTTP_200_OK)
+        return grade_data
+
+    @staticmethod
+    def _filter_gradebook_for_roster(grade_data, roster):
+        """Keep at most one row per assignment (the enrolled student's roster or group)."""
+        filtered = []
+        for block in grade_data:
+            new_block = {
+                "assignment_id": block["assignment_id"],
+                "assignment_name": block["assignment_name"],
+                "is_grouped": block["is_grouped"],
+                "is_weighted": block["is_weighted"],
+                "data": [],
+            }
+            rows = block.get("data") or []
+            if block["is_grouped"]:
+                gm = GroupsMembership.objects.filter(
+                    roster=roster, group__assignment_id=block["assignment_id"]
+                ).first()
+                if gm:
+                    gid = str(gm.group_id)
+                    match = next(
+                        (r for r in rows if str(r["entity_id"]) == gid), None
+                    )
+                    if match:
+                        new_block["data"] = [match]
+            else:
+                rid = str(roster.id)
+                match = next((r for r in rows if str(r["entity_id"]) == rid), None)
+                if match:
+                    new_block["data"] = [match]
+            filtered.append(new_block)
+        return filtered
+
+    @action(detail=True, methods=["get"], url_path="grades")
+    def grades(self, request, *args, **kwargs):
+        course = self.get_object()
+        return Response(
+            self._build_course_gradebook(course), status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=["get"], url_path="my-grades")
+    def my_grades(self, request, *args, **kwargs):
+        if request.user.role != Roles.STUDENT:
+            return Response(
+                {"detail": "Only students may access this resource."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        course = self.get_object()
+        roster = (
+            Roster.objects.filter(course=course, student_profile__user=request.user)
+            .select_related("student_profile__user")
+            .first()
+        )
+        if not roster:
+            return Response(
+                {"detail": "You are not enrolled in this course."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        full = self._build_course_gradebook(course)
+        filtered = self._filter_gradebook_for_roster(full, roster)
+        return Response(filtered, status=status.HTTP_200_OK)
 
 
 class RosterModelViewSet(

@@ -21,6 +21,10 @@ function ViewList({
   rubricCriteriaCount = 0,
   children = null,
   assignmentId = null,
+  isGrouped = false,
+  isGroupLeader = true,
+  groupName = "",
+  inGroup = true,
 }) {
   const [displayLimit, setDisplayLimit] = useState(5);
 
@@ -49,21 +53,39 @@ function ViewList({
 
   return (
     <section className="animate-in fade-in duration-500">
-      <div className="flex justify-between items-end mb-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6">
+        <div className="space-y-2 min-w-0">
           <h2 className="text-sm font-black uppercase tracking-widest text-accent flex items-center gap-2">
             <FileText size={18} className="text-primary" />
-            Submission History
+            {isGrouped ? "Group submission history" : "Submission history"}
           </h2>
           <p className="text-[10px] text-text-muted font-bold uppercase mt-1">
-            Total Attempts: {submissions.length}
+            Total attempts: {submissions.length}
+            {isGrouped && groupName ? (
+              <span className="block normal-case font-medium tracking-normal text-text-main mt-1">
+                Showing submissions for group:{" "}
+                <span className="text-primary font-bold">{groupName}</span>
+              </span>
+            ) : null}
           </p>
+          {isGrouped && !inGroup && (
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-medium normal-case">
+              You are not in a group for this assignment yet. Your instructor
+              must assign you before your group can submit.
+            </p>
+          )}
+          {isGrouped && inGroup && !isGroupLeader && (
+            <p className="text-xs text-text-main bg-slate-50 border border-border rounded-lg px-3 py-2 font-medium normal-case">
+              Only your group leader can submit new attempts. You can still
+              review your group&apos;s submission history below.
+            </p>
+          )}
         </div>
         {children}
       </div>
 
       {submissions.length === 0 ? (
-        <EmptyState />
+        <EmptyState isGrouped={isGrouped} inGroup={inGroup} />
       ) : (
         <div className="space-y-2">
           {/* DESKTOP/MOBILE UNIFIED LIST */}
@@ -145,12 +167,18 @@ function ViewList({
   );
 }
 
-const EmptyState = () => (
-  <div className="py-12 border-2 border-dashed border-border rounded-xl flex flex-col items-center text-center">
+const EmptyState = ({ isGrouped = false, inGroup = true }) => (
+  <div className="py-12 border-2 border-dashed border-border rounded-xl flex flex-col items-center text-center px-4">
     <Inbox size={32} className="text-border mb-3" />
     <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">
       No submissions found
     </p>
+    {isGrouped && inGroup && (
+      <p className="text-xs text-text-muted mt-3 max-w-md normal-case font-medium">
+        When your group leader submits, graded runs will appear here for
+        everyone in the group.
+      </p>
+    )}
   </div>
 );
 
@@ -190,11 +218,25 @@ const SubmissionsList = ({
   submissions = [],
   rubricCriteriaCount = 0,
   children = null,
+  onSelectSubmission = null,
+  isGrouped = false,
+  isGroupLeader = true,
+  groupName = "",
+  inGroup = true,
 }) => {
   const [viewingSubmission, setViewingSubmission] = useState(null);
+
+  const handleSelectRow = (sub) => {
+    if (typeof onSelectSubmission === "function") {
+      onSelectSubmission(sub);
+    } else {
+      setViewingSubmission(sub);
+    }
+  };
+
   return (
     <div className="w-full">
-      {viewingSubmission ? (
+      {!onSelectSubmission && viewingSubmission ? (
         <ViewTestResult
           assignmentId={assignmentId}
           viewingSubmission={viewingSubmission}
@@ -203,9 +245,13 @@ const SubmissionsList = ({
       ) : (
         <ViewList
           assignmentId={assignmentId}
-          setViewingSubmission={setViewingSubmission}
+          setViewingSubmission={handleSelectRow}
           submissions={submissions}
           rubricCriteriaCount={rubricCriteriaCount}
+          isGrouped={isGrouped}
+          isGroupLeader={isGroupLeader}
+          groupName={groupName}
+          inGroup={inGroup}
         >
           {children}
         </ViewList>
