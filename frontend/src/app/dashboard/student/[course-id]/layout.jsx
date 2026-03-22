@@ -9,6 +9,7 @@ import {
   FileCode,
   ChevronDown,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export default function Layout({ children }) {
@@ -30,6 +31,12 @@ export default function Layout({ children }) {
       icon: <FileCode size={16} />,
       href: `/dashboard/student/${courseId}/assignments`,
     },
+    {
+      label: "Grades",
+      icon: <FileSpreadsheet size={16} />,
+      href: `/dashboard/student/${courseId}/grades`,
+    },
+
     // {
     //   label: "Roster",
     //   icon: <Users size={16} />,

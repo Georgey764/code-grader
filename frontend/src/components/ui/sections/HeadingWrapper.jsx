@@ -169,6 +169,11 @@ const linker = {
     name: "Assignments",
     message: "View all Assignments for your Selected Course",
   },
+  // Student: Course grades (self)
+  "/dashboard/student/id/grades": {
+    name: "Grades",
+    message: "Your scores and rubric breakdown for this course",
+  },
   // Student: Assignment Detail
   "/dashboard/student/id/assignments/id": {
     name: "Assignment Detail",

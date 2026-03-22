@@ -21,7 +21,7 @@ import {
   buildReportCsv,
   buildReportTxt,
   downloadBlob,
-} from "./(helper)/reportUtils";
+} from "@/lib/courseGradeReport";
 
 export default function CourseGradeReportPage() {
   const { api } = useMetadata();
