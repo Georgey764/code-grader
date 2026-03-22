@@ -89,7 +89,7 @@ class CourseModelViewset(viewsets.ModelViewSet):
 
             # Determine entities (Groups vs Rosters)
             if assignment.is_grouped:
-                entities = assignment.course.groups.all()
+                entities = assignment.groups.all()
             else:
                 entities = assignment.course.rosters.select_related(
                     "student_profile__user"

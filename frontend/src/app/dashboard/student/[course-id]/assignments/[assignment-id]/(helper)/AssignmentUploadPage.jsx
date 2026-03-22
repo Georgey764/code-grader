@@ -22,8 +22,32 @@ import SubmissionList from "./SubmissionList";
 import { EditableCodeBlock } from "@/components/ui/elements";
 import { CodeReport, LoadingPage } from "@/components/ui/sections";
 
+function normalizeCwid(c) {
+  if (c == null || c === "") return "";
+  return String(c).trim().toLowerCase();
+}
+
+function resolveStudentGroupMeta(groupsList, userCwid) {
+  const cwidNorm = normalizeCwid(userCwid);
+  if (!cwidNorm) return { id: null, isLeader: false, name: "" };
+  const list = Array.isArray(groupsList) ? groupsList : [];
+  for (const g of list) {
+    for (const m of g.group_memberships || []) {
+      const u = m.roster_student?.student_profile?.user;
+      if (u?.cwid && normalizeCwid(u.cwid) === cwidNorm) {
+        return {
+          id: g.id,
+          isLeader: !!m.is_leader,
+          name: g.name || "",
+        };
+      }
+    }
+  }
+  return { id: null, isLeader: false, name: "" };
+}
+
 export default function AssignmentUploadPage({ courseId, assignmentId }) {
-  const { api } = useMetadata();
+  const { api, user } = useMetadata();
 
   // Mode & Data State
   const [submissionMode, setSubmissionMode] = useState("file"); // 'file' or 'editor'
@@ -40,6 +64,11 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const [assignmentData, setAssignmentData] = useState(null);
   const [activeSubmission, setActiveSubmission] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [groupMeta, setGroupMeta] = useState({
+    id: null,
+    isLeader: false,
+    name: "",
+  });
 
   useEffect(() => {
     const fetchPageData = async () => {
@@ -55,8 +84,19 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
         const data = assignmentResponse?.data;
         setRoster(rosterResponse?.data?.at(0));
-        setSubmissions(submissionResponse?.data.reverse());
+        const subData = submissionResponse?.data;
+        setSubmissions(
+          Array.isArray(subData) ? [...subData].reverse() : [],
+        );
         setAssignmentData(data);
+
+        if (data?.is_grouped) {
+          const gr = await api.get(`assignments/${assignmentId}/groups/`);
+          const raw = Array.isArray(gr.data) ? gr.data : gr.data?.results ?? [];
+          setGroupMeta(resolveStudentGroupMeta(raw, user?.cwid));
+        } else {
+          setGroupMeta({ id: null, isLeader: false, name: "" });
+        }
 
         // Initialize Editor filename based on assignment language
         const ext = data?.language?.toLowerCase() === "java" ? "java" : "py";
@@ -68,7 +108,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       }
     };
     fetchPageData();
-  }, [api, assignmentId, courseId]);
+  }, [api, assignmentId, courseId, user?.cwid]);
 
   // Sync file content to editor if user switches modes after selecting a file
   useEffect(() => {
@@ -114,6 +154,19 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
   const handleUpload = async (e) => {
     e?.preventDefault();
 
+    if (assignmentData?.is_grouped) {
+      if (!groupMeta.id) {
+        alert(
+          "You are not assigned to a group for this assignment. Contact your instructor.",
+        );
+        return;
+      }
+      if (!groupMeta.isLeader) {
+        alert("Only your group leader can submit for this assignment.");
+        return;
+      }
+    }
+
     let contentToSubmit = "";
     if (submissionMode === "file") {
       if (!file) return;
@@ -128,8 +181,8 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
     const formData = new FormData();
     formData.append("assignment", assignmentId);
     formData.append("roster", roster?.id);
-    if (assignmentData?.is_grouped) {
-      formData.append("group", assignmentData?.group_id);
+    if (assignmentData?.is_grouped && groupMeta.id) {
+      formData.append("group", groupMeta.id);
     }
     formData.append("submitted_file", contentToSubmit);
 
@@ -154,7 +207,11 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
   return (
     <div className="flex flex-col items-center justify-center max-w-5xl mx-auto px-3 sm:px-4 pb-12 sm:pb-20 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full">
-      <AssignmentDetails assignmentData={assignmentData} courseId={courseId} />
+      <AssignmentDetails
+        assignmentData={assignmentData}
+        courseId={courseId}
+        assignmentId={assignmentId}
+      />
 
       <div className="w-full bg-surface rounded-xl border border-border shadow-subtle overflow-hidden relative">
         {/* Navigation Tabs */}
@@ -181,24 +238,29 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
             <SubmissionList
               submissions={submissions}
               assignmentId={assignmentId}
+              isGrouped={!!assignmentData?.is_grouped}
+              isGroupLeader={!!groupMeta.isLeader}
+              groupName={groupMeta.name}
+              inGroup={!!groupMeta.id}
               onSelectSubmission={(sub) => {
                 setActiveSubmission(sub);
                 setResults(sub.test_results || []);
                 setStatus("completed");
               }}
             >
-              {new Date(assignmentData?.deadline) >= new Date() && (
-                <button
-                  onClick={() => resetWorkflow("upload")}
-                  className="w-full sm:w-auto cursor-pointer group flex items-center justify-center gap-2 bg-primary text-white px-5 py-3.5 sm:py-3 rounded-md font-black uppercase text-[10px] tracking-[0.2em] shadow-md hover:bg-accent transition-all"
-                >
-                  <PlusIcon
-                    size={16}
-                    className="text-secondary group-hover:rotate-90 transition-transform"
-                  />
-                  New Submission
-                </button>
-              )}
+              {new Date(assignmentData?.deadline) >= new Date() &&
+                (!assignmentData?.is_grouped || groupMeta.isLeader) && (
+                  <button
+                    onClick={() => resetWorkflow("upload")}
+                    className="w-full sm:w-auto cursor-pointer group flex items-center justify-center gap-2 bg-primary text-white px-5 py-3.5 sm:py-3 rounded-md font-black uppercase text-[10px] tracking-[0.2em] shadow-md hover:bg-accent transition-all"
+                  >
+                    <PlusIcon
+                      size={16}
+                      className="text-secondary group-hover:rotate-90 transition-transform"
+                    />
+                    New Submission
+                  </button>
+                )}
             </SubmissionList>
           )}
 
@@ -286,13 +348,15 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
                 >
                   <List size={16} /> History
                 </button>
-                <button
-                  onClick={() => resetWorkflow("upload")}
-                  className="w-full sm:flex-1 cursor-pointer flex items-center justify-center gap-2 px-5 py-4 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded shadow-lg hover:bg-accent transition-all order-1 sm:order-2"
-                >
-                  <RotateCcw size={16} className="text-secondary" /> Submit
-                  Again
-                </button>
+                {(!assignmentData?.is_grouped || groupMeta.isLeader) && (
+                  <button
+                    onClick={() => resetWorkflow("upload")}
+                    className="w-full sm:flex-1 cursor-pointer flex items-center justify-center gap-2 px-5 py-4 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded shadow-lg hover:bg-accent transition-all order-1 sm:order-2"
+                  >
+                    <RotateCcw size={16} className="text-secondary" /> Submit
+                    Again
+                  </button>
+                )}
               </div>
             </div>
           )}

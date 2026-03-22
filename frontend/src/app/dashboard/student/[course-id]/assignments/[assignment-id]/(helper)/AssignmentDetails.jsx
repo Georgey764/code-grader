@@ -96,6 +96,24 @@ export default function AssignmentDetails({
               Rubrics
             </span>
           </Link>
+
+          {assignmentData.is_grouped && assignmentId && (
+            <>
+              <div className="h-3 w-px bg-border/60" />
+              <Link
+                href={`/dashboard/student/${courseId}/assignments/${assignmentId}/groups`}
+                className="flex items-center gap-2 group"
+              >
+                <Users
+                  size={14}
+                  className="text-primary group-hover:scale-110 transition-transform"
+                />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted group-hover:text-accent transition-colors">
+                  Groups
+                </span>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 

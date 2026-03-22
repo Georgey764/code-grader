@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from apps.assignments.models import (
     Assignment,
@@ -6,10 +7,12 @@ from apps.assignments.models import (
     Group,
     GroupsMembership,
 )
+from apps.courses.models import Roster
+from apps.accounts.models import StudentProfile
+from apps.accounts.serializers import UserDetailSerializer
 from apps.core.serializers import BaseSerializers
 from rest_framework.validators import UniqueTogetherValidator
 from django.db.models import Sum
-from django.shortcuts import get_object_or_404
 
 
 class RubricCriteriaSerializer(BaseSerializers):
@@ -107,11 +110,29 @@ class TestCaseSerializer(serializers.ModelSerializer):
         ]
 
 
+class StudentProfileLightSerializer(serializers.ModelSerializer):
+    user = UserDetailSerializer(read_only=True)
+
+    class Meta:
+        model = StudentProfile
+        fields = ["id", "user"]
+
+
+class RosterStudentBriefSerializer(serializers.ModelSerializer):
+    student_profile = StudentProfileLightSerializer(read_only=True)
+
+    class Meta:
+        model = Roster
+        fields = ["id", "student_profile"]
+
+
 class GroupsMembershipSerializer(serializers.ModelSerializer):
+    roster_student = RosterStudentBriefSerializer(source="roster", read_only=True)
+
     class Meta:
         model = GroupsMembership
-        fields = ["id", "group", "roster", "is_leader"]
-        read_only_fields = ["id"]
+        fields = ["id", "group", "roster", "is_leader", "roster_student"]
+        read_only_fields = ["id", "roster_student"]
         validators = [
             UniqueTogetherValidator(
                 queryset=GroupsMembership.objects.all(),
@@ -124,23 +145,45 @@ class GroupsMembershipSerializer(serializers.ModelSerializer):
         # CUSTOM CHECK: Ensure student isn't in another group for this assignment
         roster = attrs.get("roster")
         group = attrs.get("group")
+        if roster is None and self.instance:
+            roster = self.instance.roster
+        if group is None and self.instance:
+            group = self.instance.group
 
-        if (
-            GroupsMembership.objects.filter(
-                roster=roster, group__assignment=group.assignment
-            )
-            .exclude(group=group)
-            .exists()
-        ):
-            raise serializers.ValidationError(
-                "This student is already assigned to a group for this assignment."
-            )
+        if roster is not None and group is not None:
+            if (
+                GroupsMembership.objects.filter(
+                    roster=roster, group__assignment=group.assignment
+                )
+                .exclude(group=group)
+                .exists()
+            ):
+                raise serializers.ValidationError(
+                    "This student is already assigned to a group for this assignment."
+                )
 
         return attrs
 
+    @transaction.atomic
+    def create(self, validated_data):
+        if validated_data.get("is_leader"):
+            group = validated_data["group"]
+            GroupsMembership.objects.filter(group=group).update(is_leader=False)
+        return super().create(validated_data)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        if validated_data.get("is_leader") is True:
+            GroupsMembership.objects.filter(group=instance.group).exclude(
+                pk=instance.pk
+            ).update(is_leader=False)
+        return super().update(instance, validated_data)
+
 
 class GroupSerializer(serializers.ModelSerializer):
-    current_count = serializers.IntegerField(source="memberships.count", read_only=True)
+    current_count = serializers.IntegerField(
+        source="group_memberships.count", read_only=True
+    )
     group_memberships = GroupsMembershipSerializer(read_only=True, many=True)
 
     class Meta:

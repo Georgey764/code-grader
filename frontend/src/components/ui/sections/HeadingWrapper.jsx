@@ -127,10 +127,21 @@ const linker = {
     name: "View Submissions",
     message: "View all submissions for your Selected Assignment's Roster",
   },
+  // Faculty: View Groups
+  "/dashboard/faculty/id/assignments/id/groups": {
+    name: "View Groups",
+    message: "View all groups for your Selected Assignment",
+    buttonIn: <CreateButton message="Create Group" childLink="create" />,
+  },
   // Faculty: Grade View Page
   "/dashboard/faculty/id/grades": {
     name: "Gradebook",
     message: "Weighted Points & Diagnostic Summary",
+  },
+  // Faculty: Course grade report (per-student)
+  "/dashboard/faculty/id/grade-report": {
+    name: "Grade Report",
+    message: "Per-student averages and latest submissions by assignment",
   },
   // Faculty: Grade View Page
   "/dashboard/faculty/id/grades/id": {

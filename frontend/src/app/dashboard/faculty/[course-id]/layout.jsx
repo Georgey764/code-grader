@@ -11,6 +11,7 @@ import {
   Menu,
   Terminal,
   Edit,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export default function Layout({ children }) {
@@ -41,6 +42,11 @@ export default function Layout({ children }) {
       label: "Grading Portal",
       icon: <Edit size={16} />,
       href: `/dashboard/faculty/${courseId}/grades`,
+    },
+    {
+      label: "Grading Report",
+      icon: <FileSpreadsheet size={16} />,
+      href: `/dashboard/faculty/${courseId}/grade-report`,
     },
   ];
 
