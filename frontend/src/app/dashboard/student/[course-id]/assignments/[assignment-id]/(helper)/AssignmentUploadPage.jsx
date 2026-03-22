@@ -99,7 +99,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
       } else if (nextAttempt > attemptsLimit) {
         throw new Error("Error while running automated tests. Check history.");
       } else {
-        setProgress((cur) => (cur < 85 ? cur + 7 : 99));
+        setProgress((cur) => (cur < 85 ? cur + 15 : 99));
         setTimeout(() => pollStudentSubmission(submission, nextAttempt), 2000);
       }
     } catch (e) {

@@ -153,7 +153,7 @@ def run_untrusted_java(student_code, test_cases, is_file_input):
                     sandbox.files.write("/tmp/input.txt", input_data)
                     # Use the detected class_name
                     execution = sandbox.commands.run(
-                        f"java -cp /tmp {class_name}", timeout=time_limit
+                        f"java -cp /tmp {class_name}", timeout=time_limit, cwd="/tmp"
                     )
                 else:
                     # Standard Input Redirection
