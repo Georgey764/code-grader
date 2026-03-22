@@ -60,7 +60,18 @@ io.on("connection", (socket) => {
     if (language.toLowerCase() === "java") {
       await handleJavaExecution(filePath, socket, session, userDir);
     } else {
-      await runCode("python3", filePath, socket, session, userDir);
+      try {
+        const result = await runCode(
+          "python3",
+          filePath,
+          socket,
+          session,
+          userDir,
+        );
+        socket.emit("code_completed", result);
+      } catch (err) {
+        socket.emit("error", err.toString().trim());
+      }
     }
   });
 

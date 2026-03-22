@@ -175,6 +175,7 @@ function ViewTestResult({
           Close Report
         </button>
       </div>
+
       <CodeReport
         submission={viewingSubmission}
         assignmentId={assignmentId}

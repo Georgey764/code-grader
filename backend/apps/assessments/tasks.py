@@ -34,12 +34,15 @@ def run_submission_tests_task(submission_id):
     # Execution
     submission.update_test_status(status=Submission.Status.PROCESSING)
 
-    if language == Assignment.Language.PYTHON:
-        results = run_untrusted_python(student_code, test_cases, is_file_input)
-    if language == Assignment.Language.JAVA:
-        results = run_untrusted_java(student_code, test_cases, is_file_input)
+    try:
+        if language == Assignment.Language.PYTHON:
+            results = run_untrusted_python(student_code, test_cases, is_file_input)
+        if language == Assignment.Language.JAVA:
+            results = run_untrusted_java(student_code, test_cases, is_file_input)
 
-    TestResult.save_test_results(submission, results)
-    submission.update_test_status(status=Submission.Status.PROCESSED)
+        TestResult.save_test_results(submission, results)
+        submission.update_test_status(status=Submission.Status.PROCESSED)
 
-    return f"Processed submission: {submission_id}"
+    except Exception as e:
+        submission.update_test_status(status=Submission.Status.PROCESSED)
+        raise e

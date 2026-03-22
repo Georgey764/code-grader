@@ -77,6 +77,7 @@ export function runCode(command, filePath, socket, session, userDir) {
     // 2. Define Cleanup First
     // We use a timer variable to clear it later
     let timeoutId;
+    let output = "";
 
     const cleanup = async () => {
       if (!session.running) return;
@@ -122,10 +123,8 @@ export function runCode(command, filePath, socket, session, userDir) {
     const exitListener = ptyProcess.onExit(({ exitCode }) => {
       if (!session.running) return;
 
-      socket.emit("code_completed", { exitCode });
-
-      if (exitCode === 0) resolve("Success");
-      else reject(new Error(`Exit Code: ${exitCode}`));
+      if (exitCode === 0) resolve(exitCode);
+      else reject(`[Exit Code: ${exitCode}]\r\n${output.toString().trim()}`);
 
       cleanup();
     });
@@ -136,7 +135,7 @@ export function runCode(command, filePath, socket, session, userDir) {
       if (!session.running) return;
       socket.emit("error", "[Execution Timed Out]\r\n");
       cleanup();
-      reject(new Error("Timeout"));
+      reject("Timeout");
     }, timeoutDuration);
   });
 }
@@ -144,9 +143,10 @@ export function runCode(command, filePath, socket, session, userDir) {
 export async function handleJavaExecution(filePath, socket, session, userDir) {
   try {
     await compileJava(filePath, socket, session, userDir);
-    await runCode("java", filePath, socket, session, userDir);
+    const result = await runCode("java", filePath, socket, session, userDir);
+    socket.emit("code_completed", result);
   } catch (err) {
-    console.error("Execution Pipeline Error:", err.message);
+    socket.emit("error", err);
   }
 }
 
