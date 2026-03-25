@@ -29,6 +29,7 @@ from django.shortcuts import get_object_or_404
 
 logger = logging.getLogger(__name__)
 
+from apps.assessments.ai_service import detect_ai_code
 
 class SubmissionViewSet(
     mixins.CreateModelMixin,
@@ -129,6 +130,28 @@ class SubmissionViewSet(
             return queryset.none()
 
         return queryset.filter(**{actual_filter: user})
+    
+    
+    
+    def perform_create(self, serializer):
+        """
+        Intercepts the student's submission right before it saves to the database 
+        so we can run our Machine Learning AI detection on it.
+        """
+        # 1. Grab the actual code the student just uploaded
+        student_code = self.request.data.get("submitted_file", "")
+        
+        # 2. Ask the ML Brain who wrote it
+        prediction = None
+        if student_code:
+            prediction = detect_ai_code(student_code)
+            
+        # 3. Save the submission to the database normally, but include our new prediction!
+        serializer.save(ai_prediction=prediction)
+    
+    
+    
+    
 
     @action(detail=True, methods=["post"], url_path="run-tests", url_name="run-tests")
     def run_tests(self, request, id=None):

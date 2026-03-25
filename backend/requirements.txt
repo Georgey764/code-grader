@@ -60,3 +60,5 @@ urllib3==2.6.3
 vine==5.1.0
 wcmatch==10.1
 wcwidth==0.6.0
+scikit-learn
+pandas

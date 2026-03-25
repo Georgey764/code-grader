@@ -30,22 +30,12 @@ class Submission(BaseModel):
     status = models.CharField(
         max_length=50, choices=Status.choices, default=Status.PENDING
     )
+    
+    # NEW FIELD: Stores the ML model's prediction (e.g., Human, GEMINI, LLAMA)
+    ai_prediction = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return f"Submission {self.id} for {self.assignment.name}"
-
-    class Meta:
-        db_table = "submission"
-        verbose_name = "submission"
-        verbose_name_plural = "submissions"
-        ordering = ["-created_at"]
-
-    def update_test_status(self, status):
-        """
-        Logic to handle the results dictionary and save to DB
-        """
-        self.status = status
-        self.save()
 
 
 class RubricResult(BaseModel):
