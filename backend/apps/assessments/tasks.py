@@ -37,8 +37,9 @@ def run_submission_tests_task(submission_id):
             }
         )
 
-    # Execution
-    submission.update_test_status(status=Submission.Status.PROCESSING)
+    # Execution - Fixed line below
+    submission.status = Submission.Status.PROCESSING
+    submission.save()
 
     try:
         if language == Assignment.Language.PYTHON:
@@ -47,13 +48,17 @@ def run_submission_tests_task(submission_id):
             results = run_untrusted_java(student_code, test_cases, is_file_input)
 
         TestResult.save_test_results(submission, results)
-        submission.update_test_status(status=Submission.Status.PROCESSED)
+        
+        # Fixed lines below
+        submission.status = Submission.Status.PROCESSED
+        submission.save()
 
         return f"Processed submission: {submission_id}"
         
     except Exception as e:
-        # Moved this block back to its rightful place!
-        submission.update_test_status(status=Submission.Status.PROCESSED)
+        # Fixed lines below
+        submission.status = Submission.Status.PROCESSED
+        submission.save()
         raise e
 
 
