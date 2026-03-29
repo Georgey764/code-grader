@@ -44,7 +44,7 @@ export default function LoginPage() {
             e.preventDefault();
             const form = e.target;
             try {
-              const response = await fetch(baseUrl + "token/", {
+              const response = await fetch(baseUrl + "auth/jwt/create/", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -55,6 +55,14 @@ export default function LoginPage() {
                   password: form.password.value,
                 }),
               });
+
+              if (!response.ok) {
+                const data = await response.json();
+
+                alert(data.detail);
+                return;
+              }
+
               const data = await response.json();
               if (data["detail"]) {
                 alert(data.detail);
@@ -72,11 +80,11 @@ export default function LoginPage() {
                 localStorage.setItem("refresh_token", refresh_token);
 
                 if (role == "FA") {
-                  router.push("/app/faculty");
+                  router.push("/dashboard/faculty");
                 } else if (role == "ST") {
-                  router.push("/app/student/");
+                  router.push("/dashboard/student/");
                 } else if (role == "GA") {
-                  router.push("app/faculty");
+                  router.push("/dashboard/faculty");
                 }
               }
             } catch (e) {
@@ -101,7 +109,7 @@ export default function LoginPage() {
             />
             <div className="flex justify-end">
               <a
-                href="#"
+                href="/password-reset"
                 className="text-xs text-primary hover:underline font-medium"
               >
                 Forgot password?

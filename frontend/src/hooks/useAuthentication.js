@@ -61,7 +61,9 @@ export default function useAuthentication() {
 
     const attemptRefresh = async (refresh) => {
       try {
-        const res = await axios.post(`${baseUrl}token/refresh/`, { refresh });
+        const res = await axios.post(`${baseUrl}auth/jwt/refresh/`, {
+          refresh,
+        });
         const newAccess = res.data.access;
         localStorage.setItem("access_token", newAccess);
         return newAccess;

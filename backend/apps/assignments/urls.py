@@ -23,10 +23,18 @@ rubric_criteria_router.register(r"rubric-criteria", RubricViewSet, basename="rub
 group_router = routers.NestedDefaultRouter(router, r"", lookup="assignment")
 group_router.register(r"groups", GroupViewSet, basename="group")
 
+group_membership_router = routers.NestedDefaultRouter(
+    group_router, r"groups", lookup="group"
+)
+group_membership_router.register(
+    r"memberships", GroupsMembershipViewSet, basename="groupsmembership"
+)
+
 
 urlpatterns = [
     path("", include(router.urls)),
     path("", include(test_case_router.urls)),
     path("", include(rubric_criteria_router.urls)),
     path("", include(group_router.urls)),
+    path("", include(group_membership_router.urls)),
 ]

@@ -8,3 +8,4 @@ export { default as BackButton } from "./BackButton";
 export { default as NoItemFound } from "./NoItemFound";
 export { default as CreateButton } from "./CreateButton";
 export { default as CodeBlock } from "./CodeBlock";
+export { default as EditableCodeBlock } from "./EditableCodeBlock";

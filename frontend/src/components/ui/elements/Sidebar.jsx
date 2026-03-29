@@ -1,25 +1,45 @@
 "use client";
 import React, { useState, useMemo } from "react";
-import { BookOpen, Settings, Menu, X, LogOut } from "lucide-react";
+import {
+  BookOpen,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  Terminal,
+  TerminalIcon,
+  SquareTerminal,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 
+function getFullRole(role) {
+  if (role === "st") return "student";
+  if (role === "fa") return "faculty";
+  if (role === "ga") return "ga";
+  return role;
+}
+
 const navConfig = {
-  student: [
+  st: [
     {
       icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student",
+      route: "/dashboard/student",
     },
   ],
-  faculty: [
-    { icon: <BookOpen size={20} />, label: "Courses", route: "/app/faculty" },
+  fa: [
+    {
+      icon: <BookOpen size={20} />,
+      label: "Courses",
+      route: "/dashboard/faculty",
+    },
   ],
   ga: [
     {
       icon: <BookOpen size={20} />,
       label: "Courses",
-      route: "/app/student",
+      route: "/dashboard/student",
     },
   ],
 };
@@ -28,19 +48,24 @@ export default function Sidebar() {
   const { name, logout } = useMetadata(); // Pull logout from context
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
+  const { user } = useMetadata();
+  const role = user?.role.toLowerCase();
 
   const navItems = useMemo(() => {
-    const role = pathname.split("/")[2]?.toLowerCase();
     return [
       ...(navConfig[role] || []),
       {
+        icon: <SquareTerminal size={20} />,
+        label: "Playground",
+        route: "/dashboard/playground",
+      },
+      {
         icon: <Settings size={20} />,
         label: "Settings",
-        route: `/app/${role}/settings`,
+        route: `/dashboard/${getFullRole(role)}/settings`,
       },
     ];
-  }, [pathname]);
+  }, [role]);
 
   const handleLogout = () => {
     logout();
@@ -90,7 +115,7 @@ export default function Sidebar() {
                   router.push(item.route);
                   setIsOpen(false);
                 }}
-                className="relative flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 hover:text-secondary transition-all group"
+                className="cursor-pointer relative flex items-center gap-4 p-3 rounded-xl hover:bg-white/10 hover:text-secondary transition-all group"
               >
                 <div className="mx-auto">{item.icon}</div>
                 <span className="font-bold text-xs md:hidden uppercase tracking-widest">
@@ -106,7 +131,7 @@ export default function Sidebar() {
           {/* Logout Action Button */}
           <button
             onClick={handleLogout}
-            className="mt-auto p-3 text-white/40 hover:text-white transition-colors relative group"
+            className="cursor-pointer mt-auto p-3 text-white/40 hover:text-white transition-colors relative group"
             title="Logout"
           >
             <LogOut size={20} />

@@ -1,16 +1,36 @@
 "use client";
 
-import { Check, Copy, FileCode, Loader2, Play } from "lucide-react";
-import { useState } from "react";
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeClosed,
+  FileCode,
+  Loader2,
+  Maximize,
+  Minimize,
+  Play,
+  Terminal,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useRef } from "react";
+import FileUpload from "./(helper)/FileUpload";
 
 export default function CodeBlock({
   code,
   name = "Starter Code",
   handleRunCode,
   isRunningCode,
+  handleRunTestCases,
+  isRunningTestCases,
+  isFileInput = false,
+  setInputFile,
+  submissionId,
+  assignmentId,
+  isMinimizedGiven = false,
 }) {
   const [copied, setCopied] = useState(false);
-
+  const fileUploadRef = useRef(null);
   const handleCopy = async () => {
     if (code) {
       await navigator.clipboard.writeText(code);
@@ -18,8 +38,13 @@ export default function CodeBlock({
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
+  const router = useRouter();
+  const [isMinimized, setIsMinimized] = useState(isMinimizedGiven);
   const lines = (code || "").split("\n");
+
+  const handleMinimize = () => {
+    setIsMinimized(!isMinimized);
+  };
 
   return (
     // Applied bg-slate-950 as the main background
@@ -27,32 +52,31 @@ export default function CodeBlock({
       {/* Editor Header - Applied bg-slate-900 and slate borders */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-900 backdrop-blur-sm border-b border-slate-800">
         <div className="flex items-center gap-4">
-          <div className="flex gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-[#FF5F56]/80" />
-            <div className="w-3 h-3 rounded-full bg-[#FFBD2E]/80" />
-            <div className="w-3 h-3 rounded-full bg-[#27C93F]/80" />
-          </div>
+          <button
+            onClick={handleMinimize}
+            className={`relative flex items-center justify-center
+                  h-6 w-6 rounded-full bg-slate-800 hover:bg-slate-700 transition-all duration-200 hover:scale-105 active:scale-95`}
+          >
+            <span className="text-black opacity-80 group-hover:opacity-100 text-white">
+              {isMinimized ? <Maximize size={12} /> : <Minimize size={12} />}
+            </span>
+          </button>
+
           {/* Changed text-zinc-500 to text-slate-500 */}
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white">
             <FileCode size={12} className="opacity-70" />
             {name}
           </div>
         </div>
+
         <div className="flex items-center gap-2">
-          {handleRunCode &&
-            (!isRunningCode ? (
-              <button
-                onClick={handleRunCode}
-                className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
-              >
-                <Play size={12} />
-                Run
-              </button>
-            ) : (
-              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
-                <Loader2 size={12} className="animate-spin" /> Running...
-              </div>
-            ))}
+          {setInputFile && isFileInput && (
+            <FileUpload
+              ref={fileUploadRef}
+              setInputFile={setInputFile}
+              isRunningTestCases={isRunningTestCases}
+            />
+          )}
 
           <button
             onClick={handleCopy}
@@ -71,30 +95,95 @@ export default function CodeBlock({
               </>
             )}
           </button>
+
+          {handleRunTestCases && (
+            <>
+              {assignmentId && (
+                <button
+                  onClick={() =>
+                    router.push(`../assignments/${assignmentId}/test-cases`)
+                  }
+                  className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+                >
+                  <Eye size={12} />
+                  Test Cases
+                </button>
+              )}
+              <div>
+                {!isRunningTestCases ? (
+                  <button
+                    onClick={() => {
+                      fileUploadRef.current?.clearFile();
+                      handleRunTestCases();
+                    }}
+                    className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+                  >
+                    <Play size={12} />
+                    Test Cases
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
+                    <Loader2 size={12} className="animate-spin" /> Running
+                    Tests...
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {handleRunCode &&
+            (!isRunningCode ? (
+              <button
+                onClick={handleRunCode}
+                className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+              >
+                <Play size={12} />
+                Run
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md">
+                <Loader2 size={12} className="animate-spin" /> Running...
+              </div>
+            ))}
+
+          {submissionId && (
+            <button
+              onClick={() =>
+                router.push(
+                  `/dashboard/playground?submission_id=${submissionId}`,
+                )
+              }
+              className="cursor-pointer flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-white transition-all bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 rounded-md"
+            >
+              <Terminal size={12} /> Open in Playground
+            </button>
+          )}
         </div>
       </div>
 
       {/* Code Area */}
-      <div className="relative overflow-x-auto scrollbar-hide">
-        {/* Changed main text color to text-slate-200 for good contrast */}
-        <pre className="py-5 text-white min-w-full">
-          {lines.map((line, i) => (
-            // Changed line hover highlight to a subtle slate-900
-            <div
-              key={i}
-              className="flex px-4 hover:bg-slate-900 transition-colors leading-6"
-            >
-              {/* Line Numbers - Changed to text-slate-600 */}
-              <span className="w-10 shrink-0 text-slate-600 text-left select-none tabular-nums opacity-80">
-                {i + 1}
-              </span>
+      {!isMinimized && (
+        <div className="relative overflow-x-auto scrollbar-hide">
+          {/* Changed main text color to text-slate-200 for good contrast */}
+          <pre className="py-5 text-white min-w-full">
+            {lines.map((line, i) => (
+              // Changed line hover highlight to a subtle slate-900
+              <div
+                key={i}
+                className="flex px-4 hover:bg-slate-900 transition-colors leading-6"
+              >
+                {/* Line Numbers - Changed to text-slate-600 */}
+                <span className="w-10 shrink-0 text-slate-600 text-left select-none tabular-nums opacity-80">
+                  {i + 1}
+                </span>
 
-              {/* Actual Code Text - whitespace-pre handles indents */}
-              <span className="ml-4 whitespace-pre">{line || " "}</span>
-            </div>
-          ))}
-        </pre>
-      </div>
+                {/* Actual Code Text - whitespace-pre handles indents */}
+                <span className="ml-4 whitespace-pre">{line || " "}</span>
+              </div>
+            ))}
+          </pre>
+        </div>
+      )}
 
       <style jsx global>{`
         /* Keep scrollbars hidden as requested previously */

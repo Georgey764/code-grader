@@ -1,50 +1,61 @@
 "use client";
 
-import Link from "next/link";
 import { CreateButton } from "@/components/ui/elements";
-import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import DisplayBody from "./(helper)/HeadingWrapperDisplayBody";
 
 const linker = {
   // Faculty: Settings
-  "/app/faculty/settings": {
+  "/dashboard/faculty/settings": {
     name: "Settings",
     message: "View your Profile Settings",
   },
   // Faculty: Create Course
-  "/app/faculty/create-course": {
+  "/dashboard/faculty/create-course": {
     name: "Create Course",
     message: "Create a Course for your Students",
   },
   // Faculty: Course List
-  "/app/faculty": {
+  "/dashboard/faculty": {
     name: "Courses",
     message: "View your Courses",
     buttonIn: (
-      <CreateButton message="Create Course" link="/app/faculty/create-course" />
+      <CreateButton
+        message="Create Course"
+        link="/dashboard/faculty/create-course"
+      />
     ),
   },
   // Faculty: Course Detail
-  "/app/faculty/id": {
+  "/dashboard/faculty/id": {
     name: "Course Detail",
     message: "View the Details for the Selected Course",
     buttonIn: <CreateButton message="Edit Course" childLink="edit" />,
   },
   // Faculty: Course Detail Edit
-  "/app/faculty/edit": {
+  "/dashboard/faculty/id/edit": {
     name: "Edit Course Detail",
     message: "Edit the Details for the Selected Course",
   },
-  //Faculty: Course Roster List
-  "/app/faculty/id/roster": {
+  // Faculty: Course Roster List
+  "/dashboard/faculty/id/roster": {
     name: "Rosters",
     message: "View the Roster for Selected Course",
     buttonIn: <CreateButton message="Add Students" childLink="add" />,
   },
+  // Faculty: Add Students to Roster
+  "/dashboard/faculty/id/roster/add": {
+    name: "Add Students",
+    message: "Enroll Students in the Selected Course",
+  },
+  // Faculty: Student Results (Roster Detail)
+  "/dashboard/faculty/id/roster/id": {
+    name: "Student Results",
+    message: "View Performance for the Selected Student",
+  },
   // Faculty: Assignment List
-  "/app/faculty/id/assignments": {
+  "/dashboard/faculty/id/assignments": {
     name: "Assignments List",
     message: "View all Assignments of Selected Course",
     buttonIn: (
@@ -55,7 +66,7 @@ const linker = {
     ),
   },
   // Faculty Assignment Detail
-  "/app/faculty/id/assignments/id": {
+  "/dashboard/faculty/id/assignments/id": {
     name: "Assignment Detail",
     message: "View Assignment Detail Selected Assignment",
     buttonIn: (
@@ -63,33 +74,38 @@ const linker = {
     ),
   },
   // Edit Faculty Assignment Detail
-  "/app/faculty/id/assignments/id/edit-assignment": {
+  "/dashboard/faculty/id/assignments/id/edit-assignment": {
     name: "Edit Assignment Detail",
     message: "Edit Assignment Detail Selected Assignment",
   },
   // Faculty Assignment Submissions Detail
-  "/app/faculty/id/assignments/id/submissions": {
+  "/dashboard/faculty/id/assignments/id/submissions": {
     name: "Submissions",
     message: "View all Submissions for Selected Assignment",
   },
   // Faculty Create Assignmnet
-  "/app/faculty/id/assignments/create-assignment": {
+  "/dashboard/faculty/id/assignments/create-assignment": {
     name: "Create Assignment",
     message: "Create an Assignment for the Selected Course",
   },
   // Faculty: Test Cases List
-  "/app/faculty/id/assignments/id/test-cases": {
+  "/dashboard/faculty/id/assignments/id/test-cases": {
     name: "Test Cases",
     message: "View all Test Cases for Selected Course",
     buttonIn: <CreateButton message="Create Test Case" childLink="create" />,
   },
   // Faculty: Test Case Create
-  "/app/faculty/id/assignments/id/test-cases/create": {
+  "/dashboard/faculty/id/assignments/id/test-cases/create": {
     name: "Create Test Case",
     message: "Create a Test Case for your Selected Assignment",
   },
+  // Faculty: Test Case Edit
+  "/dashboard/faculty/id/assignments/id/test-cases/edit": {
+    name: "Edit Test Case",
+    message: "Edit the Test Case for your Selected Assignment",
+  },
   // Faculty: Rubric Criteria List
-  "/app/faculty/id/assignments/id/rubrics": {
+  "/dashboard/faculty/id/assignments/id/rubrics": {
     name: "Rubric Criteria",
     message: "View All Rubric Criteria for Selected Course",
     buttonIn: (
@@ -97,50 +113,96 @@ const linker = {
     ),
   },
   // Faculty: Rubric Criterion Create
-  "/app/faculty/id/assignments/id/rubrics/create": {
+  "/dashboard/faculty/id/assignments/id/rubrics/create": {
     name: "Create Rubric Criterion",
     message: "Create a Rubric Criterion for your Selected Assignment",
   },
-  // Faculty: Rubric Criterion Create
-  "/app/faculty/id/assignments/id/submissions/view": {
+  // Faculty: Rubric Criterion Edit
+  "/dashboard/faculty/id/assignments/id/rubrics/edit": {
+    name: "Edit Rubric Criterion",
+    message: "Edit the Rubric Criterion for your Selected Assignment",
+  },
+  // Faculty: View Submissions by Roster
+  "/dashboard/faculty/id/assignments/id/submissions/view": {
     name: "View Submissions",
     message: "View all submissions for your Selected Assignment's Roster",
   },
+  // Faculty: View Groups
+  "/dashboard/faculty/id/assignments/id/groups": {
+    name: "View Groups",
+    message: "View all groups for your Selected Assignment",
+    buttonIn: <CreateButton message="Create Group" childLink="create" />,
+  },
   // Faculty: Grade View Page
-  "/app/faculty/id/grades": {
+  "/dashboard/faculty/id/grades": {
     name: "Gradebook",
     message: "Weighted Points & Diagnostic Summary",
   },
+  // Faculty: Course grade report (per-student)
+  "/dashboard/faculty/id/grade-report": {
+    name: "Grade Report",
+    message: "Per-student averages and latest submissions by assignment",
+  },
   // Faculty: Grade View Page
-  "/app/faculty/id/grades/id": {
+  "/dashboard/faculty/id/grades/id": {
     name: "Grade Detail",
     message: "View the Details for the Selected Grade",
   },
   // Student: Courses List
-  "/app/student": {
+  "/dashboard/student": {
     name: "Courses",
     message: "View your Courses",
     buttonIn: <CreateButton message="Join New Course" childLink="join" />,
   },
-  // Course Detail
-  "/app/student/id": {
+  // Student: Join Course
+  "/dashboard/student/join": {
+    name: "Join Course",
+    message: "Enroll in a Course using the Course ID",
+  },
+  // Student: Course Detail
+  "/dashboard/student/id": {
     name: "Course Detail",
     message: "View your Course Detail for Selected Course",
   },
   // Student: Assignments List
-  "/app/student/id/assignments": {
+  "/dashboard/student/id/assignments": {
     name: "Assignments",
     message: "View all Assignments for your Selected Course",
   },
-  // Student: Assignments Detail
-  "/app/student/id/assignments/id": {
+  // Student: Course grades (self)
+  "/dashboard/student/id/grades": {
+    name: "Grades",
+    message: "Your scores and rubric breakdown for this course",
+  },
+  // Student: Assignment Detail
+  "/dashboard/student/id/assignments/id": {
     name: "Assignment Detail",
     message: "View Assignment Detail for your Selected Assignment",
   },
+  // Student: Test Cases (Read-only)
+  "/dashboard/student/id/assignments/id/test-cases": {
+    name: "Test Cases",
+    message: "View Test Cases for your Selected Assignment",
+  },
+  // Student: Rubric Criteria (Read-only)
+  "/dashboard/student/id/assignments/id/rubrics": {
+    name: "Rubric Criteria",
+    message: "View Rubric Criteria for your Selected Assignment",
+  },
+  // Student: To Do
+  "/dashboard/student/to-do": {
+    name: "To Do",
+    message: "Your Tasks and Course Overview",
+  },
   // Student: Settings
-  "/app/student/settings": {
+  "/dashboard/student/settings": {
     name: "Settings",
     message: "View your Profile Settings",
+  },
+  // Playground
+  "/dashboard/playground": {
+    name: "Playground",
+    message: "Code Editor & Terminal Sandbox",
   },
 };
 

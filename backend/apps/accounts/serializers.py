@@ -170,28 +170,15 @@ def validate_classification(value):
 
 
 class RegisterSerializer(BaseSerializers):
-    email = serializers.EmailField(
-        required=True,
-        validators=[
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message="A user with this email already exists.",
-            )
-        ],
-    )
+    # 1. We remove UniqueValidator from email and cwid
+    # so we can handle the logic manually in the validate() method.
+    email = serializers.EmailField(required=True)
+    cwid = serializers.CharField(validators=[validate_cwid])
+
     first_name = serializers.CharField(validators=[validate_name])
     last_name = serializers.CharField(validators=[validate_name])
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
-    cwid = serializers.CharField(
-        validators=[
-            validate_cwid,
-            UniqueValidator(
-                queryset=User.objects.all(),
-                message="A user with this CWID already exists.",
-            ),
-        ]
-    )
     role = serializers.ChoiceField(choices=Roles.choices, required=True)
     title = serializers.CharField(required=False, validators=[validate_title])
     phone = serializers.CharField(required=False)
@@ -216,48 +203,74 @@ class RegisterSerializer(BaseSerializers):
             "classification",
         ]
 
+    def validate_email(self, value):
+        return value.lower()
+
     def validate(self, attrs):
+        # 2. Check Password Match
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
                 {"password": "Password fields didn't match."}
             )
+
+        # 3. Handle Stale/Inactive Users (The Production Fix)
+        email = attrs.get("email")
+        cwid = attrs.get("cwid")
+
+        # Check if a user with this email or CWID already exists
+        existing_user = (
+            User.objects.filter(email=email).first()
+            or User.objects.filter(cwid=cwid).first()
+        )
+
+        if existing_user:
+            if existing_user.is_active:
+                # If they are active, this is a real conflict. Block it.
+                if existing_user.email == email:
+                    raise serializers.ValidationError(
+                        {"email": "A user with this email already exists."}
+                    )
+                raise serializers.ValidationError(
+                    {"cwid": "A user with this CWID already exists."}
+                )
+            else:
+                # If they are NOT active, delete the old record so we can create a fresh one.
+                # This clears the way for the new registration and new activation token.
+                existing_user.delete()
+
+        # 4. Role-based Validation
         if attrs["role"] == Roles.FACULTY:
             if not attrs.get("title"):
                 raise serializers.ValidationError(
-                    {"title": "professor title is required for faculties"}
+                    {"title": "Professor title is required for faculties"}
                 )
             if not attrs.get("phone"):
                 raise serializers.ValidationError(
-                    {"phone": "phone number is required for faculties"}
+                    {"phone": "Phone number is required for faculties"}
                 )
+
         return attrs
 
     @transaction.atomic
     def create(self, validated_data):
         validated_data.pop("password_confirm")
 
+        # Extract profile-specific data
         title = validated_data.pop("title", None)
         phone = validated_data.pop("phone", None)
-
         classification = validated_data.pop("classification", None)
         major = validated_data.pop("major", None)
 
-        user = User.objects.create_user(**validated_data)
+        # Create user with is_active=False
+        user = User.objects.create_user(is_active=False, **validated_data)
 
+        # Create Profiles
         if validated_data["role"] == Roles.FACULTY:
-            FacultyProfile.objects.create(
-                user=user,
-                phone=phone,
-                title=title,
-            )
-
+            FacultyProfile.objects.create(user=user, phone=phone, title=title)
         elif validated_data["role"] == Roles.STUDENT:
             StudentProfile.objects.create(
-                user=user,
-                major=major,
-                classification=classification,
+                user=user, major=major, classification=classification
             )
-
         elif validated_data["role"] == Roles.GRADING_ASSISTANT:
             GradingAssistantProfile.objects.create(user=user)
 

@@ -17,3 +17,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["cwid"] = user.cwid
 
         return token
+
+    def validate(self, attrs):
+        # This adds data to the JSON RESPONSE BODY (visible in Network tab)
+        data = super().validate(attrs)
+
+        # Add the custom fields to the response dictionary
+        data["role"] = self.user.role
+        data["cwid"] = self.user.cwid
+        data["email"] = self.user.email
+
+        return data

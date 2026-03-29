@@ -19,6 +19,9 @@
 
   /* Code Syntax (Warhawk Dark Mode) */
   --code-bg: #1A1214;       /* Dark charcoal with a hint of maroon */
+  --code-header: #231F20;  /* Slightly lighter bar for editor header */
+  --code-text: #F8F8F2;    /* Light text for code on dark bg */
+  --code-muted: #94A3B8;   /* Muted text for buttons/labels on dark */
   --code-keyword: #BD955A;  /* Gold for keywords */
   --code-string: #A5B4FC;   /* Soft contrast for strings */
   --code-comment: #8E8E8E;
@@ -47,6 +50,9 @@
 
   /* Code colors & line height */
   --color-code-bg: var(--code-bg);
+  --color-code-header: var(--code-header);
+  --color-code-text: var(--code-text);
+  --color-code-muted: var(--code-muted);
   --color-code-keyword: var(--code-keyword);
   --color-code-string: var(--code-string);
   --color-code-comment: var(--code-comment);

@@ -161,12 +161,16 @@ class TestCaseViewSet(viewsets.ModelViewSet):
         filter_paths = {
             Roles.GRADING_ASSISTANT: "assignment__course__grading_assistant_profile__user",
             Roles.FACULTY: "assignment__course__faculty_profile__user",
+            Roles.STUDENT: "assignment__course__rosters__student_profile__user",
         }
         filter_path = filter_paths.get(user.role)
         if filter_path:
             queryset = queryset.filter(**{filter_path: user})
         else:
             return queryset.none()
+
+        if user.role == Roles.STUDENT:
+            queryset = queryset.filter(is_hidden=False)
 
         assignment_id = self.kwargs.get("assignment_id")
         if not assignment_id:
@@ -242,9 +246,19 @@ class GroupsMembershipViewSet(
     """
 
     queryset = GroupsMembership.objects.all().select_related(
-        "group__assignment__faculty_profile__user", "roster__student_profile__user"
+        "group__assignment__course__faculty_profile__user",
+        "roster__student_profile__user",
     )
     serializer_class = GroupsMembershipSerializer
+    lookup_field = "id"
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        group_id = self.kwargs.get("group_id")
+        assignment_id = self.kwargs.get("assignment_id")
+        if group_id and assignment_id:
+            return qs.filter(group_id=group_id, group__assignment_id=assignment_id)
+        return qs.none()
 
     def get_permissions(self):
         if not self.request.user.is_authenticated:
@@ -266,7 +280,7 @@ class GroupsMembershipViewSet(
             )
 
         # Business Logic: Check if group is full
-        if group.memberships.count() >= group.max_members:
+        if group.group_memberships.count() >= group.max_members:
             return Response(
                 {
                     "error": f"This group has reached its limit of {group.max_members} members."
