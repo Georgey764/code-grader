@@ -1,5 +1,7 @@
 from rest_framework import viewsets, mixins
-from apps.assessments.models import Submission
+from django.db.models import Prefetch
+
+from apps.assessments.models import PlagiarismMatch, Submission
 from apps.courses.models import Course, Roster
 from apps.courses.serializers import (
     CourseSerializer,
@@ -113,7 +115,23 @@ class CourseModelViewset(viewsets.ModelViewSet):
                 # Fetch latest submission
                 latest_sub = (
                     Submission.objects.filter(**filter_kwargs)
-                    .prefetch_related("rubric_results__rubric_criteria", "test_results")
+                    .select_related("roster__student_profile__user")
+                    .prefetch_related(
+                        "rubric_results__rubric_criteria",
+                        "test_results",
+                        Prefetch(
+                            "plagiarism_matches_as_a",
+                            queryset=PlagiarismMatch.objects.select_related(
+                                "submission_b__roster__student_profile__user"
+                            ),
+                        ),
+                        Prefetch(
+                            "plagiarism_matches_as_b",
+                            queryset=PlagiarismMatch.objects.select_related(
+                                "submission_a__roster__student_profile__user"
+                            ),
+                        ),
+                    )
                     .order_by("-created_at")
                     .first()
                 )

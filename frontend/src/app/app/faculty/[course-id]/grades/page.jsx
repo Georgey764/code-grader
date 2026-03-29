@@ -41,45 +41,46 @@ export default function GradebookPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 pb-20">
-      <header className="flex flex-col md:flex-row justify-between items-center gap-4 pb-5">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
-          size={14}
-        />
-        <input
-          type="text"
-          placeholder="Filter by name or ID..."
-          className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <header className="flex flex-col md:flex-row justify-between items-center gap-4 pb-8">
+        <div className="relative w-full max-w-md">
+          {/* This wrapper ensures the search icon stays inside the input */}
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+            size={14}
+          />
+          <input
+            type="text"
+            placeholder="Filter by name or ID..."
+            className="w-full pl-9 pr-4 py-2.5 bg-surface border border-border rounded-xl text-xs outline-none focus:ring-2 focus:ring-primary/10 transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </header>
 
       <div className="space-y-4">
-        {gradeData.map((assignment) => {
-          return (
-            <AssignmentAccordion
-              key={assignment.assignment_id}
-              assignment={assignment}
-              isOpen={openAssignment === assignment.assignment_id}
-              toggle={() =>
-                setOpenAssignment(
-                  openAssignment === assignment.assignment_id
-                    ? null
-                    : assignment.assignment_id,
-                )
-              }
-              searchTerm={searchTerm}
-              onSelect={(row) => {
-                const submissionId = row?.submission?.id;
-                if (!submissionId) return;
-                router.push(
-                  `/app/faculty/${courseId}/grades/${submissionId}`,
-                );
-              }}
-            />
-          );
-        })}
+        {gradeData.map((assignment) => (
+          <AssignmentAccordion
+            key={assignment.assignment_id}
+            assignment={assignment}
+            isOpen={openAssignment === assignment.assignment_id}
+            toggle={() =>
+              setOpenAssignment(
+                openAssignment === assignment.assignment_id
+                  ? null
+                  : assignment.assignment_id,
+              )
+            }
+            searchTerm={searchTerm}
+            onSelect={(row) => {
+              const submissionId = row?.submission?.id;
+              if (!submissionId) return;
+              router.push(
+                `/app/faculty/${courseId}/grades/${submissionId}`,
+              );
+            }}
+          />
+        ))}
       </div>
     </div>
   );

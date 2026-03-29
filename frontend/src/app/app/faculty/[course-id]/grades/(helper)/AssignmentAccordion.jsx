@@ -4,14 +4,18 @@ import React, { useState } from "react";
 import {
   Users,
   User,
-  CheckCircle2,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
   Beaker,
+  AlertTriangle,
+  GitCompareArrows,
 } from "lucide-react";
+
+import AIDetectionBadge from "@/components/graders/elements/AIDetectionBadge";
+import PlagiarismDiffModal from "@/components/graders/elements/PlagiarismDiffModal";
 
 export default function AssignmentAccordion({
   assignment,
@@ -21,6 +25,11 @@ export default function AssignmentAccordion({
   onSelect,
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [diffOpen, setDiffOpen] = useState(false);
+  const [diffPair, setDiffPair] = useState({
+    submissionId: null,
+    otherSubmissionId: null,
+  });
   const itemsPerPage = 10;
 
   const totalEnrolled = assignment.data.length;
@@ -49,6 +58,15 @@ export default function AssignmentAccordion({
 
   return (
     <div className="border border-border rounded-2xl bg-surface shadow-subtle overflow-hidden">
+      <PlagiarismDiffModal
+        open={diffOpen}
+        onClose={() => {
+          setDiffOpen(false);
+          setDiffPair({ submissionId: null, otherSubmissionId: null });
+        }}
+        submissionId={diffPair.submissionId}
+        otherSubmissionId={diffPair.otherSubmissionId}
+      />
       <button
         onClick={toggle}
         className={`w-full p-5 flex items-center justify-between transition-colors ${isOpen ? "bg-slate-50/50" : "hover:bg-slate-50/30"}`}
@@ -92,6 +110,7 @@ export default function AssignmentAccordion({
             <thead className="bg-slate-50/50 text-[9px] font-black uppercase text-text-muted border-b border-border">
               <tr className="text-sm">
                 <th className="p-4 pl-8">Student Identification</th>
+                <th className="p-4 text-center min-w-[200px]">Integrity</th>
                 <th className="p-4 text-center">Diagnostics</th>
                 <th className="p-4 text-center">Status</th>
                 <th className="p-4 text-center">Final Score</th>
@@ -102,6 +121,8 @@ export default function AssignmentAccordion({
               {paginatedData.map((row) => {
                 const sub = row.submission;
                 const isGraded = sub && sub.total_points > 0;
+                const matches = sub?.plagiarism_matches || [];
+                const topMatch = matches[0];
                 return (
                   <tr
                     key={row.entity_id}
@@ -116,6 +137,54 @@ export default function AssignmentAccordion({
                           {row.student_detail?.email ||
                             `ID: ${row.entity_id.slice(0, 8)}`}
                         </span>
+                      </div>
+                    </td>
+                    <td className="p-4 align-top">
+                      <div className="flex flex-col items-center gap-2">
+                        {sub?.ai_prediction ? (
+                          <AIDetectionBadge
+                            prediction={sub.ai_prediction}
+                            compact
+                          />
+                        ) : (
+                          <span className="text-[9px] font-bold text-text-muted opacity-40">
+                            -
+                          </span>
+                        )}
+                        
+                        {sub?.plagiarism_alert && topMatch ? (
+                          <div className="flex w-full max-w-[220px] flex-col items-center gap-1.5 rounded-lg border border-amber-300/80 bg-amber-50 px-2 py-2 text-center">
+                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-900">
+                              <AlertTriangle size={12} className="shrink-0" />
+                              Plagiarism risk
+                            </span>
+                            <span className="text-[10px] font-bold text-amber-950">
+                              {topMatch.similarity_percent}% vs{" "}
+                              {topMatch.other_student_label}
+                            </span>
+                            {matches.length > 1 && (
+                              <span className="text-[9px] text-amber-800/80">
+                                +{matches.length - 1} other match
+                                {matches.length > 2 ? "es" : ""}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDiffPair({
+                                  submissionId: sub.id,
+                                  otherSubmissionId: topMatch.other_submission_id,
+                                });
+                                setDiffOpen(true);
+                              }}
+                              className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-amber-400 bg-white px-2 py-1 text-[9px] font-black uppercase tracking-wider text-amber-950 hover:bg-amber-100"
+                            >
+                              <GitCompareArrows size={12} />
+                              Diff viewer
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                     <td className="p-4 text-center">

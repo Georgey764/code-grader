@@ -10,8 +10,10 @@ import {
   ChevronRight,
   CircleDashed,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { CodeReport } from "@/components/ui/sections";
+import AIDetectionBadge from "@/components/graders/elements/AIDetectionBadge";
 
 export default function SubmissionsPage() {
   const param = useParams();
@@ -74,6 +76,9 @@ export default function SubmissionsPage() {
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted w-40">
                   Status
                 </th>
+                <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted min-w-[140px]">
+                  Integrity
+                </th>
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted text-right w-24">
                   View
                 </th>
@@ -88,6 +93,7 @@ export default function SubmissionsPage() {
                   assignmentData?.rubric_criterias?.length || 0;
                 const resultsCount = sub?.rubric_results?.length || 0;
                 const isGraded = rubricCount > 0 && resultsCount >= rubricCount;
+                const plag = sub?.plagiarism_alert;
 
                 return (
                   <tr
@@ -130,6 +136,29 @@ export default function SubmissionsPage() {
                           />
                         )}
                         {isGraded ? "Graded" : "Ungraded"}
+                      </div>
+                    </td>
+                    <td
+                      className="px-6 py-4 align-top"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex flex-col gap-2">
+                        {sub?.ai_prediction ? (
+                          <AIDetectionBadge
+                            prediction={sub.ai_prediction}
+                            compact
+                          />
+                        ) : (
+                          <span className="text-[9px] font-bold text-text-muted opacity-40">
+                            —
+                          </span>
+                        )}
+                        {plag ? (
+                          <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-amber-900">
+                            <AlertTriangle size={12} />
+                            Plagiarism risk
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">

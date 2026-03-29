@@ -2,15 +2,17 @@ from django.forms import ValidationError
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from apps.assessments.models import Submission, RubricResult, TestResult
+from apps.assessments.models import PlagiarismMatch, Submission, RubricResult, TestResult
+from apps.assessments.plagiarism_service import structural_diff_line_highlights
 from apps.assessments.serializers import (
     SubmissionSerializer,
     RubricResultSerializer,
     TestResultSerializer,
+    _submission_student_label,
 )
 from apps.assignments.models import Course, Assignment
 from apps.assessments.services import run_untrusted_python
-from apps.assessments.tasks import run_submission_tests_task
+from apps.assessments.tasks import run_plagiarism_check_task, run_submission_tests_task
 from apps.assignments.models import TestCase
 from rest_framework.exceptions import APIException
 from apps.core.permissions import IsStudent, DenyAll
@@ -59,6 +61,18 @@ class SubmissionViewSet(
             "test_results",
             queryset=TestResult.objects.select_related("test_case"),
         ),
+        Prefetch(
+            "plagiarism_matches_as_a",
+            queryset=PlagiarismMatch.objects.select_related(
+                "submission_b__roster__student_profile__user"
+            ),
+        ),
+        Prefetch(
+            "plagiarism_matches_as_b",
+            queryset=PlagiarismMatch.objects.select_related(
+                "submission_a__roster__student_profile__user"
+            ),
+        ),
     )
     serializer_class = SubmissionSerializer
     lookup_field = "id"
@@ -69,6 +83,8 @@ class SubmissionViewSet(
         elif self.action == "list":
             return [IsAuthenticated()]
         elif self.action == "retrieve":
+            return [IsSubmissionAssignmentAffiliated()]
+        elif self.action == "plagiarism_diff":
             return [IsSubmissionAssignmentAffiliated()]
         elif self.action == "run_tests":
             return [(IsStudent & IsSubmissionAssignmentAffiliated)()]
@@ -146,10 +162,59 @@ class SubmissionViewSet(
         if student_code:
             prediction = detect_ai_code(student_code)
             
-        # 3. Save the submission to the database normally, but include our new prediction!
-        serializer.save(ai_prediction=prediction)
-    
-    
+        submission = serializer.save(ai_prediction=prediction)
+        run_plagiarism_check_task.delay(str(submission.id))
+
+    @action(detail=True, methods=["get"], url_path="plagiarism-diff")
+    def plagiarism_diff(self, request, id=None):
+        """Side-by-side structural diff for faculty / grading assistants (normalized AST lines)."""
+        if request.user.role == Roles.STUDENT:
+            return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
+        other_id = request.query_params.get("other_submission_id")
+        if not other_id:
+            return Response(
+                {"detail": "Query parameter other_submission_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sub = self.get_object()
+        other = get_object_or_404(Submission, pk=other_id)
+        if other.assignment_id != sub.assignment_id:
+            return Response(
+                {"detail": "Submissions must belong to the same assignment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        meta = structural_diff_line_highlights(
+            sub.submitted_file or "", other.submitted_file or ""
+        )
+        if meta is None:
+            return Response(
+                {
+                    "detail": "Could not build structural diff (invalid Python or source too short)."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "left": {
+                    "submission_id": str(sub.id),
+                    "student_label": _submission_student_label(sub),
+                    "lines": meta["left_normalized_lines"],
+                },
+                "right": {
+                    "submission_id": str(other.id),
+                    "student_label": _submission_student_label(other),
+                    "lines": meta["right_normalized_lines"],
+                },
+                "highlight_left_indices": meta["highlight_left_indices"],
+                "highlight_right_indices": meta["highlight_right_indices"],
+            }
+        )
+
+
     
     
 

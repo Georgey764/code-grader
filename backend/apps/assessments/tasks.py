@@ -1,6 +1,12 @@
 from celery import shared_task
-from django.core.exceptions import ValidationError
-from apps.assessments.models import Submission, TestResult
+from django.db.models import Q
+
+from apps.assessments.models import PlagiarismMatch, Submission, TestResult
+from apps.assessments.plagiarism_service import (
+    SIMILARITY_THRESHOLD,
+    ordered_submission_pair,
+    structural_similarity_ratio,
+)
 from apps.assessments.services import run_untrusted_python, run_untrusted_java
 from apps.assignments.models import Assignment, TestCase
 
@@ -43,3 +49,44 @@ def run_submission_tests_task(submission_id):
     submission.update_test_status(status=Submission.Status.PROCESSED)
 
     return f"Processed submission: {submission_id}"
+
+
+@shared_task
+def run_plagiarism_check_task(submission_id):
+    """
+    Compare one submission against all others on the same assignment (O(n)).
+    Runs after upload; skips non-Python, short files, and pairs below SIMILARITY_THRESHOLD.
+    """
+    try:
+        submission = Submission.objects.select_related("assignment").get(pk=submission_id)
+    except Submission.DoesNotExist:
+        return f"Plagiarism: submission {submission_id} not found."
+
+    assignment = submission.assignment
+    if assignment.language != Assignment.Language.PYTHON:
+        return "Plagiarism: skipped (non-Python assignment)."
+
+    code = submission.submitted_file or ""
+    if len(code.strip()) < 50:
+        return "Plagiarism: skipped (source too short)."
+
+    PlagiarismMatch.objects.filter(
+        Q(submission_a=submission) | Q(submission_b=submission)
+    ).delete()
+
+    others = Submission.objects.filter(assignment=assignment).exclude(pk=submission.pk)
+    created = 0
+    for other in others.iterator():
+        other_code = other.submitted_file or ""
+        ratio = structural_similarity_ratio(code, other_code)
+        if ratio <= SIMILARITY_THRESHOLD:
+            continue
+        a, b = ordered_submission_pair(submission, other)
+        PlagiarismMatch.objects.update_or_create(
+            submission_a=a,
+            submission_b=b,
+            defaults={"similarity_score": ratio},
+        )
+        created += 1
+
+    return f"Plagiarism: {created} match(es) for submission {submission_id}."

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.assessments.models import RubricResult, Submission
-from apps.assessments.serializers import TestResultSerializer
+from apps.assessments.serializers import TestResultSerializer, _submission_student_label
 from apps.core.serializers import BaseSerializers
 from apps.courses.models import Course, Roster
 from apps.accounts.serializers import (
@@ -110,6 +110,9 @@ class GradebookSubmissionSerializer(serializers.ModelSerializer):
     rubric_results = GradebookRubricResultSerializer(many=True, read_only=True)
     test_results = TestResultSerializer(many=True, read_only=True)
     test_summary = serializers.SerializerMethodField()
+    plagiarism_max_score = serializers.SerializerMethodField()
+    plagiarism_matches = serializers.SerializerMethodField()
+    plagiarism_alert = serializers.SerializerMethodField()
 
     class Meta:
         model = Submission
@@ -122,6 +125,10 @@ class GradebookSubmissionSerializer(serializers.ModelSerializer):
             "test_summary",
             "created_at",
             "submitted_file",
+            "ai_prediction",
+            "plagiarism_max_score",
+            "plagiarism_matches",
+            "plagiarism_alert",
         ]
 
     def get_test_summary(self, obj):
@@ -152,3 +159,42 @@ class GradebookSubmissionSerializer(serializers.ModelSerializer):
                 total_score += float(result.points)
 
         return round(total_score, 2)
+
+    def get_plagiarism_max_score(self, obj):
+        scores = []
+        for m in obj.plagiarism_matches_as_a.all():
+            scores.append(m.similarity_score)
+        for m in obj.plagiarism_matches_as_b.all():
+            scores.append(m.similarity_score)
+        if not scores:
+            return None
+        return round(max(scores) * 100, 1)
+
+    def get_plagiarism_matches(self, obj):
+        out = []
+        for m in obj.plagiarism_matches_as_a.all():
+            other = m.submission_b
+            out.append(
+                {
+                    "other_submission_id": str(other.id),
+                    "similarity_percent": round(m.similarity_score * 100, 1),
+                    "other_student_label": _submission_student_label(other),
+                }
+            )
+        for m in obj.plagiarism_matches_as_b.all():
+            other = m.submission_a
+            out.append(
+                {
+                    "other_submission_id": str(other.id),
+                    "similarity_percent": round(m.similarity_score * 100, 1),
+                    "other_student_label": _submission_student_label(other),
+                }
+            )
+        out.sort(key=lambda x: -x["similarity_percent"])
+        return out
+
+    def get_plagiarism_alert(self, obj):
+        return (
+            obj.plagiarism_matches_as_a.exists()
+            or obj.plagiarism_matches_as_b.exists()
+        )

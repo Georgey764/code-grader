@@ -38,6 +38,42 @@ class Submission(BaseModel):
         return f"Submission {self.id} for {self.assignment.name}"
 
 
+class PlagiarismMatch(BaseModel):
+    """
+    Pairwise similarity between two submissions on the same assignment.
+    submission_a_id is always lexicographically before submission_b_id to avoid duplicates.
+    """
+
+    submission_a = models.ForeignKey(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name="plagiarism_matches_as_a",
+    )
+    submission_b = models.ForeignKey(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name="plagiarism_matches_as_b",
+    )
+    similarity_score = models.FloatField(
+        help_text="Structural similarity ratio in the range [0.0, 1.0].",
+    )
+
+    class Meta:
+        db_table = "plagiarism_match"
+        verbose_name = "Plagiarism Match"
+        verbose_name_plural = "Plagiarism Matches"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission_a", "submission_b"],
+                name="unique_plagiarism_submission_pair",
+            ),
+        ]
+        ordering = ["-similarity_score", "-created_at"]
+
+    def __str__(self):
+        return f"{self.similarity_score:.2f} — {self.submission_a_id} / {self.submission_b_id}"
+
+
 class RubricResult(BaseModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     submission = models.ForeignKey(
