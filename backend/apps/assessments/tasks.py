@@ -19,7 +19,6 @@ def run_submission_tests_task(submission_id):
     except Submission.DoesNotExist:
         return f"Submission {submission_id} not found."
 
-    # Your logic (Copied from your View)
     assignment = submission.assignment
     language = assignment.language
     is_file_input = assignment.is_file_input
@@ -27,36 +26,33 @@ def run_submission_tests_task(submission_id):
     student_code = submission.submitted_file
 
     test_cases = []
-
     for tc in test_case_objects:
-        test_cases.append(
-            {
-                "id": tc.id,
-                "input": tc.text_input,
-                "expected_output": tc.expected_output,
-            }
-        )
+        test_cases.append({
+            "id": tc.id,
+            "input": tc.text_input,
+            "expected_output": tc.expected_output,
+        })
 
-    # Execution - Fixed line below
+    # Set status to PROCESSING
     submission.status = Submission.Status.PROCESSING
     submission.save()
 
     try:
+        results = []
         if language == Assignment.Language.PYTHON:
             results = run_untrusted_python(student_code, test_cases, is_file_input)
-        if language == Assignment.Language.JAVA:
+        elif language == Assignment.Language.JAVA:
             results = run_untrusted_java(student_code, test_cases, is_file_input)
 
         TestResult.save_test_results(submission, results)
         
-        # Fixed lines below
+        # Set status to PROCESSED on success
         submission.status = Submission.Status.PROCESSED
         submission.save()
-
         return f"Processed submission: {submission_id}"
-        
+
     except Exception as e:
-        # Fixed lines below
+        # Ensure status is reset even if execution fails
         submission.status = Submission.Status.PROCESSED
         submission.save()
         raise e
@@ -64,10 +60,6 @@ def run_submission_tests_task(submission_id):
 
 @shared_task
 def run_plagiarism_check_task(submission_id):
-    """
-    Compare one submission against all others on the same assignment (O(n)).
-    Runs after upload; skips non-Python, short files, and pairs below SIMILARITY_THRESHOLD.
-    """
     try:
         submission = Submission.objects.select_related("assignment").get(pk=submission_id)
     except Submission.DoesNotExist:

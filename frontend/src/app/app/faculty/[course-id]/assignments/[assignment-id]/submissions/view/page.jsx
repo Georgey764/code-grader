@@ -99,9 +99,7 @@ export default function SubmissionsPage() {
                   <tr
                     key={sub.id}
                     onClick={() =>
-                      router.push(
-                        `/dashboard/faculty/${courseId}/grades/${sub.id}`,
-                      )
+                      router.push(`/app/faculty/${courseId}/grades/${sub.id}`)
                     }
                     className="hover:bg-primary/5 cursor-pointer transition-colors group"
                   >
