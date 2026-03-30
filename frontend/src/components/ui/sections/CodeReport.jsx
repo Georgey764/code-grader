@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 
 import {
+  AlertTriangle,
   Check,
   ChevronDown,
   ChevronUp,
+  Code2,
   CornerDownRight,
   Eye,
   Layout,
@@ -155,6 +157,8 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
         openTest={openTest}
         setOpenTest={setOpenTest}
       />
+
+      <CrossClassIssueSection crossClassIssues={submission?.cross_class_issues} />
 
       <RubricResultAccordion
         submission={submission}
@@ -395,6 +399,149 @@ function RubricResultAccordion({
                       <p className="text-xs text-slate-500 italic leading-relaxed">
                         &quot;{res.optional_feedback}&quot;
                       </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CrossClassIssueSection({ crossClassIssues }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [openIssue, setOpenIssue] = useState(null);
+  const [openDuplicate, setOpenDuplicate] = useState(null);
+
+  const notChecked = crossClassIssues === null || crossClassIssues === undefined;
+  const hasIssues = !notChecked && crossClassIssues?.has_issues === true;
+  const issues = crossClassIssues?.issues || [];
+
+  return (
+    <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-sm">
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between p-5 bg-white border-b border-slate-200/60 hover:bg-slate-50/50 transition-all cursor-pointer select-none"
+      >
+        <div className="flex items-center gap-4">
+          <div className={`p-3 rounded-xl transition-colors ${
+            notChecked ? "bg-slate-100 text-slate-400"
+            : hasIssues ? "bg-amber-50 text-amber-600"
+            : "bg-green-50 text-green-600"
+          }`}>
+            <Code2 size={20} />
+          </div>
+          <div className="text-left">
+            <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
+              Cross-Class Analysis
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+              {notChecked ? (
+                <>
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">Pending</p>
+                </>
+              ) : hasIssues ? (
+                <>
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <p className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.15em]">
+                    {issues.length} Class {issues.length === 1 ? "Pair" : "Pairs"} with Duplicate Methods
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">No Duplicate Classes Detected</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className={`transition-transform duration-500 ${isExpanded ? "rotate-180" : ""}`}>
+          <ChevronDown size={20} className={isExpanded ? "text-primary" : "text-slate-300"} />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="p-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          {notChecked ? (
+            <p className="p-10 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Analysis Pending</p>
+          ) : !hasIssues ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
+              <div className="p-3 bg-green-50 rounded-full text-green-500"><Check size={20} /></div>
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">No duplicate class functionality detected</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {issues.map((issue, i) => (
+                <div key={i} className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                  <button
+                    onClick={() => setOpenIssue(openIssue === i ? null : i)}
+                    className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-zinc-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle size={15} className="text-amber-500 shrink-0" />
+                      <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-tight">
+                        {issue.class_a} &amp; {issue.class_b}
+                      </span>
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-black uppercase rounded-full tracking-wider">
+                        {issue.duplicate_methods.length} duplicate {issue.duplicate_methods.length === 1 ? "method" : "methods"}
+                      </span>
+                    </div>
+                    {openIssue === i
+                      ? <ChevronUp size={16} className="text-zinc-400" />
+                      : <ChevronDown size={16} className="text-zinc-400" />}
+                  </button>
+
+                  {openIssue === i && (
+                    <div className="p-4 bg-zinc-50/50 border-t border-zinc-200 space-y-3 animate-in slide-in-from-top-1">
+                      {issue.duplicate_methods.map((dup, j) => (
+                        <div key={j} className="border border-zinc-100 rounded-lg overflow-hidden">
+                          <button
+                            onClick={() => setOpenDuplicate(openDuplicate === `${i}-${j}` ? null : `${i}-${j}`)}
+                            className="w-full px-4 py-2.5 flex items-center justify-between bg-white hover:bg-zinc-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-mono font-bold text-zinc-600">
+                                {issue.class_a}.<span className="text-amber-600">{dup.method_a}</span>
+                                {dup.method_a !== dup.method_b && (
+                                  <> / {issue.class_b}.<span className="text-amber-600">{dup.method_b}</span></>
+                                )}
+                              </span>
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-black rounded tracking-wider">
+                                {Math.round(dup.similarity * 100)}% similar
+                              </span>
+                            </div>
+                            {openDuplicate === `${i}-${j}`
+                              ? <ChevronUp size={14} className="text-zinc-400" />
+                              : <ChevronDown size={14} className="text-zinc-400" />}
+                          </button>
+
+                          {openDuplicate === `${i}-${j}` && (
+                            <div className="grid grid-cols-2 gap-0 border-t border-zinc-100">
+                              <div className="border-r border-zinc-100">
+                                <div className="px-3 py-1.5 bg-slate-100 border-b border-zinc-100">
+                                  <span className="text-[9px] font-black uppercase text-zinc-400">{issue.class_a}.{dup.method_a}</span>
+                                </div>
+                                <pre className="p-3 bg-slate-900 text-slate-300 text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-60">
+                                  {dup.snippet_a || "—"}
+                                </pre>
+                              </div>
+                              <div>
+                                <div className="px-3 py-1.5 bg-slate-100 border-b border-zinc-100">
+                                  <span className="text-[9px] font-black uppercase text-zinc-400">{issue.class_b}.{dup.method_b}</span>
+                                </div>
+                                <pre className="p-3 bg-slate-900 text-slate-300 text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-60">
+                                  {dup.snippet_b || "—"}
+                                </pre>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

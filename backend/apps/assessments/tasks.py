@@ -3,6 +3,46 @@ from django.core.exceptions import ValidationError
 from apps.assessments.models import Submission, TestResult
 from apps.assessments.services import run_untrusted_python, run_untrusted_java
 from apps.assignments.models import Assignment, TestCase
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task
+def run_cross_class_check_task(submission_id):
+    from apps.assessments.services import detect_cross_class_issues
+
+    try:
+        submission = Submission.objects.get(pk=submission_id)
+    except Submission.DoesNotExist:
+        return
+
+    if not submission.submitted_file:
+        return
+
+    language = getattr(submission.assignment, "language", "python")
+
+    try:
+        result = detect_cross_class_issues(submission.submitted_file, language)
+        submission.cross_class_issues = result
+        submission.save(update_fields=["cross_class_issues"])
+    except Exception as e:
+        logger.error(f"Cross-class check task failed for {submission_id}: {e}")
+
+
+@shared_task
+def run_plagiarism_check_task(submission_id):
+    from apps.assessments.services import check_plagiarism
+
+    try:
+        submission = Submission.objects.get(pk=submission_id)
+    except Submission.DoesNotExist:
+        return
+
+    try:
+        check_plagiarism(submission)
+    except Exception as e:
+        logger.error(f"Plagiarism check task failed for {submission_id}: {e}")
 
 
 @shared_task
@@ -46,3 +86,7 @@ def run_submission_tests_task(submission_id):
     except Exception as e:
         submission.update_test_status(status=Submission.Status.PROCESSED)
         raise e
+
+    # Trigger checks after tests complete
+    run_plagiarism_check_task.delay(str(submission_id))
+    run_cross_class_check_task.delay(str(submission_id))
