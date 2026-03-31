@@ -159,6 +159,8 @@ class PlagiarismMatch(BaseModel):
 
     class Meta:
         db_table = "plagiarism_match"
+        verbose_name = "Plagiarism Match"
+        verbose_name_plural = "Plagiarism Matches"
         ordering = ["-similarity_score"]
         constraints = [
             models.UniqueConstraint(
