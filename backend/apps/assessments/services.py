@@ -2,6 +2,7 @@ from e2b import TimeoutException
 from e2b_code_interpreter import Sandbox
 from pathlib import Path
 from dotenv import load_dotenv
+from django.db.models import F, Q
 import os
 import time
 import re
@@ -413,9 +414,10 @@ def _ngram_jaccard(tokens_a: list, tokens_b: list, n: int = 3) -> float:
 
 def check_plagiarism(submission) -> list:
     """
-    Compares the submission against all other submissions for the same assignment
+    Compares the submission against other students' submissions for the same assignment
     using token-based trigram Jaccard similarity. This avoids false positives
     from shared language syntax/boilerplate.
+    Excludes the same student's other attempts (same roster); only compares across rosters.
     Saves PlagiarismMatch records for pairs with similarity >= 0.4.
     """
     from apps.assessments.models import PlagiarismMatch, Submission as Sub
@@ -429,9 +431,15 @@ def check_plagiarism(submission) -> list:
     if not tokens_a:
         return []
 
+    # Remove legacy rows where this submission was matched against another attempt by the same student
+    PlagiarismMatch.objects.filter(
+        Q(submission_a=submission) | Q(submission_b=submission)
+    ).filter(submission_a__roster_id=F("submission_b__roster_id")).delete()
+
     other_submissions = (
         Sub.objects.filter(assignment=submission.assignment)
         .exclude(pk=submission.pk)
+        .exclude(roster_id=submission.roster_id)
         .exclude(submitted_file__isnull=True)
         .exclude(submitted_file="")
     )

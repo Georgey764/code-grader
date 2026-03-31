@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMetadata } from "@/context";
+import { PlagiarismModal } from "@/components/ui/sections";
 import {
   Hash,
   InboxIcon,
@@ -11,219 +12,14 @@ import {
   CircleDashed,
   CheckCircle2,
   Copy,
-  X,
-  AlertTriangle,
 } from "lucide-react";
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function computeLineMatches(codeA, codeB) {
-  const linesA = (codeA || "").split("\n");
-  // Only consider lines with meaningful content (>15 chars after trimming)
-  const setB = new Set(
-    (codeB || "")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l.length > 15)
-  );
-  return linesA.map((line) => ({
-    text: line,
-    isMatch: line.trim().length > 15 && setB.has(line.trim()),
-  }));
-}
-
-// ─── Plagiarism Comparison Modal ─────────────────────────────────────────────
-
-function PlagiarismModal({ submission, matches, onClose, api }) {
-  const [selected, setSelected] = useState(null);
-  const [matchedSub, setMatchedSub] = useState(null);
-  const [loadingMatch, setLoadingMatch] = useState(false);
-
-  const handleSelect = async (match) => {
-    if (selected?.matched_submission_id === match.matched_submission_id) return;
-    setSelected(match);
-    setLoadingMatch(true);
-    try {
-      const res = await api.get(`assessments/submissions/${match.matched_submission_id}/`);
-      setMatchedSub(res.data);
-    } catch (err) {
-      console.error("Failed to fetch matched submission", err);
-    } finally {
-      setLoadingMatch(false);
-    }
-  };
-
-  const sortedMatches = [...matches].sort((a, b) => b.similarity_score - a.similarity_score);
-
-  const currentLines = selected
-    ? computeLineMatches(submission.submitted_file, matchedSub?.submitted_file)
-    : [];
-  const matchedLines = selected
-    ? computeLineMatches(matchedSub?.submitted_file, submission.submitted_file)
-    : [];
-
-  return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl flex flex-col overflow-hidden"
-        style={{ height: "90vh" }}>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle size={16} className="text-red-600" />
-            </div>
-            <div>
-              <h2 className="font-black text-accent text-sm uppercase tracking-widest">
-                Plagiarism Report
-              </h2>
-              <p className="text-[10px] text-text-muted font-bold uppercase tracking-wide mt-0.5">
-                {matches.length} similar submission{matches.length !== 1 ? "s" : ""} found
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors text-text-muted hover:text-accent"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar: match list */}
-          <div className="w-64 border-r border-slate-200 flex flex-col shrink-0 bg-slate-50">
-            <p className="px-4 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted border-b border-slate-200">
-              Violations
-            </p>
-            <div className="overflow-y-auto flex-1">
-              {sortedMatches.map((m) => {
-                const pct = Math.round(m.similarity_score * 100);
-                const isHigh = m.similarity_score >= 0.6;
-                const isActive = selected?.matched_submission_id === m.matched_submission_id;
-                return (
-                  <button
-                    key={m.matched_submission_id}
-                    onClick={() => handleSelect(m)}
-                    className={`w-full text-left px-4 py-3 border-b border-slate-200 transition-colors ${
-                      isActive ? "bg-white border-l-2 border-l-red-500" : "hover:bg-white"
-                    }`}
-                  >
-                    <p className="text-xs font-bold text-accent truncate">{m.student_name}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span
-                        className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-widest ${
-                          isHigh ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"
-                        }`}
-                      >
-                        {pct}% similar
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Main: code comparison */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {!selected ? (
-              <div className="flex-1 flex items-center justify-center text-center p-8">
-                <div>
-                  <Copy size={40} className="text-slate-200 mx-auto mb-3" />
-                  <p className="text-sm font-bold text-text-muted">Select a student from the list to compare code</p>
-                </div>
-              </div>
-            ) : loadingMatch ? (
-              <div className="flex-1 flex items-center justify-center">
-                <CircleDashed size={24} className="animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="flex flex-1 overflow-hidden">
-                {/* Current submission */}
-                <div className="flex-1 flex flex-col overflow-hidden border-r border-slate-200">
-                  <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 shrink-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">
-                      This Submission
-                    </p>
-                  </div>
-                  <div className="flex-1 overflow-auto bg-slate-950">
-                    <table className="w-full text-xs font-mono">
-                      <tbody>
-                        {currentLines.map((line, i) => (
-                          <tr
-                            key={i}
-                            className={line.isMatch ? "bg-amber-500/20" : ""}
-                          >
-                            <td className="select-none px-3 py-0 text-slate-600 text-right w-10 border-r border-slate-800 text-[10px]">
-                              {i + 1}
-                            </td>
-                            <td className="px-4 py-0 text-slate-200 whitespace-pre leading-5">
-                              {line.text || " "}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Matched submission */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                  <div className="px-4 py-2.5 bg-slate-100 border-b border-slate-200 shrink-0">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">
-                      {selected.student_name}
-                    </p>
-                  </div>
-                  <div className="flex-1 overflow-auto bg-slate-950">
-                    <table className="w-full text-xs font-mono">
-                      <tbody>
-                        {matchedLines.map((line, i) => (
-                          <tr
-                            key={i}
-                            className={line.isMatch ? "bg-amber-500/20" : ""}
-                          >
-                            <td className="select-none px-3 py-0 text-slate-600 text-right w-10 border-r border-slate-800 text-[10px]">
-                              {i + 1}
-                            </td>
-                            <td className="px-4 py-0 text-slate-200 whitespace-pre leading-5">
-                              {line.text || " "}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer legend */}
-        {selected && !loadingMatch && (
-          <div className="px-6 py-2.5 border-t border-slate-200 bg-slate-50 flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-amber-500/40 border border-amber-500/60" />
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wide">
-                Matching lines
-              </span>
-            </div>
-            <span className="text-[10px] text-text-muted">
-              Highlighted lines appear in both submissions
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ─── Badges ─────────────────────────────────────────────────────────────────
 
 function PlagiarismBadge({ matches, onOpen }) {
   const [tooltipPos, setTooltipPos] = useState(null);
   const badgeRef = React.useRef(null);
+  const canOpenModal = typeof onOpen === "function";
 
   if (!matches || matches.length === 0) {
     return (
@@ -249,16 +45,16 @@ function PlagiarismBadge({ matches, onOpen }) {
     <>
       <span
         ref={badgeRef}
-        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest cursor-pointer ${colorClass}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setTooltipPos(null)}
-        onClick={onOpen}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${canOpenModal ? "cursor-pointer" : "cursor-default"} ${colorClass}`}
+        onMouseEnter={canOpenModal ? handleMouseEnter : undefined}
+        onMouseLeave={canOpenModal ? () => setTooltipPos(null) : undefined}
+        onClick={canOpenModal ? onOpen : undefined}
       >
         <Copy size={10} />
         {pct}% Match
         {matches.length > 1 && <span className="opacity-70">+{matches.length - 1}</span>}
       </span>
-      {tooltipPos && (
+      {tooltipPos && canOpenModal && (
         <div
           className="fixed z-[9999] w-64 bg-white border border-slate-200 rounded-lg shadow-xl p-3 text-xs"
           style={{ top: tooltipPos.top, left: tooltipPos.left }}
@@ -290,7 +86,8 @@ function PlagiarismBadge({ matches, onOpen }) {
 export default function SubmissionsPage() {
   const param = useParams();
   const assignmentId = param["assignment-id"];
-  const { api } = useMetadata();
+  const { api, user } = useMetadata();
+  const isInstructor = user?.role === "FA";
 
   const searchParams = useSearchParams();
   const rosterId = searchParams.get("roster_id");
@@ -332,7 +129,7 @@ export default function SubmissionsPage() {
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl">
-      {plagiarismModal && (
+      {isInstructor && plagiarismModal && (
         <PlagiarismModal
           submission={plagiarismModal.submission}
           matches={plagiarismModal.submission.plagiarism_matches}
@@ -411,7 +208,9 @@ export default function SubmissionsPage() {
                     <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <PlagiarismBadge
                         matches={sub.plagiarism_matches}
-                        onOpen={() => setPlagiarismModal({ submission: sub })}
+                        onOpen={
+                          isInstructor ? () => setPlagiarismModal({ submission: sub }) : undefined
+                        }
                       />
                     </td>
                     <td className="px-6 py-4 text-right">

@@ -52,6 +52,8 @@ class SubmissionSerializer(BaseSerializers):
         result = []
         for match in matches:
             other = match.submission_b if match.submission_a_id == obj.id else match.submission_a
+            if other.roster_id == obj.roster_id:
+                continue
             try:
                 student_name = other.roster.student_profile.user.get_full_name()
             except Exception:
@@ -60,6 +62,9 @@ class SubmissionSerializer(BaseSerializers):
                 "matched_submission_id": str(other.id),
                 "similarity_score": match.similarity_score,
                 "student_name": student_name,
+                "matched_submission_created_at": (
+                    other.created_at.isoformat() if other.created_at else None
+                ),
             })
         return result
 
