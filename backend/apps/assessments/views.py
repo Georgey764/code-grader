@@ -10,7 +10,11 @@ from apps.assessments.serializers import (
 )
 from apps.assignments.models import Course, Assignment
 from apps.assessments.services import run_untrusted_python
-from apps.assessments.tasks import run_submission_tests_task
+from apps.assessments.tasks import (
+    run_submission_tests_task,
+    run_plagiarism_check_task,
+    run_cross_class_check_task,
+)
 from apps.assignments.models import TestCase
 from rest_framework.exceptions import APIException
 from apps.core.permissions import IsStudent, DenyAll
@@ -71,6 +75,8 @@ class SubmissionViewSet(
             return [IsSubmissionAssignmentAffiliated()]
         elif self.action == "run_tests":
             return [(IsStudent & IsSubmissionAssignmentAffiliated)()]
+        elif self.action in ["run_plagiarism_check", "run_cross_class_check"]:
+            return [IsSubmissionAssignmentAffiliated()]
         return [DenyAll()]
 
     # def get_object(self):
@@ -165,6 +171,32 @@ class SubmissionViewSet(
         except Exception as e:
             logger.error(f"Error triggering tests for submission {id}: {e}")
             return Response({"error": "Failed to trigger tests"}, status=500)
+
+    @action(detail=True, methods=["post"], url_path="run-plagiarism-check", url_name="run-plagiarism-check")
+    def run_plagiarism_check(self, request, id=None):
+        """Manually trigger plagiarism check for a submission."""
+        try:
+            submission = self.get_object()
+            run_plagiarism_check_task.delay(str(submission.id))
+            return Response({"status": "Plagiarism check triggered"}, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            logger.error(f"Error triggering plagiarism check for {id}: {e}")
+            return Response({"error": "Failed to trigger plagiarism check"}, status=500)
+
+
+
+    @action(detail=True, methods=["post"], url_path="run-cross-class-check", url_name="run-cross-class-check")
+    def run_cross_class_check(self, request, id=None):
+        """Manually trigger cross-class duplicate functionality check for a submission."""
+        try:
+            submission = self.get_object()
+            if not submission.submitted_file:
+                return Response({"error": "No code submitted"}, status=400)
+            run_cross_class_check_task.delay(str(submission.id))
+            return Response({"status": "Cross-class check triggered"}, status=status.HTTP_202_ACCEPTED)
+        except Exception as e:
+            logger.error(f"Error triggering cross-class check for {id}: {e}")
+            return Response({"error": "Failed to trigger cross-class check"}, status=500)
 
 
 class RubricResultViewSet(viewsets.ModelViewSet):

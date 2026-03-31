@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMetadata } from "@/context";
+import { PlagiarismModal } from "@/components/ui/sections";
 import {
   Hash,
   InboxIcon,
@@ -10,12 +11,83 @@ import {
   ChevronRight,
   CircleDashed,
   CheckCircle2,
+  Copy,
 } from "lucide-react";
+
+// ─── Badges ─────────────────────────────────────────────────────────────────
+
+function PlagiarismBadge({ matches, onOpen }) {
+  const [tooltipPos, setTooltipPos] = useState(null);
+  const badgeRef = React.useRef(null);
+  const canOpenModal = typeof onOpen === "function";
+
+  if (!matches || matches.length === 0) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-green-100 text-green-700">
+        <CheckCircle2 size={10} /> Clean
+      </span>
+    );
+  }
+
+  const highest = Math.max(...matches.map((m) => m.similarity_score));
+  const pct = Math.round(highest * 100);
+  const isHigh = highest >= 0.6;
+  const colorClass = isHigh ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600";
+
+  const handleMouseEnter = () => {
+    if (badgeRef.current) {
+      const rect = badgeRef.current.getBoundingClientRect();
+      setTooltipPos({ top: rect.bottom + window.scrollY + 6, left: rect.left + window.scrollX });
+    }
+  };
+
+  return (
+    <>
+      <span
+        ref={badgeRef}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${canOpenModal ? "cursor-pointer" : "cursor-default"} ${colorClass}`}
+        onMouseEnter={canOpenModal ? handleMouseEnter : undefined}
+        onMouseLeave={canOpenModal ? () => setTooltipPos(null) : undefined}
+        onClick={canOpenModal ? onOpen : undefined}
+      >
+        <Copy size={10} />
+        {pct}% Match
+        {matches.length > 1 && <span className="opacity-70">+{matches.length - 1}</span>}
+      </span>
+      {tooltipPos && canOpenModal && (
+        <div
+          className="fixed z-[9999] w-64 bg-white border border-slate-200 rounded-lg shadow-xl p-3 text-xs"
+          style={{ top: tooltipPos.top, left: tooltipPos.left }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={() => setTooltipPos(null)}
+        >
+          <p className="font-bold text-accent mb-1">Similar Submissions</p>
+          <p className="text-[10px] text-text-muted mb-2">Click to view code comparison</p>
+          <ul className="space-y-1.5">
+            {[...matches]
+              .sort((a, b) => b.similarity_score - a.similarity_score)
+              .map((m, i) => (
+                <li key={i} className="flex justify-between items-center gap-2 text-[10px]">
+                  <span className="text-text-muted truncate">{m.student_name}</span>
+                  <span className={`font-black shrink-0 ${m.similarity_score >= 0.6 ? "text-red-600" : "text-amber-600"}`}>
+                    {Math.round(m.similarity_score * 100)}%
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function SubmissionsPage() {
   const param = useParams();
   const assignmentId = param["assignment-id"];
-  const { api } = useMetadata();
+  const { api, user } = useMetadata();
+  const isInstructor = user?.role === "FA";
 
   const searchParams = useSearchParams();
   const rosterId = searchParams.get("roster_id");
@@ -24,9 +96,9 @@ export default function SubmissionsPage() {
   const [submissions, setSubmissions] = useState([]);
   const [assignmentData, setAssignmentData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plagiarismModal, setPlagiarismModal] = useState(null); // { submission }
 
   const router = useRouter();
-
   const courseId = param["course-id"];
 
   const fetchPageData = async () => {
@@ -57,6 +129,15 @@ export default function SubmissionsPage() {
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl">
+      {isInstructor && plagiarismModal && (
+        <PlagiarismModal
+          submission={plagiarismModal.submission}
+          matches={plagiarismModal.submission.plagiarism_matches}
+          onClose={() => setPlagiarismModal(null)}
+          api={api}
+        />
+      )}
+
       {submissions.length === 0 ? (
         <EmptyState />
       ) : (
@@ -73,6 +154,9 @@ export default function SubmissionsPage() {
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted w-40">
                   Status
                 </th>
+                <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted w-36">
+                  Plagiarism
+                </th>
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted text-right w-24">
                   View
                 </th>
@@ -81,10 +165,7 @@ export default function SubmissionsPage() {
             <tbody className="divide-y divide-border/50">
               {submissions.map((sub, index) => {
                 const attemptNum = submissions.length - index;
-
-                // Check if every rubric criterion has a result saved
-                const rubricCount =
-                  assignmentData?.rubric_criterias?.length || 0;
+                const rubricCount = assignmentData?.rubric_criterias?.length || 0;
                 const resultsCount = sub?.rubric_results?.length || 0;
                 const isGraded = rubricCount > 0 && resultsCount >= rubricCount;
 
@@ -92,24 +173,18 @@ export default function SubmissionsPage() {
                   <tr
                     key={sub.id}
                     onClick={() =>
-                      router.push(
-                        `/dashboard/faculty/${courseId}/grades/${sub.id}`,
-                      )
+                      router.push(`/dashboard/faculty/${courseId}/grades/${sub.id}`)
                     }
                     className="hover:bg-primary/5 cursor-pointer transition-colors group"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 font-black text-accent text-xs">
-                        <Hash size={14} className="text-secondary" />{" "}
-                        {attemptNum}
+                        <Hash size={14} className="text-secondary" /> {attemptNum}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-xs font-bold text-accent">
-                        <Calendar
-                          size={14}
-                          className="text-primary opacity-60"
-                        />
+                        <Calendar size={14} className="text-primary opacity-60" />
                         {new Date(sub.created_at).toLocaleString([], {
                           dateStyle: "medium",
                           timeStyle: "short",
@@ -125,13 +200,18 @@ export default function SubmissionsPage() {
                         {isGraded ? (
                           <CheckCircle2 size={14} />
                         ) : (
-                          <CircleDashed
-                            size={14}
-                            className="animate-spin-slow"
-                          />
+                          <CircleDashed size={14} className="animate-spin-slow" />
                         )}
                         {isGraded ? "Graded" : "Ungraded"}
                       </div>
+                    </td>
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <PlagiarismBadge
+                        matches={sub.plagiarism_matches}
+                        onOpen={
+                          isInstructor ? () => setPlagiarismModal({ submission: sub }) : undefined
+                        }
+                      />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <ChevronRight
