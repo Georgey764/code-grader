@@ -31,6 +31,9 @@ class Submission(BaseModel):
         max_length=50, choices=Status.choices, default=Status.PENDING
     )
 
+    # Cross-class duplicate functionality check
+    cross_class_issues = models.JSONField(null=True, blank=True)
+
     def __str__(self):
         return f"Submission {self.id} for {self.assignment.name}"
 
@@ -138,5 +141,30 @@ class TestResult(BaseModel):
             models.UniqueConstraint(
                 fields=["submission", "test_case"],
                 name="unique_submission_test_case",
+            )
+        ]
+
+
+class PlagiarismMatch(BaseModel):
+    submission_a = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="plagiarism_matches_as_a"
+    )
+    submission_b = models.ForeignKey(
+        Submission, on_delete=models.CASCADE, related_name="plagiarism_matches_as_b"
+    )
+    similarity_score = models.FloatField()
+
+    def __str__(self):
+        return f"Match: {self.submission_a_id} <-> {self.submission_b_id} ({self.similarity_score:.0%})"
+
+    class Meta:
+        db_table = "plagiarism_match"
+        verbose_name = "Plagiarism Match"
+        verbose_name_plural = "Plagiarism Matches"
+        ordering = ["-similarity_score"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission_a", "submission_b"],
+                name="unique_plagiarism_submission_pair",
             )
         ]

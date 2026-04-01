@@ -94,7 +94,7 @@ services:
     container_name: worker
     command: celery -A config worker --loglevel=info
     volumes:
-      - ./backend:/code
+      - ./backend:/app
     networks:
       - app-network
     environment:

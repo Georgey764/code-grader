@@ -1,17 +1,19 @@
 from django.utils import timezone
 from rest_framework import serializers
-from apps.assessments.models import Submission, RubricResult, TestResult
+from apps.assessments.models import Submission, RubricResult, TestResult, PlagiarismMatch
 from apps.assignments.models import GroupsMembership
 from apps.assignments.serializers import TestCaseSerializer, RubricCriteriaSerializer
 from apps.core.serializers import BaseSerializers
-
-from rest_framework import serializers
+from django.db.models import Q
 
 
 class RubricResultSerializer(serializers.ModelSerializer):
+    criteria_name = serializers.CharField(source="rubric_criteria.name", read_only=True)
+    max_points = serializers.DecimalField(source="rubric_criteria.max_points", max_digits=5, decimal_places=2, read_only=True)
+
     class Meta:
         model = RubricResult
-        fields = ["id", "submission", "rubric_criteria", "points", "optional_feedback"]
+        fields = ["id", "submission", "rubric_criteria", "criteria_name", "max_points", "points", "optional_feedback"]
 
     def validate_points(self, value):
         """
@@ -38,6 +40,33 @@ class TestResultSerializer(serializers.ModelSerializer):
 class SubmissionSerializer(BaseSerializers):
     test_results = TestResultSerializer(many=True, read_only=True)
     rubric_results = RubricResultSerializer(many=True, read_only=True)
+    plagiarism_matches = serializers.SerializerMethodField()
+
+    def get_plagiarism_matches(self, obj):
+        matches = PlagiarismMatch.objects.filter(
+            Q(submission_a=obj) | Q(submission_b=obj)
+        ).select_related(
+            "submission_a__roster__student_profile__user",
+            "submission_b__roster__student_profile__user",
+        )
+        result = []
+        for match in matches:
+            other = match.submission_b if match.submission_a_id == obj.id else match.submission_a
+            if other.roster_id == obj.roster_id:
+                continue
+            try:
+                student_name = other.roster.student_profile.user.get_full_name()
+            except Exception:
+                student_name = "Unknown"
+            result.append({
+                "matched_submission_id": str(other.id),
+                "similarity_score": match.similarity_score,
+                "student_name": student_name,
+                "matched_submission_created_at": (
+                    other.created_at.isoformat() if other.created_at else None
+                ),
+            })
+        return result
 
     class Meta(BaseSerializers.Meta):
         model = Submission
@@ -50,6 +79,8 @@ class SubmissionSerializer(BaseSerializers):
             "submitted_file",
             "status",
             "rubric_results",
+            "cross_class_issues",
+            "plagiarism_matches",
         ]
 
     def validate(self, attrs):
