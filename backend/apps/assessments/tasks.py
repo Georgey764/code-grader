@@ -5,6 +5,10 @@ from apps.assessments.services import run_untrusted_python, run_untrusted_java
 from apps.assignments.models import Assignment, TestCase
 import logging
 
+#    AI Tool Import
+from apps.assessments.ai_tools.ai_service import predict_ai_generated
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -59,6 +63,19 @@ def run_submission_tests_task(submission_id):
     is_file_input = assignment.is_file_input
     test_case_objects = TestCase.objects.filter(assignment__pk=assignment.pk)
     student_code = submission.submitted_file
+    
+# AI Detection Block - Predict if the code is AI generated and save the result to the submission
+    try:
+        if student_code and len(student_code.strip()) > 0:
+            submission.ai_prediction = predict_ai_generated(student_code)
+        else:
+            submission.ai_prediction = "Unknown (Empty File)"
+            
+        submission.save(update_fields=["ai_prediction"])
+    except Exception as e:
+        logger.error(f"AI Detection failed for {submission_id}: {e}")
+        submission.ai_prediction = "Unknown (Error)"
+        submission.save(update_fields=["ai_prediction"])
 
     test_cases = []
 
