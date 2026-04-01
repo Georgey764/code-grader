@@ -95,17 +95,14 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 # EMAIL CREDS
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER or "noreply@localhost"
-
-if EMAIL_HOST_USER:
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-else:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 # CELERY CREDS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -226,8 +223,8 @@ AUTH_USER_MODEL = "accounts.User"
 DJOSER = {
     "LOGIN_FIELD": "email",
     "USER_CREATE_PASSWORD_RETYPE": False,
-    "SEND_ACTIVATION_EMAIL": not DEBUG,
-    "PASSWORD_CHANGED_EMAIL_CONFIRMATION": not DEBUG,
+    "SEND_ACTIVATION_EMAIL": True,
+    "PASSWORD_CHANGED_EMAIL_CONFIRMATION": True,
     "PASSWORD_RESET_CONFIRM_URL": "password-reset/{uid}/{token}",
     "ACTIVATION_URL": "activate/{uid}/{token}",
     "SERIALIZERS": {

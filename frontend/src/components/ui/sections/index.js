@@ -2,4 +2,4 @@ export { default as LoadingPage } from "./LoadingPage";
 export { default as HeadingWrapper } from "./HeadingWrapper";
 export { default as CourseDetail } from "./CourseDetail";
 export { default as AssignmentListSection } from "./AssignmentListSection";
-export { default as CodeReport, PlagiarismModal } from "./CodeReport";
+export { default as CodeReport } from "./CodeReport";
