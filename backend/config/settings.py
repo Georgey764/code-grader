@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -103,6 +104,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+if DEBUG:
+    # No SMTP credentials needed locally; Djoser activation/reset emails print to the console.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # CELERY CREDS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
@@ -212,9 +217,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-DOMAIN = (
-    f"{os.getenv('ALLOWED_HOST_2')}:3000" if DEBUG else f"{os.getenv('ALLOWED_HOST_2')}"
-)
+_allowed_host_2 = os.getenv("ALLOWED_HOST_2", "localhost")
+DOMAIN = f"{_allowed_host_2}:3000" if DEBUG else f"{_allowed_host_2}"
 SITE_NAME = "Code Grader"
 SITE_URL = f"http://{DOMAIN}" if DEBUG else f"https://{DOMAIN}"
 
@@ -234,6 +238,19 @@ DJOSER = {
         "token_create": "apps.core.serializers.MyTokenObtainPairSerializer",
     },
 }
+
+if DEBUG:
+    _origin = os.getenv("ALLOWED_ORIGIN", "http://localhost:3000")
+    _frontend = urlparse(_origin if "://" in _origin else f"http://{_origin}")
+    DJOSER.update(
+        {
+            # Match ALLOWED_ORIGIN so activation/password-reset links in console emails work.
+            # (Registration still sends activation email; it prints to the console via EMAIL_BACKEND.)
+            "EMAIL_FRONTEND_PROTOCOL": _frontend.scheme or "http",
+            "EMAIL_FRONTEND_DOMAIN": _frontend.netloc or "localhost:3000",
+            "PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND": True,
+        }
+    )
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
