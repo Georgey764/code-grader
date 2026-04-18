@@ -7,6 +7,10 @@ import { ChevronDown, ChevronUp, Terminal, Trash } from "lucide-react";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
 import EditableCodeBlock from "@/components/ui/elements/EditableCodeBlock";
+import {
+  parseSubmittedPayload,
+  playgroundSourceFromPayload,
+} from "@/utils/submissionPayload";
 
 const XTerminal = dynamic(() => import("@/components/ui/elements/XTerminal"), {
   ssr: false,
@@ -42,10 +46,16 @@ export default function PlaygroundPage() {
         );
         const submittedFile = response.data?.submitted_file;
         if (submittedFile) {
-          setCode(submittedFile);
+          const parsed = parseSubmittedPayload(submittedFile);
           const isJava =
-            submittedFile.includes("public class") ||
-            submittedFile.includes("class Main");
+            parsed.mode === "multi"
+              ? Object.keys(parsed.files || {}).some((n) =>
+                  n.toLowerCase().endsWith(".java"),
+                )
+              : submittedFile.includes("public class") ||
+                submittedFile.includes("class Main");
+          const src = playgroundSourceFromPayload(parsed, !isJava);
+          setCode(src);
           setLanguage(isJava ? "java" : "python");
           setFileName(isJava ? "Main.java" : "main.py");
         }

@@ -29,4 +29,6 @@ urlpatterns = [
     path("api/courses/", include("apps.courses.urls")),
     path("api/assignments/", include("apps.assignments.urls")),
     path("api/assessments/", include("apps.assessments.urls")),
+    path("api/ai-detector/", include("apps.ai_detector.urls")),
+    path("api/plag-detector/", include("apps.plag_detector.urls")),
 ]

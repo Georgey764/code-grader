@@ -9,10 +9,7 @@ from apps.assessments.serializers import (
     TestResultSerializer,
 )
 from apps.assignments.models import Course, Assignment
-from apps.assessments.services import run_untrusted_python
-from apps.assessments.tasks import run_submission_tests_task
-from apps.assignments.models import TestCase
-from rest_framework.exceptions import APIException
+from apps.assessments.tasks import run_submission_tests_sync
 from apps.core.permissions import IsStudent, DenyAll
 from rest_framework.permissions import IsAuthenticated
 from apps.assessments.permissions import (
@@ -22,7 +19,7 @@ from apps.assessments.permissions import (
     IsCreatingSubmissionForEnrolledCourse,
 )
 from apps.accounts.models import Roles
-from django.db.models import Prefetch, query
+from django.db.models import Prefetch
 from apps.assignments.models import GroupsMembership
 import logging
 from django.shortcuts import get_object_or_404
@@ -131,9 +128,7 @@ class SubmissionViewSet(
             return queryset.filter(roster__student_profile__user=user)
 
         if user.role == Roles.FACULTY:
-            return queryset.filter(
-                assignment__course__faculty_profile__user=user
-            )
+            return queryset.filter(assignment__course__faculty_profile__user=user)
 
         if user.role == Roles.GRADING_ASSISTANT:
             return queryset.filter(
@@ -142,11 +137,31 @@ class SubmissionViewSet(
 
         return queryset.none()
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        submission = serializer.instance
+        try:
+            run_submission_tests_sync(submission)
+        except Exception as e:
+            logger.exception("Grading failed on create for submission %s", submission.pk)
+            return Response(
+                {"detail": "Submission saved but grading failed.", "error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        instance = self.get_queryset().get(pk=submission.pk)
+        out = self.get_serializer(instance)
+        return Response(
+            out.data,
+            status=status.HTTP_201_CREATED,
+            headers=self.get_success_headers(out.data),
+        )
+
     @action(detail=True, methods=["post"], url_path="run-tests", url_name="run-tests")
     def run_tests(self, request, id=None):
         """
-        Custom endpoint to trigger the autograder for a specific submission.
-        Accessible at: POST /api/submissions/{id}/run_tests/
+        Re-run the autograder synchronously for this submission.
         """
         try:
             submission = self.get_object()
@@ -155,16 +170,13 @@ class SubmissionViewSet(
             if not submission.submitted_file:
                 return Response({"error": "No file attached"}, status=400)
 
-            run_submission_tests_task.delay(submission.id)
-
-            return Response(
-                {"status": "Tests triggered", "submission_id": submission.id},
-                status=status.HTTP_202_ACCEPTED,
-            )
+            run_submission_tests_sync(submission)
+            instance = self.get_queryset().get(pk=submission.pk)
+            return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error(f"Error triggering tests for submission {id}: {e}")
-            return Response({"error": "Failed to trigger tests"}, status=500)
+            logger.error(f"Error running tests for submission {id}: {e}")
+            return Response({"error": "Failed to run tests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RubricResultViewSet(viewsets.ModelViewSet):

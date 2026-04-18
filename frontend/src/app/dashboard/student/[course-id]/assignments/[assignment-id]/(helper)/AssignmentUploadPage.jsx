@@ -51,14 +51,13 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
   // Mode & Data State
   const [submissionMode, setSubmissionMode] = useState("file"); // 'file' or 'editor'
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [editorCode, setEditorCode] = useState("");
   const [editorFileName, setEditorFileName] = useState("main.py");
 
   // Workflow State
   const [status, setStatus] = useState("list");
   const [results, setResults] = useState([]);
-  const [progress, setProgress] = useState(0);
   const [roster, setRoster] = useState({});
   const [submissions, setSubmissions] = useState([]);
   const [assignmentData, setAssignmentData] = useState(null);
@@ -85,14 +84,17 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
         const data = assignmentResponse?.data;
         setRoster(rosterResponse?.data?.at(0));
         const subData = submissionResponse?.data;
-        setSubmissions(
-          Array.isArray(subData) ? [...subData].reverse() : [],
-        );
+        const subList = Array.isArray(subData)
+          ? subData
+          : (subData?.results ?? []);
+        setSubmissions([...subList].reverse());
         setAssignmentData(data);
 
         if (data?.is_grouped) {
           const gr = await api.get(`assignments/${assignmentId}/groups/`);
-          const raw = Array.isArray(gr.data) ? gr.data : gr.data?.results ?? [];
+          const raw = Array.isArray(gr.data)
+            ? gr.data
+            : (gr.data?.results ?? []);
           setGroupMeta(resolveStudentGroupMeta(raw, user?.cwid));
         } else {
           setGroupMeta({ id: null, isLeader: false, name: "" });
@@ -110,46 +112,18 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
     fetchPageData();
   }, [api, assignmentId, courseId, user?.cwid]);
 
-  // Sync file content to editor if user switches modes after selecting a file
+  // Sync file content to editor if user switches modes after selecting one file
   useEffect(() => {
-    if (file && submissionMode === "editor" && !editorCode) {
-      file.text().then((text) => setEditorCode(text));
+    if (
+      files.length === 1 &&
+      submissionMode === "editor" &&
+      !editorCode
+    ) {
+      files[0].text().then((text) => setEditorCode(text));
     }
-  }, [file, submissionMode, editorCode]);
+  }, [files, submissionMode, editorCode]);
 
   if (isLoading) return <LoadingPage />;
-
-  const pollStudentSubmission = async (submission, attempt = 0) => {
-    setStatus("polling");
-    const nextAttempt = attempt + 1;
-    try {
-      const response = await api.get(
-        `assessments/submissions/${submission?.id}/`,
-      );
-      const attemptsLimit =
-        assignmentData?.language?.toLowerCase() === "python" ? 15 : 30;
-
-      if (response.data.status.toUpperCase() === "PROCESSED") {
-        setActiveSubmission(response?.data);
-        setResults(response?.data?.test_results || []);
-        setStatus("completed");
-        api
-          .get(`assessments/submissions/?assignment_id=${assignmentId}`)
-          .then((res) => setSubmissions(res.data));
-      } else if (nextAttempt > attemptsLimit) {
-        throw new Error("Error while running automated tests. Check history.");
-      } else {
-        setProgress((cur) => (cur < 85 ? cur + 15 : 99));
-        setTimeout(() => pollStudentSubmission(submission, nextAttempt), 2000);
-      }
-    } catch (e) {
-      alert(
-        `${e?.message || "Error while running automated tests. Check history."}`,
-      );
-      console.log(e?.response);
-      window.location.reload();
-    }
-  };
 
   const handleUpload = async (e) => {
     e?.preventDefault();
@@ -169,8 +143,20 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
     let contentToSubmit = "";
     if (submissionMode === "file") {
-      if (!file) return;
-      contentToSubmit = await file.text();
+      if (!files.length) return;
+      if (files.length === 1) {
+        contentToSubmit = await files[0].text();
+      } else {
+        const bundle = { v: 1, files: {} };
+        const isJava = assignmentData?.language?.toLowerCase() === "java";
+        for (const f of files) {
+          let key = f.name;
+          if (isJava && key.toLowerCase() === "main.java") key = "Main.java";
+          if (!isJava && key.toLowerCase() === "main.py") key = "main.py";
+          bundle.files[key] = await f.text();
+        }
+        contentToSubmit = JSON.stringify(bundle);
+      }
     } else {
       if (!editorCode.trim()) return alert("Editor is empty.");
       contentToSubmit = editorCode;
@@ -188,21 +174,34 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
     try {
       const response = await api.post("assessments/submissions/", formData);
-      await api.post(`assessments/submissions/${response.data?.id}/run-tests/`);
-      pollStudentSubmission(response.data);
+      const sub = response.data;
+      setActiveSubmission(sub);
+      setResults(sub?.test_results || []);
+      setStatus("completed");
+      try {
+        const res = await api.get(
+          `assessments/submissions/?assignment_id=${assignmentId}`,
+        );
+        const r = res.data;
+        const list = Array.isArray(r) ? r : (r?.results ?? []);
+        setSubmissions([...list].reverse());
+      } catch (_) {
+        /* list refresh is best-effort */
+      }
     } catch (err) {
       setStatus("upload");
+      const detail = err?.response?.data?.detail;
+      const msg = err?.response?.data?.error;
       alert(
-        `Upload failed: ${err?.message || "Ensure your file/code meets requirements."}`,
+        `Submit failed: ${detail || msg || err?.message || "Ensure your files meet requirements."}`,
       );
     }
   };
 
   const resetWorkflow = (targetStatus = "list") => {
     setStatus(targetStatus);
-    setFile(null);
+    setFiles([]);
     setEditorCode("");
-    setProgress(0);
   };
 
   return (
@@ -227,7 +226,7 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
             icon={<CloudUpload size={16} />}
           />
           <StepTab
-            active={status === "polling" || status === "completed"}
+            active={status === "completed"}
             label="Evaluation"
             icon={<CheckCircle2 size={16} />}
           />
@@ -286,8 +285,8 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
 
               {submissionMode === "file" ? (
                 <FileUpload
-                  file={file}
-                  setFile={setFile}
+                  files={files}
+                  setFiles={setFiles}
                   handleUpload={handleUpload}
                   language={assignmentData?.language}
                 >
@@ -300,6 +299,12 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
                 </FileUpload>
               ) : (
                 <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-300">
+                  <p className="text-center text-[10px] font-bold text-text-muted uppercase tracking-widest max-w-lg mx-auto">
+                    Editor submits one source file. For multiple files in one
+                    attempt, use <span className="text-primary">File</span> and
+                    select every <span className="font-mono">.py</span> or{" "}
+                    <span className="font-mono">.java</span> in your project.
+                  </p>
                   <EditableCodeBlock
                     code={editorCode}
                     onCodeChange={setEditorCode}
@@ -328,9 +333,9 @@ export default function AssignmentUploadPage({ courseId, assignmentId }) {
             </div>
           )}
 
-          {(status === "uploading" || status === "polling") && (
+          {status === "uploading" && (
             <div className="py-8 sm:py-12">
-              <PollingView status={status} progress={progress} />
+              <PollingView />
             </div>
           )}
 

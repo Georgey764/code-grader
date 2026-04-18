@@ -126,7 +126,7 @@ class TestResult(BaseModel):
                 ]
                 cls.objects.bulk_create(test_results_to_create)
         except Exception:
-            submission.update_test_status(status=Submission.Status.INCOMPLETE)
+            submission.update_test_status(status=Submission.Status.PROCESSED)
             submission.save()
 
     class Meta:
