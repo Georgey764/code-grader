@@ -234,9 +234,28 @@ class RegisterSerializer(BaseSerializers):
                     {"cwid": "A user with this CWID already exists."}
                 )
             else:
-                # If they are NOT active, delete the old record so we can create a fresh one.
-                # This clears the way for the new registration and new activation token.
-                existing_user.delete()
+                # Do not delete: a new registration would invalidate links in any email
+                # already sent and causes "Stale token" on activation. User should resend
+                # activation from the login page instead.
+                if existing_user.email == email:
+                    raise serializers.ValidationError(
+                        {
+                            "email": (
+                                "This email is already registered but not activated. "
+                                "Go to Login and use “Resend activation email” after "
+                                "entering your password."
+                            )
+                        }
+                    )
+                raise serializers.ValidationError(
+                    {
+                        "cwid": (
+                            "This CWID is already tied to an inactive account. "
+                            "Log in with the email used for that registration and "
+                            "resend activation, or contact support."
+                        )
+                    }
+                )
 
         # 4. Role-based Validation
         if attrs["role"] == Roles.FACULTY:

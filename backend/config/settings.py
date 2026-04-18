@@ -226,6 +226,9 @@ SITE_URL = f"http://{DOMAIN}" if DEBUG else f"https://{DOMAIN}"
 
 AUTH_USER_MODEL = "accounts.User"
 
+# Djoser activation links use Django’s token generator (same timeout as password reset).
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", str(60 * 60 * 24 * 7)))
+
 DJOSER = {
     "LOGIN_FIELD": "email",
     "USER_CREATE_PASSWORD_RETYPE": False,
