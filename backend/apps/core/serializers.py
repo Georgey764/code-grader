@@ -1,5 +1,7 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.exceptions import AuthenticationFailed
 
 
 class BaseSerializers(serializers.ModelSerializer):
@@ -19,10 +21,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # This adds data to the JSON RESPONSE BODY (visible in Network tab)
+        email = (attrs.get("email") or "").strip().lower()
+        password = attrs.get("password")
+        if email and password:
+            User = get_user_model()
+            user = User.objects.filter(email=email).first()
+            if user and not user.is_active and user.check_password(password):
+                raise AuthenticationFailed(
+                    "INACTIVE_ACCOUNT: This account has not been activated yet. "
+                    "Use “Resend activation email” on this page, or open the latest "
+                    "link from your inbox."
+                )
+
         data = super().validate(attrs)
 
-        # Add the custom fields to the response dictionary
         data["role"] = self.user.role
         data["cwid"] = self.user.cwid
         data["email"] = self.user.email

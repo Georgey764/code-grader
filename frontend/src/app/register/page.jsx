@@ -61,11 +61,20 @@ export default function RegisterPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-
-        alert(
-          `Error Registering Account ${data?.email?.[0] || data?.cwid?.[0] || "Server Error"}`,
-        );
+        const data = await response.json().catch(() => ({}));
+        const firstMsg = (obj) => {
+          if (!obj || typeof obj !== "object") return null;
+          for (const v of Object.values(obj)) {
+            if (Array.isArray(v) && v[0]) return String(v[0]);
+            if (typeof v === "string") return v;
+          }
+          return null;
+        };
+        const msg =
+          firstMsg(data) ||
+          (typeof data.detail === "string" ? data.detail : null) ||
+          "Server error";
+        alert(`Could not register: ${msg}`);
         setLoading(false);
         return;
       }
