@@ -145,7 +145,9 @@ class SubmissionViewSet(
         try:
             run_submission_tests_sync(submission)
         except Exception as e:
-            logger.exception("Grading failed on create for submission %s", submission.pk)
+            logger.exception(
+                "Grading failed on create for submission %s", submission.pk
+            )
             return Response(
                 {"detail": "Submission saved but grading failed.", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -172,11 +174,16 @@ class SubmissionViewSet(
 
             run_submission_tests_sync(submission)
             instance = self.get_queryset().get(pk=submission.pk)
-            return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
+            return Response(
+                self.get_serializer(instance).data, status=status.HTTP_200_OK
+            )
 
         except Exception as e:
             logger.error(f"Error running tests for submission {id}: {e}")
-            return Response({"error": "Failed to run tests"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": "Failed to run tests"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class RubricResultViewSet(viewsets.ModelViewSet):
