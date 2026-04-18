@@ -10,12 +10,17 @@ import {
   ChevronRight,
   CircleDashed,
   CheckCircle2,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 export default function SubmissionsPage() {
   const param = useParams();
   const assignmentId = param["assignment-id"];
-  const { api } = useMetadata();
+  const { api, user } = useMetadata();
+  const isFaculty = user?.role === "FA";
+  const [aiBySubmission, setAiBySubmission] = useState({});
+  const [aiLoading, setAiLoading] = useState({});
 
   const searchParams = useSearchParams();
   const rosterId = searchParams.get("roster_id");
@@ -53,6 +58,25 @@ export default function SubmissionsPage() {
     fetchPageData();
   }, [api, assignmentId, groupId, rosterId]);
 
+  const runAiCheck = async (subId, e) => {
+    e?.stopPropagation?.();
+    setAiLoading((m) => ({ ...m, [subId]: true }));
+    try {
+      const { data } = await api.post(
+        `ai-detector/submissions/${subId}/analyze/`,
+      );
+      setAiBySubmission((m) => ({ ...m, [subId]: data }));
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Could not run AI analysis.";
+      alert(msg);
+    } finally {
+      setAiLoading((m) => ({ ...m, [subId]: false }));
+    }
+  };
+
   if (loading) return null;
 
   return (
@@ -73,6 +97,11 @@ export default function SubmissionsPage() {
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted w-40">
                   Status
                 </th>
+                {isFaculty ? (
+                  <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted w-56">
+                    AI signal
+                  </th>
+                ) : null}
                 <th className="px-6 py-3 text-[9px] font-black uppercase tracking-widest text-text-muted text-right w-24">
                   View
                 </th>
@@ -133,6 +162,42 @@ export default function SubmissionsPage() {
                         {isGraded ? "Graded" : "Ungraded"}
                       </div>
                     </td>
+                    {isFaculty ? (
+                      <td
+                        className="px-6 py-4 align-top"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex flex-col gap-2 max-w-[220px]">
+                          <button
+                            type="button"
+                            onClick={(e) => runAiCheck(sub.id, e)}
+                            disabled={!!aiLoading[sub.id]}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest hover:bg-primary transition-colors disabled:opacity-50"
+                          >
+                            {aiLoading[sub.id] ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Sparkles size={12} />
+                            )}
+                            Check
+                          </button>
+                          {aiBySubmission[sub.id]?.summary ? (
+                            <p
+                              className={`text-[10px] font-bold leading-snug ${
+                                aiBySubmission[sub.id].prediction === "ai"
+                                  ? "text-amber-700"
+                                  : aiBySubmission[sub.id].prediction ===
+                                      "human"
+                                    ? "text-emerald-700"
+                                    : "text-text-muted"
+                              }`}
+                            >
+                              {aiBySubmission[sub.id].summary}
+                            </p>
+                          ) : null}
+                        </div>
+                      </td>
+                    ) : null}
                     <td className="px-6 py-4 text-right">
                       <ChevronRight
                         size={18}

@@ -16,6 +16,49 @@ export function prepareExecutionContext(session, socket) {
   }
 }
 
+/** Compile every *.java in userDir (multi-file projects). */
+export function compileJavaInDir(userDir, socket, session) {
+  return new Promise((resolve, reject) => {
+    const ptyProcess = pty.spawn("/bin/bash", ["-lc", "javac *.java"], {
+      name: "xterm-color",
+      cols: 80,
+      rows: 24,
+      cwd: userDir,
+      env: process.env,
+    });
+    session.process = ptyProcess;
+
+    ptyProcess.onData((data) => {
+      socket.emit("code_compiled_stdout", data);
+    });
+
+    const cleanup = () => {
+      ptyProcess.kill();
+      session.process = null;
+    };
+
+    ptyProcess.onExit(({ exitCode }) => {
+      cleanup();
+      clearTimeout(timeoutId);
+      if (exitCode !== 0) {
+        socket.emit("error", `[Compilation Failed with exit code ${exitCode}]`);
+        reject(`Failed`);
+      } else {
+        resolve("Success");
+      }
+    });
+
+    const duration = 15000;
+    let timeoutId = setTimeout(() => {
+      if (session.running) {
+        socket.emit("error", "[Compilation Timed Out]\r\n");
+        cleanup();
+        reject("Timeout");
+      }
+    }, duration);
+  });
+}
+
 export function compileJava(filePath, socket, session, userDir) {
   return new Promise((resolve, reject) => {
     const ptyProcess = pty.spawn("javac", [filePath], {
@@ -58,10 +101,17 @@ export function compileJava(filePath, socket, session, userDir) {
   });
 }
 
-export function runCode(command, filePath, socket, session, userDir) {
+export function runCode(
+  command,
+  filePath,
+  socket,
+  session,
+  userDir,
+  javaMainClass = "Main",
+) {
   return new Promise((resolve, reject) => {
     // 1. Setup State
-    const runArg = command === "java" ? "Main" : filePath;
+    const runArg = command === "java" ? javaMainClass : filePath;
 
     const ptyProcess = pty.spawn(command, [runArg], {
       name: "xterm-color",
@@ -105,8 +155,8 @@ export function runCode(command, filePath, socket, session, userDir) {
       session.process = null;
 
       // Async file deletion (non-blocking)
-      if (filePath && fs.existsSync(path.join(userDir, "Main.class")))
-        fs.unlinkSync(path.join(userDir, "Main.class"));
+      const cls = path.join(userDir, `${javaMainClass}.class`);
+      if (filePath && fs.existsSync(cls)) fs.unlinkSync(cls);
       if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
     };
 
@@ -140,10 +190,23 @@ export function runCode(command, filePath, socket, session, userDir) {
   });
 }
 
-export async function handleJavaExecution(filePath, socket, session, userDir) {
+export async function handleJavaExecution(
+  filePath,
+  socket,
+  session,
+  userDir,
+  javaMainClass = "Main",
+) {
   try {
     await compileJava(filePath, socket, session, userDir);
-    const result = await runCode("java", filePath, socket, session, userDir);
+    const result = await runCode(
+      "java",
+      filePath,
+      socket,
+      session,
+      userDir,
+      javaMainClass,
+    );
     socket.emit("code_completed", result);
   } catch (err) {
     socket.emit("error", err);
@@ -245,13 +308,16 @@ export async function handleTextInputTestCase(
   session,
   socket,
   userDir,
+  javaMainClass = "Main",
 ) {
   return new Promise((resolve, reject) => {
     // 1. Determine arguments based on language
     // Java needs the class name, Python needs the file path;
     const command = language.toLowerCase() === "java" ? "java" : "python3";
     const args =
-      language.toLowerCase() === "java" ? ["-cp", userDir, "Main"] : [filePath];
+      language.toLowerCase() === "java"
+        ? ["-cp", userDir, javaMainClass]
+        : [filePath];
 
     const child = spawn(command, args, {
       cwd: userDir,
@@ -351,9 +417,10 @@ export async function handleFileInputTestCase(
   filePath,
   userDir,
   session,
+  javaMainClass = "Main",
 ) {
   return new Promise(async (resolve, reject) => {
-    const runArg = language.toLowerCase() === "java" ? "Main" : filePath;
+    const runArg = language.toLowerCase() === "java" ? javaMainClass : filePath;
     const command = language.toLowerCase() === "java" ? "java" : "python3";
 
     const start = Date.now();

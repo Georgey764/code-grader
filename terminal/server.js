@@ -2,15 +2,14 @@ const express = require("express");
 const fs = require("fs");
 const http = require("http");
 const { Server } = require("socket.io");
-const pty = require("node-pty");
 const path = require("path");
 const {
   prepareExecutionContext,
   runCode,
-  handleJavaExecution,
   handleFileInputTestCase,
   handleTextInputTestCase,
   compileJava,
+  compileJavaInDir,
 } = require("./helper/Utils.js");
 
 const app = express();
@@ -20,6 +19,111 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN_TERMINAL;
 
 const baseDir = path.join(__dirname, "sessions");
 fs.mkdirSync(baseDir, { recursive: true });
+
+const PYTHON_STDIN_WRAPPER = `import builtins
+
+# Save the real input function
+_original_input = builtins.input
+
+# Redefine it to ignore the prompt argument and call the original with nothing
+def silent_input(prompt=""):
+    return _original_input()
+
+builtins.input = silent_input
+`;
+
+function resolvePythonEntry(files, entry) {
+  const keys = Object.keys(files || {});
+  const pys = keys.filter((k) => k.toLowerCase().endsWith(".py"));
+  const e = entry ? path.basename(entry) : null;
+  if (e && files[e]) return e;
+  if (pys.length === 1) return pys[0];
+  const mainPy = pys.find((n) => n.toLowerCase() === "main.py");
+  if (mainPy) return mainPy;
+  if (pys.length)
+    return [...pys].sort((a, b) =>
+      a.toLowerCase().localeCompare(b.toLowerCase()),
+    )[0];
+  return "main.py";
+}
+
+function javaMainClassFromSource(content) {
+  const stripped = String(content || "").replace(
+    /^\s*package\s+[\w.]+\s*;\s*/gim,
+    "",
+  );
+  let m = stripped.match(/public\s+class\s+(\w+)/);
+  if (!m) m = stripped.match(/class\s+(\w+)/);
+  return m ? m[1] : "Main";
+}
+
+function resolveJavaEntry(files, entry) {
+  const javas = Object.keys(files || {}).filter((k) =>
+    k.toLowerCase().endsWith(".java"),
+  );
+  const trimmed = entry ? String(entry).trim() : "";
+  if (trimmed && /^[A-Za-z_][A-Za-z0-9_]*$/.test(trimmed)) return trimmed;
+  if (javas.length === 1)
+    return javaMainClassFromSource(files[javas[0]] || "");
+  const mainJava = javas.find((n) => n.toLowerCase() === "main.java");
+  if (mainJava) return javaMainClassFromSource(files[mainJava] || "");
+  for (const name of javas) {
+    if (/public\s+static\s+void\s+main\s*\(/.test(files[name] || ""))
+      return javaMainClassFromSource(files[name] || "");
+  }
+  const first = [...javas].sort((a, b) =>
+    a.toLowerCase().localeCompare(b.toLowerCase()),
+  )[0];
+  return javaMainClassFromSource(files[first] || "");
+}
+
+/**
+ * @returns {{ filePath: string, javaMainClass: string | null }}
+ */
+function writeProjectFiles(userDir, language, code, files, entry) {
+  const isJava = language.toLowerCase() === "java";
+
+  if (files && typeof files === "object" && Object.keys(files).length) {
+    let entryPy = "main.py";
+    let javaMainClass = "Main";
+    if (isJava) {
+      javaMainClass = resolveJavaEntry(files, entry);
+    } else {
+      entryPy = resolvePythonEntry(files, entry);
+    }
+    for (const [name, content] of Object.entries(files)) {
+      const safe = path.basename(name);
+      let body = content;
+      if (!isJava && safe === entryPy) {
+        body = PYTHON_STDIN_WRAPPER + content;
+      }
+      fs.writeFileSync(path.join(userDir, safe), body);
+    }
+    const filePath = isJava
+      ? path.join(userDir, `${javaMainClass}.java`)
+      : path.join(userDir, entryPy);
+    return { filePath, javaMainClass: isJava ? javaMainClass : null };
+  }
+
+  const entryName = isJava ? "Main.java" : "main.py";
+  const filePath = path.join(userDir, entryName);
+  const codeToWrite = isJava ? code : PYTHON_STDIN_WRAPPER + code;
+  fs.writeFileSync(filePath, codeToWrite);
+  return { filePath, javaMainClass: isJava ? "Main" : null };
+}
+
+function cleanupProjectSources(userDir) {
+  if (!fs.existsSync(userDir)) return;
+  for (const f of fs.readdirSync(userDir)) {
+    if (/\.(py|java|class)$/i.test(f)) {
+      try {
+        fs.unlinkSync(path.join(userDir, f));
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+}
 
 // 1. Setup Socket.io with CORS (allowing your React app to connect)
 const io = new Server(server, {
@@ -47,18 +151,38 @@ io.on("connection", (socket) => {
 
   // Run the code
   socket.on("run_code", async (data) => {
-    const { language, code } = data;
+    const { language, code, files, entry } = data;
 
     const session = sessions.get(socket.id);
     prepareExecutionContext(session, socket);
-    const fileName =
-      language.toLowerCase() === "java" ? "Main.java" : "main.py";
-    const filePath = path.join(userDir, fileName);
-
-    fs.writeFileSync(filePath, code);
+    cleanupProjectSources(userDir);
+    const { filePath, javaMainClass } = writeProjectFiles(
+      userDir,
+      language,
+      code,
+      files,
+      entry,
+    );
 
     if (language.toLowerCase() === "java") {
-      await handleJavaExecution(filePath, socket, session, userDir);
+      try {
+        if (files && typeof files === "object" && Object.keys(files).length) {
+          await compileJavaInDir(userDir, socket, session);
+        } else {
+          await compileJava(filePath, socket, session, userDir);
+        }
+        const result = await runCode(
+          "java",
+          filePath,
+          socket,
+          session,
+          userDir,
+          javaMainClass || "Main",
+        );
+        socket.emit("code_completed", result);
+      } catch (err) {
+        socket.emit("error", err);
+      }
     } else {
       try {
         const result = await runCode(
@@ -73,6 +197,7 @@ io.on("connection", (socket) => {
         socket.emit("error", err.toString().trim());
       }
     }
+    cleanupProjectSources(userDir);
   });
 
   // Upload the input file
@@ -94,37 +219,29 @@ io.on("connection", (socket) => {
   socket.on("run_test_case", async (data) => {
     const session = sessions.get(socket.id);
 
-    const { language, testCases, isFileInput, code } = data;
+    const { language, testCases, isFileInput, code, files, entry } = data;
     prepareExecutionContext(session, socket);
+    cleanupProjectSources(userDir);
 
-    const fileName =
-      language.toLowerCase() === "java" ? "Main.java" : "main.py";
-    const filePath = path.join(userDir, fileName);
-    const codeToWrite =
-      language.toLowerCase() === "java"
-        ? code
-        : `import builtins
+    const { filePath, javaMainClass } = writeProjectFiles(
+      userDir,
+      language,
+      code,
+      files,
+      entry,
+    );
+    const jmc = javaMainClass || "Main";
 
-# Save the real input function
-_original_input = builtins.input
-
-# Redefine it to ignore the prompt argument and call the original with nothing
-def silent_input(prompt=""):
-    return _original_input()
-
-builtins.input = silent_input
-${code}`;
-
-    fs.writeFileSync(filePath, codeToWrite);
     if (language.toLowerCase() === "java") {
-      const output = await compileJava(
-        filePath,
-        socket,
-        session,
-        userDir,
-      ).catch((e) => {
+      try {
+        if (files && typeof files === "object" && Object.keys(files).length) {
+          await compileJavaInDir(userDir, socket, session);
+        } else {
+          await compileJava(filePath, socket, session, userDir);
+        }
+      } catch (e) {
         socket.emit("error", e);
-      });
+      }
     }
 
     for (const testCase of testCases) {
@@ -138,6 +255,7 @@ ${code}`;
             filePath,
             userDir,
             session,
+            jmc,
           );
           socket.emit("test_case_completed", output);
         } catch (error) {
@@ -155,6 +273,7 @@ ${code}`;
             session,
             socket,
             userDir,
+            jmc,
           );
           socket.emit("test_case_completed", output);
         } catch (error) {
@@ -163,7 +282,7 @@ ${code}`;
       }
     }
 
-    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    cleanupProjectSources(userDir);
     socket.emit("test_cases_completed", {
       passedCount: session.testCasesPassed,
       errorCases: session.errorCases,

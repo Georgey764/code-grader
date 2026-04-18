@@ -91,6 +91,8 @@ LOCAL_APPS = [
     "apps.courses",
     "apps.assignments",
     "apps.assessments",
+    "apps.ai_detector",
+    "apps.plag_detector",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

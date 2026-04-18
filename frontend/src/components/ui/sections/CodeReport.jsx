@@ -2,43 +2,31 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  Check,
-  ChevronDown,
-  ChevronUp,
-  CornerDownRight,
-  Eye,
-  Layout,
-  MessageSquare,
-  Scale,
-  Terminal,
-  Trash,
-  X,
-} from "lucide-react";
+import { ChevronDown, Eye, MessageSquare, Scale, Terminal, Trash } from "lucide-react";
 import { CodeBlock } from "@/components/ui/elements";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMetadata } from "@/context";
 import { LoadingPage } from "@/components/ui/sections";
-
-// Use dynamic import with ssr: false
-// Source - https://stackoverflow.com/a/78116690
-// Posted by Bigboss01, modified by community. See post 'Timeline' for change history
-// Retrieved 2026-03-18, License - CC BY-SA 4.0
+import {
+  parseSubmittedPayload,
+  orderedSubmissionFilenames,
+  playgroundSourceFromPayload,
+  runtimeEntryFromTabFilename,
+} from "@/utils/submissionPayload";
 
 const XTerminal = dynamic(() => import("@/components/ui/elements/XTerminal"), {
   ssr: false,
 });
 
-export default function CodeReport({ results = [], submission, assignmentId }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export default function CodeReport({ submission, assignmentId }) {
   const [isRubricExpanded, setIsRubricExpanded] = useState(false);
-  const [openTest, setOpenTest] = useState(null);
   const [runCount, setRunCount] = useState(0);
   const [isRunningCode, setIsRunningCode] = useState(false);
   const [isRunningTestCases, setIsRunningTestCases] = useState(false);
   const [inputFile, setInputFile] = useState(null);
-  const { api, user } = useMetadata();
+  const [activeFileName, setActiveFileName] = useState(null);
+  const { api } = useMetadata();
   const [assignment, setAssignment] = useState(null);
   const [testCases, setTestCases] = useState(null);
 
@@ -46,32 +34,26 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
   const isPython = language?.toLowerCase() === "python";
   const isFileInput = assignment?.is_file_input;
 
-  const levelMap = {
-    1: { label: "Beginning", color: "text-red-600" },
-    2: { label: "Developing", color: "text-orange-600" },
-    3: { label: "Proficient", color: "text-amber-600" },
-    4: { label: "Accomplished", color: "text-blue-600" },
-    5: { label: "Exceptional", color: "text-green-600" },
-  };
-
-  const visibleTests = results?.filter((t) =>
-    user.role.toLowerCase() == "st" ? !t?.test_case?.is_hidden : true,
-  );
-  const passedCount = visibleTests.filter((t) => t.is_success).length;
   const rubricResults = submission?.rubric_results || [];
 
-  function handleRunCode() {
+  useEffect(() => {
+    setActiveFileName(null);
+  }, [submission?.id]);
+
+  function handleRunCodeForTab(fileName) {
     if (isRunningTestCases || isRunningCode) {
       return;
     }
+    setActiveFileName(fileName);
     setIsRunningCode(true);
     setRunCount((cur) => cur + 2);
   }
 
-  function handleRunTestCases() {
+  function handleRunTestCasesForTab(fileName) {
     if (isRunningCode || isRunningTestCases) {
       return;
     }
+    setActiveFileName(fileName);
     setRunCount(-1);
     setIsRunningTestCases(true);
   }
@@ -90,28 +72,86 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
 
   if (!assignment) return <LoadingPage />;
 
+  const parsed = parseSubmittedPayload(submission?.submitted_file);
+  const submissionFileLabel =
+    parsed.mode === "multi" ? "Submitted files" : "Submitted file";
+  const codeTabs =
+    parsed.mode === "multi"
+      ? orderedSubmissionFilenames(
+          parsed.files,
+          isPython,
+          parsed.entry,
+        ).map((name) => ({
+          name,
+          code: parsed.files[name] ?? "",
+        }))
+      : [
+          {
+            name: isPython ? "submission.py" : "Submission.java",
+            code: parsed.content ?? "",
+          },
+        ];
+
+  const resolvedActive =
+    activeFileName && codeTabs.some((t) => t.name === activeFileName)
+      ? activeFileName
+      : codeTabs[0]?.name ?? null;
+
+  const activeTabContent =
+    codeTabs.find((t) => t.name === resolvedActive)?.code ??
+    playgroundSourceFromPayload(parsed, isPython);
+
+  const playgroundCode =
+    parsed.mode === "multi" ? activeTabContent : playgroundSourceFromPayload(parsed, isPython);
+
+  const fromTab =
+    parsed.mode === "multi" && resolvedActive
+      ? runtimeEntryFromTabFilename(resolvedActive, isPython)
+      : null;
+  const terminalEntry =
+    parsed.mode === "multi" ? (fromTab ?? parsed.entry ?? null) : null;
+
   return (
     <div className="space-y-6">
-      {/* Submission File Code View */}
       <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-primary transition-colors mt-8 mb-2">
         <Terminal size={14} className="opacity-60" />
-        Submitted File
+        {submissionFileLabel}
       </label>
+      <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest -mt-2 mb-2">
+        Click a file to select it — Run and Test Cases use the selected file as the program entry.
+      </p>
 
-      <div className="space-y-2">
-        <CodeBlock
-          inputFile={inputFile}
-          assignmentId={assignmentId}
-          setInputFile={setInputFile}
-          code={submission?.submitted_file}
-          name={isPython ? "main.py" : "Main.java"}
-          handleRunCode={handleRunCode}
-          isRunningCode={isRunningCode}
-          handleRunTestCases={handleRunTestCases}
-          isRunningTestCases={isRunningTestCases}
-          isFileInput={isFileInput}
-          submissionId={submission?.id}
-        />
+      <div className="space-y-4">
+        {codeTabs.map((tab) => (
+          <div
+            key={tab.name}
+            className={`rounded-lg transition-[box-shadow] ${
+              resolvedActive === tab.name
+                ? "ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
+                : ""
+            }`}
+          >
+            <div
+              role="presentation"
+              onClick={() => setActiveFileName(tab.name)}
+              className="cursor-pointer"
+            >
+              <CodeBlock
+                inputFile={inputFile}
+                assignmentId={assignmentId}
+                setInputFile={setInputFile}
+                code={tab.code}
+                name={tab.name}
+                handleRunCode={() => handleRunCodeForTab(tab.name)}
+                isRunningCode={isRunningCode}
+                handleRunTestCases={() => handleRunTestCasesForTab(tab.name)}
+                isRunningTestCases={isRunningTestCases}
+                isFileInput={isFileInput}
+                submissionId={submission?.id}
+              />
+            </div>
+          </div>
+        ))}
       </div>
       {/* Terminal */}
       <div className=" w-full flex items-center justify-between gap-2 mb-2">
@@ -130,7 +170,9 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
       <div className="min-h-[200px] w-full relative">
         <XTerminal
           language={language}
-          code={submission?.submitted_file}
+          code={playgroundCode}
+          terminalFiles={parsed.mode === "multi" ? parsed.files : null}
+          entry={terminalEntry}
           runCount={runCount}
           setIsRunningCode={setIsRunningCode}
           isRunningTestCases={isRunningTestCases}
@@ -141,21 +183,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
         />
       </div>
 
-      {/* Detailed Automated Accordion */}
-      <AutomatedTestResultAccordion
-        assignmentId={assignmentId}
-        passedCount={passedCount}
-        visibleTests={visibleTests}
-        submission={submission}
-        rubricResults={rubricResults}
-        levelMap={levelMap}
-        results={results}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-        openTest={openTest}
-        setOpenTest={setOpenTest}
-      />
-
       <RubricResultAccordion
         submission={submission}
         rubricResults={rubricResults}
@@ -163,138 +190,6 @@ export default function CodeReport({ results = [], submission, assignmentId }) {
         setIsExpanded={setIsRubricExpanded}
         assignmentId={assignmentId}
       />
-    </div>
-  );
-}
-
-/** * UI COMPONENTS */
-
-function AutomatedTestResultAccordion({
-  passedCount,
-  visibleTests,
-  assignmentId,
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [openTest, setOpenTest] = useState(null);
-  const router = useRouter();
-
-  return (
-    <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 overflow-hidden ">
-      {/* --- MASTER TOGGLE HEADER --- */}
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-5 bg-white border-b border-slate-200/60 hover:bg-slate-50/50 transition-all cursor-pointer group select-none"
-      >
-        {/* --- LEFT: Diagnostic Identity --- */}
-        <div className="flex items-center gap-4">
-          <div
-            className={`p-3 rounded-xl transition-colors ${passedCount === visibleTests.length ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-500"}`}
-          >
-            <Layout size={20} />
-          </div>
-          <div className="text-left">
-            <h3 className="text-sm font-black uppercase tracking-tight text-slate-800">
-              Initial Automated Results
-            </h3>
-            <div className="flex items-center gap-2 mt-1">
-              {/* Status Dot for Glanceability */}
-              <div
-                className={`w-1.5 h-1.5 rounded-full ${passedCount === visibleTests.length ? "bg-green-500" : "bg-amber-500 animate-pulse"}`}
-              />
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
-                {passedCount} / {visibleTests?.length || 0} Test Cases Passed
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* --- RIGHT: Actions & Navigation --- */}
-        <div className="flex items-center gap-6">
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevents the accordion from toggling when clicking the button
-              router.push(`../assignments/${assignmentId}/test-cases`);
-            }}
-            className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-md active:scale-95"
-          >
-            <Eye size={14} />
-            Test Cases
-          </button>
-
-          <div
-            className={`transition-transform duration-500 ${isExpanded ? "rotate-180" : ""}`}
-          >
-            <ChevronDown
-              size={20}
-              className={`${isExpanded ? "text-primary" : "text-slate-300"}`}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* --- ACCORDION CONTENT --- */}
-      {isExpanded && (
-        <div className="p-6 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
-          {/* --- TEST CASE LIST --- */}
-          <div className="space-y-3">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-              <span className="w-8 h-[1px] bg-zinc-200" /> Test Cases
-            </h4>
-            <div className="space-y-2">
-              {visibleTests?.map((test, i) => (
-                <div
-                  key={i}
-                  className="border border-zinc-200 rounded-xl overflow-hidden bg-white shadow-sm"
-                >
-                  <button
-                    onClick={() => setOpenTest(openTest === i ? null : i)}
-                    className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-zinc-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {test.is_success ? (
-                        <Check size={16} className="text-green-600" />
-                      ) : (
-                        <X size={16} className="text-red-600" />
-                      )}
-                      <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-tight">
-                        Test Case {i + 1}
-                      </span>
-                    </div>
-                    {openTest === i ? (
-                      <ChevronUp size={16} className="text-zinc-400" />
-                    ) : (
-                      <ChevronDown size={16} className="text-zinc-400" />
-                    )}
-                  </button>
-
-                  {openTest === i && (
-                    <div className="p-4 bg-zinc-50/50 border-t border-zinc-200 space-y-4 animate-in slide-in-from-top-1">
-                      <div className="grid grid-cols-2 gap-4">
-                        <DataBit
-                          label="Input"
-                          value={test.test_case?.text_input}
-                        />
-                        <DataBit
-                          label="Expected"
-                          value={test.test_case?.expected_output}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <span className="text-[9px] font-black uppercase text-zinc-400">
-                          Execution Logs
-                        </span>
-                        <pre className="p-3 bg-slate-900 text-slate-300 rounded-lg text-[10px] font-mono overflow-x-auto border border-slate-800">
-                          {test.stdout || "No output."}
-                        </pre>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -338,7 +233,7 @@ function RubricResultAccordion({
         <div className="flex items-center gap-6">
           <button
             onClick={(e) => {
-              e.stopPropagation(); // Prevents the accordion from toggling when clicking the button
+              e.stopPropagation();
               router.push(`../assignments/${assignmentId}/rubrics`);
             }}
             className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-primary transition-all shadow-md active:scale-95"
@@ -403,19 +298,6 @@ function RubricResultAccordion({
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function DataBit({ label, value }) {
-  return (
-    <div className="space-y-1">
-      <span className="text-[9px] font-black uppercase text-text-muted flex items-center gap-1">
-        <CornerDownRight size={10} /> {label}
-      </span>
-      <div className="whitespace-pre-wrap p-2 bg-white border border-border rounded text-[10px] font-mono truncate">
-        {value || "None"}
-      </div>
     </div>
   );
 }

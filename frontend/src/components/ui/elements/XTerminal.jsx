@@ -8,6 +8,10 @@ const terminalUrl = process.env.NEXT_PUBLIC_TERMINAL_URL;
 
 const XTerminal = ({
   code,
+  /** When set, all files are written to the session dir; entry selects which file/class runs. */
+  terminalFiles = null,
+  /** Python: filename in files map. Java: class name (no .java). */
+  entry = null,
   runCount,
   setIsRunningCode,
   isRunningTestCases,
@@ -146,14 +150,33 @@ const XTerminal = ({
       termObjectRef.current.write(
         `Running Test Cases... \r\n\n----------------------------------------\r\n`,
       );
-      socketRef.current.emit("run_test_case", {
-        code: code,
+      const visible = (testCases || []).filter((t) =>
+        user.role?.toLowerCase?.() === "st" ? !t?.is_hidden : true,
+      );
+      const payload = {
         language: language,
-        testCases: visibleTestCases,
+        testCases: visible,
         isFileInput: isFileInput,
-      });
+      };
+      if (terminalFiles && typeof terminalFiles === "object") {
+        payload.files = terminalFiles;
+        payload.code = "";
+        if (entry) payload.entry = entry;
+      } else {
+        payload.code = code;
+      }
+      socketRef.current.emit("run_test_case", payload);
     }
-  }, [isRunningTestCases]);
+  }, [
+    isRunningTestCases,
+    terminalFiles,
+    entry,
+    code,
+    language,
+    isFileInput,
+    testCases,
+    user?.role,
+  ]);
 
   // Run the code when the run count is greater than 0
   useEffect(() => {
@@ -162,16 +185,21 @@ const XTerminal = ({
       termObjectRef.current.write(
         `Running ${language.toUpperCase()} Code... \r\n`,
       );
-      socketRef.current.emit("run_code", {
-        language: language,
-        code: code,
-      });
+      const payload = { language: language };
+      if (terminalFiles && typeof terminalFiles === "object") {
+        payload.files = terminalFiles;
+        payload.code = "";
+        if (entry) payload.entry = entry;
+      } else {
+        payload.code = code;
+      }
+      socketRef.current.emit("run_code", payload);
     };
 
     if (runCount > 0 && runCount > countHolder.current && socketRef.current) {
       runCode();
     }
-  }, [runCount, code, language]);
+  }, [runCount, code, language, terminalFiles, entry]);
 
   // Clear the terminal when the run count is 0
   useEffect(() => {
