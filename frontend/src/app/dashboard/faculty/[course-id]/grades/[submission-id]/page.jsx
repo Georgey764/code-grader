@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
+  ChevronLeft,
   ChevronRight,
   Hash,
   User,
@@ -19,7 +20,57 @@ import {
   PlagiarismCohortModal,
 } from "@/components/graders/sections";
 
-function buildGradingQueue(gradeData, assignmentId, currentSubmissionId) {
+function rowSubmissionGraded(submission, rubricCriteriaCount) {
+  if (!submission?.id) return false;
+  if (rubricCriteriaCount > 0) {
+    return (submission.rubric_results?.length || 0) >= rubricCriteriaCount;
+  }
+  return Number(submission.total_points || 0) > 0;
+}
+
+/** Match gradebook row to the submission being viewed (latest attempt may differ from URL id). */
+function findStudentRowIndex(sorted, submission) {
+  if (!submission) return -1;
+  if (submission.group) {
+    const byGroup = sorted.findIndex(
+      (row) => String(row.entity_id) === String(submission.group),
+    );
+    if (byGroup >= 0) return byGroup;
+  }
+  const byRoster = sorted.findIndex(
+    (row) => String(row.entity_id) === String(submission.roster),
+  );
+  if (byRoster >= 0) return byRoster;
+  return sorted.findIndex(
+    (row) => String(row.submission?.id) === String(submission.id),
+  );
+}
+
+/**
+ * Walk from `start` in `direction` (+1 or -1) for the first row whose latest submission
+ * is not fully graded. `start` is inclusive as the first index to test.
+ */
+function findFirstUngraded(sorted, rubricCriteriaCount, start, direction) {
+  let i = start;
+  while (i >= 0 && i < sorted.length) {
+    const row = sorted[i];
+    const sub = row.submission;
+    if (!sub?.id) {
+      i += direction;
+      continue;
+    }
+    if (!rowSubmissionGraded(sub, rubricCriteriaCount)) {
+      return {
+        id: sub.id,
+        label: row.student_detail?.full_name || row.entity_name || null,
+      };
+    }
+    i += direction;
+  }
+  return { id: null, label: null };
+}
+
+function buildGradingQueue(gradeData, assignmentId, currentSubmission, rubricCriteriaCount) {
   const block = gradeData.find(
     (a) => String(a.assignment_id) === String(assignmentId),
   );
@@ -27,9 +78,10 @@ function buildGradingQueue(gradeData, assignmentId, currentSubmissionId) {
     return {
       nextId: null,
       prevId: null,
+      nextLabel: null,
+      prevLabel: null,
       index: -1,
       total: 0,
-      nextLabel: null,
     };
   }
   const withSub = block.data.filter((row) => row.submission?.id);
@@ -46,18 +98,28 @@ function buildGradingQueue(gradeData, assignmentId, currentSubmissionId) {
     ).toLowerCase();
     return an.localeCompare(bn);
   });
-  const idx = sorted.findIndex(
-    (row) => String(row.submission.id) === String(currentSubmissionId),
-  );
-  const nextRow = idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
-  const prevRow = idx > 0 ? sorted[idx - 1] : null;
+  const idx = findStudentRowIndex(sorted, currentSubmission);
+  const next =
+    idx >= 0
+      ? findFirstUngraded(sorted, rubricCriteriaCount, idx + 1, 1)
+      : findFirstUngraded(sorted, rubricCriteriaCount, 0, 1);
+  const prev =
+    idx >= 0
+      ? findFirstUngraded(sorted, rubricCriteriaCount, idx - 1, -1)
+      : findFirstUngraded(
+          sorted,
+          rubricCriteriaCount,
+          sorted.length - 1,
+          -1,
+        );
+
   return {
-    nextId: nextRow?.submission?.id ?? null,
-    prevId: prevRow?.submission?.id ?? null,
+    nextId: next.id,
+    prevId: prev.id,
+    nextLabel: next.label,
+    prevLabel: prev.label,
     index: idx,
     total: sorted.length,
-    nextLabel:
-      nextRow?.student_detail?.full_name || nextRow?.entity_name || null,
   };
 }
 
@@ -78,27 +140,33 @@ export default function Page() {
     if (!courseId || !submissionId) return;
     setLoading(true);
     try {
-      const [submissionResponse, gradesResponse] = await Promise.all([
-        api.get(`assessments/submissions/${submissionId}/`),
-        api.get(`courses/${courseId}/grades/`),
-      ]);
-
-      const submission = submissionResponse.data;
-      const gradeData = gradesResponse.data ?? [];
-      const rosterResponse = await api.get(
-        `courses/${courseId}/rosters/${submission.roster}/`,
+      const submissionResponse = await api.get(
+        `assessments/submissions/${submissionId}/`,
       );
+      const submission = submissionResponse.data;
+      const [gradesResponse, rosterResponse, assignmentResponse] =
+        await Promise.all([
+          api.get(`courses/${courseId}/grades/`),
+          api.get(`courses/${courseId}/rosters/${submission.roster}/`),
+          api.get(`assignments/${submission.assignment}/`),
+        ]);
+
+      const gradeData = gradesResponse.data ?? [];
+      const rubricCriteriaCount =
+        assignmentResponse.data?.rubric_criterias?.length ?? 0;
 
       const queue = buildGradingQueue(
         gradeData,
         submission.assignment,
-        submission.id,
+        submission,
+        rubricCriteriaCount,
       );
 
       setData({
         results: submission.test_results,
         assignmentId: submission.assignment,
         submission,
+        rubricCriteriaCount,
         attemptNumber: "Latest",
         studentDetail: {
           full_name:
@@ -146,23 +214,33 @@ export default function Page() {
   };
 
   const refreshSubmissionOnly = useCallback(async () => {
-    if (!submissionId) return;
+    if (!submissionId || !courseId) return;
     try {
-      const submissionResponse = await api.get(
-        `assessments/submissions/${submissionId}/`,
-      );
-      setData((prev) =>
-        prev
-          ? {
-              ...prev,
-              submission: submissionResponse.data,
-            }
-          : prev,
-      );
+      const [submissionResponse, gradesResponse] = await Promise.all([
+        api.get(`assessments/submissions/${submissionId}/`),
+        api.get(`courses/${courseId}/grades/`),
+      ]);
+      const sub = submissionResponse.data;
+      const gradeData = gradesResponse.data ?? [];
+      setData((prev) => {
+        if (!prev) return prev;
+        const queue = buildGradingQueue(
+          gradeData,
+          prev.assignmentId,
+          sub,
+          prev.rubricCriteriaCount ?? 0,
+        );
+        return {
+          ...prev,
+          submission: sub,
+          results: sub.test_results,
+          queue,
+        };
+      });
     } catch (e) {
       console.error(e);
     }
-  }, [api, submissionId]);
+  }, [api, submissionId, courseId]);
 
   if (loading) return <LoadingPage />;
 
@@ -238,6 +316,29 @@ export default function Page() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            {queue.prevId ? (
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/faculty/${courseId}/grades/${queue.prevId}`,
+                  )
+                }
+                className="cursor-pointer flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-primary text-primary rounded-lg hover:bg-primary/5 active:scale-[0.98] transition-all font-black uppercase tracking-widest text-[10px]"
+              >
+                <ChevronLeft size={16} />
+                Previous
+                {queue.prevLabel ? (
+                  <span className="font-bold normal-case tracking-normal text-xs max-w-[120px] truncate">
+                    {queue.prevLabel}
+                  </span>
+                ) : null}
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 py-2 text-center sm:text-left sm:max-w-[140px]">
+                No previous ungraded
+              </span>
+            )}
             {queue.nextId ? (
               <button
                 type="button"
@@ -257,8 +358,8 @@ export default function Page() {
                 ) : null}
               </button>
             ) : (
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 py-2 text-center sm:text-left">
-                Last in queue
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-2 py-2 text-center sm:text-left sm:max-w-[160px]">
+                No next ungraded
               </span>
             )}
           </div>
