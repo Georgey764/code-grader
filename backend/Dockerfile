@@ -9,11 +9,13 @@ ENV PYTHONUNBUFFERED 1
 WORKDIR /app
 
 # 4. Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    openjdk-17-jdk-headless \
-    && rm -rf /var/lib/apt/lists/*
+    openjdk-21-jdk-headless \
+ && rm -rf /var/lib/apt/lists/*
 
 # 5. Copy requirements first (for caching)
 COPY requirements.txt /app/
