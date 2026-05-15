@@ -50,10 +50,10 @@ def validate_name(value):
 
 
 def validate_password(value):
-    # Must be at least 8 characters
-    if len(value) < 8:
+    # Must be at least 5 characters
+    if len(value) < 5:
         raise serializers.ValidationError(
-            "Password must be at least 8 characters long."
+            "Password must be at least 5 characters long."
         )
 
     # Must only contain ASCII characters
@@ -75,8 +75,8 @@ def validate_password(value):
         )
 
     # Must contain a number
-    if not re.search(r"[0-9]", value):
-        raise serializers.ValidationError("Password must contain at least one number.")
+    #if not re.search(r"[0-9]", value):
+    #    raise serializers.ValidationError("Password must contain at least one number.")
 
     # Must contain a special character
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
